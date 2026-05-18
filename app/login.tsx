@@ -119,6 +119,13 @@ export default function LoginScreen() {
                 <Text style={styles.loginBtnText}>Ingresar al Sistema</Text>
               )}
             </TouchableOpacity>
+
+            <View style={styles.registerContainer}>
+              <Text style={styles.registerText}>¿No tienes cuenta? </Text>
+              <TouchableOpacity onPress={() => router.push(`/register?role=${isDoctor ? 'doctor' : 'patient'}`)}>
+                <Text style={[styles.registerLink, { color: isDoctor ? '#2563eb' : '#059669' }]}>Regístrate aquí</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -229,5 +236,18 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '800',
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
+  registerText: {
+    color: '#64748b',
+    fontSize: 15,
+  },
+  registerLink: {
+    fontSize: 15,
+    fontWeight: '700',
   }
 });
