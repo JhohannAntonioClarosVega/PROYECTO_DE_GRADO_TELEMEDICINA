@@ -3,6 +3,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@supabase/supabase-js'
 import { Platform } from 'react-native'
 
+// Polyfill básico para evitar el error de Supabase en SSR (Node.js 20) al renderizar para Web
+if (Platform.OS === 'web' && typeof window === 'undefined') {
+  if (typeof global.WebSocket === 'undefined') {
+    ;(global as any).WebSocket = class WebSocket {
+      constructor() {}
+      send() {}
+      close() {}
+    }
+  }
+}
+
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
 
