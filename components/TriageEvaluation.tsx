@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 export default function TriageEvaluation({ onBack, triage }: { onBack?: () => void; triage?: any }) {
   // Usamos los datos reales si existen, o datos de respaldo si venimos sin parámetros
@@ -116,7 +118,20 @@ export default function TriageEvaluation({ onBack, triage }: { onBack?: () => vo
             <Text style={styles.actionBtnText}>Derivar Emergencia</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.actionButton, styles.btnAccept]} activeOpacity={0.8}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.btnAccept]} 
+            activeOpacity={0.8}
+            onPress={() => router.push({
+              pathname: '/videocall' as any,
+              params: {
+                role: 'doctor',
+                patientId: triage?.patient_id || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
+                patientName: triageData.patient.full_name,
+                triageId: triage?.id || `room_eval_${triage?.patient_id || 'general'}`,
+                doctorName: 'Dr. Marco Antonio'
+              }
+            })}
+          >
             <Ionicons name="videocam" size={20} color="#ffffff" />
             <Text style={styles.actionBtnText}>Atender Ahora</Text>
           </TouchableOpacity>

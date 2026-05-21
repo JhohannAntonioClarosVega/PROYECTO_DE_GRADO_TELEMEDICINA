@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -43,7 +44,20 @@ export default function ConsultasScreen() {
       <Text style={styles.appointmentType}>{item.type}</Text>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={[styles.button, styles.btnVideo]} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={[styles.button, styles.btnVideo]} 
+          activeOpacity={0.8}
+          onPress={() => router.push({
+            pathname: '/videocall' as any,
+            params: {
+              role: 'doctor',
+              patientId: item.id === '1' ? '95432c20-caed-43ca-8a01-4255e7a9dc1c' : '62e604f7-ebf0-4fa9-83c4-42fcfb839803',
+              patientName: item.patientName,
+              triageId: item.id === '1' ? '82ef740e-7440-424a-b50a-f0f0c05f0cf0' : `room_${item.id}`,
+              doctorName: 'Dr. Marco Antonio'
+            }
+          })}
+        >
           <Ionicons name="videocam" size={18} color="#ffffff" />
           <Text style={styles.btnTextVideo}>Iniciar Llamada</Text>
         </TouchableOpacity>

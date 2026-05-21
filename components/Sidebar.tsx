@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import CustomModal from '@/components/CustomModal';
+import { useState } from 'react';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -15,6 +18,19 @@ const menuItems: { icon: IconName; label: string; route: string }[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setLogoutModalVisible(false);
+      router.replace('/');
+    } catch (error) {
+      console.error('Error cerrando sesión:', error);
+      setLogoutModalVisible(false);
+      router.replace('/');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -45,9 +61,24 @@ export default function Sidebar() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Dr. Jhohann Claros</Text>
-        <Text style={styles.roleText}>Médico de Guardia</Text>
+        <View>
+          <Text style={styles.footerText}>Dr. Jhohann Claros</Text>
+          <Text style={styles.roleText}>Médico de Guardia</Text>
+        </View>
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => setLogoutModalVisible(true)} activeOpacity={0.7}>
+          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+        </TouchableOpacity>
       </View>
+
+      <CustomModal
+        visible={logoutModalVisible}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que deseas salir del sistema médico?"
+        type="confirm"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+        confirmText="Salir"
+      />
     </View>
   );
 }
@@ -105,6 +136,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#334155',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   footerText: {
     fontSize: 14,
@@ -115,5 +149,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     marginTop: 2,
+  },
+  logoutBtn: {
+    padding: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
   }
 });

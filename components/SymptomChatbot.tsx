@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { triageService } from '@/services/triage.service';
+import { router } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import CustomModal from '@/components/CustomModal';
 
 // Tipos para los mensajes
 type Message = {
@@ -12,6 +15,8 @@ type Message = {
 };
 
 export default function SymptomChatbot() {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -28,7 +33,32 @@ export default function SymptomChatbot() {
     time: '',
     meds: ''
   });
+  const [createdTriageId, setCreatedTriageId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  // Obtener el ID del paciente logueado al montar
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Buscar el registro del paciente asociado a este usuario
+        const { data: patientData } = await supabase
+          .from('patients')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+        if (patientData) {
+          setCurrentUserId(patientData.id);
+        } else {
+          // Fallback: usar el user.id directamente
+          setCurrentUserId(user.id);
+        }
+      }
+    };
+    fetchUser();
+  }, []);
 
   const sendMessage = async () => {
     if (inputText.trim().length === 0) return;
@@ -75,7 +105,7 @@ export default function SymptomChatbot() {
       const finalSymptomReport = `Síntomas principales: ${collectedData.main}\nTiempo/Intensidad: ${collectedData.time}\nMedicamentos previos: ${currentText}`;
 
       try {
-        await triageService.createTriage({
+        const result = await triageService.createTriage({
           patient_id: '95432c20-caed-43ca-8a01-4255e7a9dc1c',
           reported_symptoms: finalSymptomReport,
           ai_raw_analysis: 'Pendiente de evaluación de IA...',
@@ -84,10 +114,14 @@ export default function SymptomChatbot() {
           detected_language: 'es'
         });
 
+        if (result && result.id) {
+          setCreatedTriageId(result.id);
+        }
+
         setTimeout(() => {
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
-            text: '✅ ¡He creado tu informe clínico y se ha enviado al doctor! Por favor espera en la sala.',
+            text: '✅ ¡He creado tu informe clínico y se ha enviado al doctor! Por favor presiona el botón inferior para ingresar a la sala de espera.',
             sender: 'bot',
             timestamp: new Date()
           }]);
@@ -98,7 +132,8 @@ export default function SymptomChatbot() {
       } catch (error: any) {
         console.error(error);
         setIsTyping(false);
-        alert('Error de Supabase: ' + (error?.message || JSON.stringify(error)));
+        setAlertMessage('Error de Supabase: ' + (error?.message || JSON.stringify(error)));
+        setAlertVisible(true);
       }
     }
   };
@@ -140,6 +175,9 @@ export default function SymptomChatbot() {
     >
       {/* Cabecera del Chat */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/patient-menu')}>
+          <Ionicons name="arrow-back" size={24} color="#64748b" />
+        </TouchableOpacity>
         <View style={styles.headerIcon}>
           <Ionicons name="hardware-chip" size={24} color="#3b82f6" />
         </View>
@@ -167,26 +205,50 @@ export default function SymptomChatbot() {
         </View>
       )}
 
-      {/* Input para escribir mensajes */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Escribe tus síntomas aquí..."
-          placeholderTextColor="#9ca3af"
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity 
-          style={[styles.sendButton, (!inputText.trim() || chatStep === 3) && styles.sendButtonDisabled]} 
-          onPress={sendMessage}
-          disabled={!inputText.trim() || chatStep === 3}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="send" size={18} color="#ffffff" style={styles.sendIcon} />
-        </TouchableOpacity>
-      </View>
+      {/* Input para escribir mensajes o botón de sala de espera */}
+      {createdTriageId ? (
+        <View style={styles.waitingRoomContainer}>
+          <TouchableOpacity 
+            style={styles.waitingRoomBtn}
+            onPress={() => router.push({
+              pathname: '/waiting-room' as any,
+              params: { triageId: createdTriageId }
+            })}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="videocam" size={20} color="#ffffff" />
+            <Text style={styles.waitingRoomBtnText}>Ingresar a la Sala de Espera</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Escribe tus síntomas aquí..."
+            placeholderTextColor="#9ca3af"
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity 
+            style={[styles.sendButton, (!inputText.trim() || chatStep === 3) && styles.sendButtonDisabled]} 
+            onPress={sendMessage}
+            disabled={!inputText.trim() || chatStep === 3}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="send" size={18} color="#ffffff" style={styles.sendIcon} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <CustomModal
+        visible={alertVisible}
+        title="Atención"
+        message={alertMessage}
+        type="alert"
+        onConfirm={() => setAlertVisible(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -210,6 +272,10 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     zIndex: 10,
+  },
+  backBtn: {
+    padding: 8,
+    marginRight: 8,
   },
   headerIcon: {
     width: 40,
@@ -343,5 +409,33 @@ const styles = StyleSheet.create({
   },
   sendIcon: {
     marginLeft: 4,
+  },
+  waitingRoomContainer: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waitingRoomBtn: {
+    width: '100%',
+    backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  waitingRoomBtnText: {
+    color: '#ffffff',
+    fontWeight: '800',
+    fontSize: 15,
+    marginLeft: 8,
   }
 });

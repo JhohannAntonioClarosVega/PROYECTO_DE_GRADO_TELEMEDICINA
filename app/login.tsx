@@ -40,7 +40,7 @@ export default function LoginScreen() {
       if (isDoctor) {
         router.push('/dashboard');
       } else {
-        router.push('/chatbot');
+        router.push('/patient-menu');
       }
     } catch (error: any) {
       setErrorMsg(error.message || 'Error al iniciar sesión.');

@@ -137,7 +137,7 @@ export default function RegisterScreen() {
           id: userId,
           specialty_id: selectedSpecialty,
           title_document_url: documentUrl,
-          license_number: 'PENDING', // Se puede actualizar luego o pedir en el form
+          license_number: 'PENDING-' + identityCard,
           is_active: false // Requiere aprobación manual
         });
 
@@ -343,6 +343,8 @@ export default function RegisterScreen() {
                 </View>
               </>
             )}
+
+
 
             <TouchableOpacity 
               style={[styles.registerBtn, { backgroundColor: isDoctor ? '#2563eb' : '#059669' }]}

@@ -1,12 +1,16 @@
 import { Slot, router, usePathname } from 'expo-router';
-import { View, StyleSheet, useWindowDimensions, Platform, TouchableOpacity, Text, SafeAreaView } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, Platform, TouchableOpacity, Text, SafeAreaView, Alert } from 'react-native';
 import Sidebar from '@/components/Sidebar';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@/lib/supabase';
+import CustomModal from '@/components/CustomModal';
+import { useState } from 'react';
 
 export default function DashboardLayout() {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
-  
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
   // Si la pantalla es ancha (Web, Tablet), mostramos el Sidebar.
   const isLargeScreen = width >= 768;
 
@@ -16,6 +20,18 @@ export default function DashboardLayout() {
     { icon: 'people', outlineIcon: 'people-outline', label: 'Pacientes', route: '/pacientes' },
     { icon: 'settings', outlineIcon: 'settings-outline', label: 'Ajustes', route: '/ajustes' },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setLogoutModalVisible(false);
+      router.replace('/');
+    } catch (error) {
+      console.error('Error cerrando sesión:', error);
+      setLogoutModalVisible(false);
+      router.replace('/');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -29,6 +45,11 @@ export default function DashboardLayout() {
         
         {/* Contenido Principal */}
         <View style={styles.mainContent}>
+          {!isLargeScreen && (
+            <TouchableOpacity style={styles.mobileLogoutBtn} onPress={() => setLogoutModalVisible(true)} activeOpacity={0.8}>
+              <Ionicons name="log-out-outline" size={22} color="#ef4444" />
+            </TouchableOpacity>
+          )}
           <Slot />
         </View>
 
@@ -58,6 +79,16 @@ export default function DashboardLayout() {
           </View>
         )}
       </View>
+
+      <CustomModal
+        visible={logoutModalVisible}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que deseas salir del sistema médico?"
+        type="confirm"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+        confirmText="Salir"
+      />
     </SafeAreaView>
   );
 }
@@ -115,5 +146,21 @@ const styles = StyleSheet.create({
   bottomNavTextActive: {
     color: '#2563eb',
     fontWeight: '700',
+  },
+  mobileLogoutBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 40 : 20,
+    right: 20,
+    zIndex: 50,
+    backgroundColor: '#fef2f2',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   }
 });

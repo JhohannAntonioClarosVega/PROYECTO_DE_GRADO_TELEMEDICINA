@@ -17,21 +17,55 @@ if (Platform.OS === 'web' && typeof window === 'undefined') {
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
 
-// Adaptador personalizado para evitar errores "window is not defined" en SSR (Web)
+// Memoria temporal en caso de que AsyncStorage falle en nativo
+const memoryStorage: Record<string, string> = {};
+
+// Adaptador personalizado robusto para evitar caídas si el módulo nativo falla
 const CustomStorageAdapter = {
-  getItem: (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web' && typeof window === 'undefined') return Promise.resolve(null);
-    return AsyncStorage.getItem(key);
+  getItem: async (key: string): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
+      return null;
+    }
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (e) {
+      console.warn('AsyncStorage no está disponible o el módulo nativo es nulo. Usando memoria temporal:', e);
+      return memoryStorage[key] || null;
+    }
   },
-  setItem: (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web' && typeof window === 'undefined') return Promise.resolve();
-    return AsyncStorage.setItem(key, value);
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(key, value);
+      }
+      return;
+    }
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('AsyncStorage no está disponible o el módulo nativo es nulo. Guardando en memoria temporal:', e);
+      memoryStorage[key] = value;
+    }
   },
-  removeItem: (key: string): Promise<void> => {
-    if (Platform.OS === 'web' && typeof window === 'undefined') return Promise.resolve();
-    return AsyncStorage.removeItem(key);
+  removeItem: async (key: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(key);
+      }
+      return;
+    }
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch (e) {
+      console.warn('AsyncStorage no está disponible o el módulo nativo es nulo. Borrando de memoria temporal:', e);
+      delete memoryStorage[key];
+    }
   },
 };
+
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

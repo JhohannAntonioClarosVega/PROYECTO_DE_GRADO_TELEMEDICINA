@@ -38,6 +38,18 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Telemedicina requiere tu cámara para la videollamada."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Telemedicina requiere tu micrófono para la videollamada."
+        }
       ]
     ],
     "experiments": {
