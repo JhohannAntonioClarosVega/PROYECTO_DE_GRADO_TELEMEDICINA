@@ -1,19 +1,146 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, SafeAreaView, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, SafeAreaView, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import CustomModal from '@/components/CustomModal';
 
 export default function MedicalRecordScreen() {
+  const params = useLocalSearchParams();
+  const patientId = params.patientId as string;
+  const patientName = (params.patientName as string) || 'Paciente';
+  const triageId = params.triageId as string;
+
   const [diagnosis, setDiagnosis] = useState('');
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
-
-  const pharmacies = [
+  const [saving, setSaving] = useState(false);
+  const [pharmacies, setPharmacies] = useState<any[]>([
     { id: '1', name: 'Farmacia Chávez - Sucursal Prado' },
     { id: '2', name: 'Farmacorp - Av. América' },
     { id: '3', name: 'Farmacias Bolivia - Zona Sur' }
-  ];
+  ]);
+
+  const [modalConfig, setModalConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'alert' as 'alert' | 'confirm',
+    confirmText: 'Aceptar',
+    onConfirm: () => {},
+    onCancel: () => {}
+  });
+
+  const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
+
+  // Cargar farmacias de la base de datos
+  useEffect(() => {
+    const fetchPharmacies = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('allied_pharmacies')
+          .select('id, name')
+          .eq('is_active', true);
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setPharmacies(data);
+        }
+      } catch (err) {
+        console.warn('Error al cargar farmacias de Supabase, usando fallback local:', err);
+      }
+    };
+    fetchPharmacies();
+  }, []);
+
+  const handleSaveRecord = async () => {
+    if (!diagnosis || !treatment) {
+      setModalConfig({
+        visible: true,
+        title: 'Campos requeridos',
+        message: 'Por favor complete el Diagnóstico y el Plan de Tratamiento.',
+        type: 'alert',
+        confirmText: 'Entendido',
+        onConfirm: closeModal,
+        onCancel: closeModal
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // 1. Obtener el doctor actual autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No hay una sesión médica activa.');
+
+      // 2. Obtener el appointmentId asociado al triage si existe
+      let appointmentId = null;
+      if (triageId) {
+        const { data: appt } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('triage_id', triageId)
+          .limit(1)
+          .maybeSingle();
+        if (appt) {
+          appointmentId = appt.id;
+        }
+      }
+
+      // 3. Guardar en medical_records
+      const { error } = await supabase.from('medical_records').insert({
+        patient_id: patientId || null,
+        doctor_id: user.id,
+        appointment_id: appointmentId,
+        diagnosis,
+        treatment_plan: treatment,
+        clinical_notes: notes || null,
+        allied_pharmacy_id: selectedPharmacy || null
+      });
+
+      if (error) throw error;
+
+      setSaving(false);
+      setModalConfig({
+        visible: true,
+        title: 'Registro Guardado',
+        message: 'El historial clínico y la derivación se han guardado de manera exitosa en la base de datos.',
+        type: 'alert',
+        confirmText: 'Aceptar',
+        onCancel: () => {
+          closeModal();
+          router.back();
+        },
+        onConfirm: () => {
+          closeModal();
+          router.back();
+        }
+      });
+    } catch (error: any) {
+      console.error('Error al guardar el registro manual:', error);
+      setSaving(false);
+      setModalConfig({
+        visible: true,
+        title: 'Error al Guardar',
+        message: error.message || 'No se pudo guardar el registro clínico en la base de datos.',
+        type: 'alert',
+        confirmText: 'Aceptar',
+        onCancel: closeModal,
+        onConfirm: closeModal
+      });
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map(word => word[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -26,8 +153,16 @@ export default function MedicalRecordScreen() {
             <Ionicons name="close" size={24} color="#1f2937" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Registro Médico</Text>
-          <TouchableOpacity style={styles.saveHeaderButton}>
-            <Text style={styles.saveHeaderText}>Guardar</Text>
+          <TouchableOpacity 
+            style={styles.saveHeaderButton} 
+            onPress={handleSaveRecord}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color="#2563eb" />
+            ) : (
+              <Text style={styles.saveHeaderText}>Guardar</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -36,11 +171,11 @@ export default function MedicalRecordScreen() {
           {/* Ficha del Paciente */}
           <View style={styles.patientBanner}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>JP</Text>
+              <Text style={styles.avatarText}>{getInitials(patientName)}</Text>
             </View>
             <View>
-              <Text style={styles.patientName}>Juan Perez</Text>
-              <Text style={styles.patientSubtitle}>Cita: Cardiología - Urgencia IA</Text>
+              <Text style={styles.patientName}>{patientName}</Text>
+              <Text style={styles.patientSubtitle}>Consulta de Telemedicina</Text>
             </View>
           </View>
 
@@ -55,6 +190,7 @@ export default function MedicalRecordScreen() {
               textAlignVertical="top"
               value={diagnosis}
               onChangeText={setDiagnosis}
+              editable={!saving}
             />
           </View>
 
@@ -69,6 +205,7 @@ export default function MedicalRecordScreen() {
               textAlignVertical="top"
               value={treatment}
               onChangeText={setTreatment}
+              editable={!saving}
             />
           </View>
 
@@ -83,6 +220,7 @@ export default function MedicalRecordScreen() {
               textAlignVertical="top"
               value={notes}
               onChangeText={setNotes}
+              editable={!saving}
             />
           </View>
 
@@ -99,8 +237,9 @@ export default function MedicalRecordScreen() {
                 <TouchableOpacity 
                   key={pharmacy.id} 
                   style={[styles.pharmacyOption, selectedPharmacy === pharmacy.id && styles.pharmacyOptionSelected]}
-                  onPress={() => setSelectedPharmacy(pharmacy.id)}
+                  onPress={() => setSelectedPharmacy(selectedPharmacy === pharmacy.id ? null : pharmacy.id)}
                   activeOpacity={0.7}
+                  disabled={saving}
                 >
                   <View style={[styles.radioCircle, selectedPharmacy === pharmacy.id && styles.radioCircleSelected]}>
                     {selectedPharmacy === pharmacy.id && <View style={styles.radioInner} />}
@@ -119,14 +258,31 @@ export default function MedicalRecordScreen() {
           <TouchableOpacity 
             style={[styles.submitButton, (!diagnosis || !treatment) && styles.submitButtonDisabled]}
             activeOpacity={0.8}
-            disabled={!diagnosis || !treatment}
+            disabled={!diagnosis || !treatment || saving}
+            onPress={handleSaveRecord}
           >
-            <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
-            <Text style={styles.submitButtonText}>Finalizar y Guardar Consulta</Text>
+            {saving ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                <Text style={styles.submitButtonText}>Finalizar y Guardar Consulta</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
       </KeyboardAvoidingView>
+
+      <CustomModal 
+        visible={modalConfig.visible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onConfirm={modalConfig.onConfirm}
+        onCancel={modalConfig.onCancel}
+        confirmText={modalConfig.confirmText}
+      />
     </SafeAreaView>
   );
 }
@@ -156,6 +312,8 @@ const styles = StyleSheet.create({
   },
   saveHeaderButton: {
     padding: 4,
+    minWidth: 60,
+    alignItems: 'flex-end',
   },
   saveHeaderText: {
     color: '#2563eb',
@@ -188,7 +346,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
   },
   patientName: {
     fontSize: 17,

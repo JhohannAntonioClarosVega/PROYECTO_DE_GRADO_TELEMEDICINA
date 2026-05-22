@@ -210,25 +210,61 @@ export default function VideoCallScreen() {
 
     setSavingNotes(true);
     try {
-      // Simular guardado clínico y cerrar la llamada
-      setTimeout(() => {
-        setSavingNotes(false);
-        setModalConfig({
-          visible: true,
-          title: 'Historial Guardado',
-          message: 'El registro e historial médico ha sido guardado exitosamente.',
-          type: 'alert',
-          confirmText: 'Aceptar',
-          onCancel: closeModal,
-          onConfirm: () => {
-            closeModal();
-            router.replace('/dashboard');
-          }
-        });
-      }, 1500);
-    } catch (error) {
-      console.error(error);
+      // 1. Obtener usuario autenticado (médico)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No hay una sesión médica activa.');
+
+      // 2. Obtener el appointment_id asociado al triage
+      let appointmentId = null;
+      if (triageId) {
+        const { data: appt } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('triage_id', triageId)
+          .limit(1)
+          .maybeSingle();
+        if (appt) {
+          appointmentId = appt.id;
+        }
+      }
+
+      // 3. Guardar en la tabla medical_records
+      const { error } = await supabase.from('medical_records').insert({
+        patient_id: patientId || null,
+        doctor_id: user.id,
+        appointment_id: appointmentId,
+        diagnosis: diagnosis,
+        treatment_plan: treatment,
+        clinical_notes: notes || null,
+      });
+
+      if (error) throw error;
+
       setSavingNotes(false);
+      setModalConfig({
+        visible: true,
+        title: 'Historial Guardado',
+        message: 'El registro e historial médico ha sido guardado exitosamente.',
+        type: 'alert',
+        confirmText: 'Aceptar',
+        onCancel: closeModal,
+        onConfirm: () => {
+          closeModal();
+          router.replace('/dashboard');
+        }
+      });
+    } catch (error: any) {
+      console.error('Error al guardar registro médico:', error);
+      setSavingNotes(false);
+      setModalConfig({
+        visible: true,
+        title: 'Error al Guardar',
+        message: error.message || 'No se pudo guardar el registro clínico en la base de datos.',
+        type: 'alert',
+        confirmText: 'Aceptar',
+        onCancel: closeModal,
+        onConfirm: closeModal
+      });
     }
   };
 

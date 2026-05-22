@@ -1,17 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
-import { useState } from 'react';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const menuItems: { icon: IconName; label: string; route: string }[] = [
   { icon: 'grid-outline', label: 'Dashboard', route: '/dashboard' },
   { icon: 'medkit-outline', label: 'Consultas Activas', route: '/consultas' },
-  { icon: 'clipboard-outline', label: 'Historial Triaje', route: '/historial' },
+  { icon: 'clipboard-outline', label: 'Mis Consultas', route: '/historial' },
   { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' },
   { icon: 'settings-outline', label: 'Ajustes', route: '/ajustes' }
 ];
@@ -19,6 +18,24 @@ const menuItems: { icon: IconName; label: string; route: string }[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [doctorName, setDoctorName] = useState('Dr.');
+
+  useEffect(() => {
+    const fetchDoctorName = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+          if (data?.full_name) setDoctorName(data.full_name);
+        }
+      } catch (e) {}
+    };
+    fetchDoctorName();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -62,7 +79,7 @@ export default function Sidebar() {
 
       <View style={styles.footer}>
         <View>
-          <Text style={styles.footerText}>Dr. Jhohann Claros</Text>
+          <Text style={styles.footerText}>{doctorName}</Text>
           <Text style={styles.roleText}>Médico de Guardia</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={() => setLogoutModalVisible(true)} activeOpacity={0.7}>

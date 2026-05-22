@@ -17,7 +17,7 @@ export default function DashboardLayout() {
   const mobileNavItems = [
     { icon: 'grid', outlineIcon: 'grid-outline', label: 'Inicio', route: '/dashboard' },
     { icon: 'medkit', outlineIcon: 'medkit-outline', label: 'Consultas', route: '/consultas' },
-    { icon: 'people', outlineIcon: 'people-outline', label: 'Pacientes', route: '/pacientes' },
+    { icon: 'clipboard', outlineIcon: 'clipboard-outline', label: 'Historial', route: '/historial' },
     { icon: 'settings', outlineIcon: 'settings-outline', label: 'Ajustes', route: '/ajustes' },
   ];
 

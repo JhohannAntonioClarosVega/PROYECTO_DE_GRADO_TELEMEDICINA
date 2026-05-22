@@ -1,148 +1,266 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  Platform, ActivityIndicator, RefreshControl
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 
-const appointments = [
-  {
-    id: '1',
-    patientName: 'Juan Perez',
-    time: '14:30',
-    status: 'waiting', // waiting, in_progress, completed
-    type: 'Cardiología - Urgencia IA',
-    meetingLink: 'https://meet.google.com/abc-defg-hij'
-  },
-  {
-    id: '2',
-    patientName: 'Ana Lopez',
-    time: '15:00',
-    status: 'scheduled',
-    type: 'Medicina General',
-    meetingLink: 'https://meet.google.com/xyz-uvw-123'
+interface Appointment {
+  id: string;            // triage id (used as room id)
+  patientId: string;
+  patientName: string;
+  patientCI: string;
+  urgency: 'Critical' | 'Medium' | 'Low';
+  waitingMins: number;
+  type: string;
+}
+
+const urgencyColor = (u: string) => {
+  switch (u) {
+    case 'Critical': return '#ef4444';
+    case 'Medium':   return '#f59e0b';
+    case 'Low':      return '#10b981';
+    default:         return '#6b7280';
   }
-];
+};
+
+const urgencyLabel = (u: string) => {
+  switch (u) {
+    case 'Critical': return 'Crítico';
+    case 'Medium':   return 'Medio';
+    case 'Low':      return 'Bajo';
+    default:         return u;
+  }
+};
 
 export default function ConsultasScreen() {
-  const [activeTab, setActiveTab] = useState('active');
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [refreshing, setRefreshing]     = useState(false);
+  const [errorMsg, setErrorMsg]         = useState('');
+  const [activeTab, setActiveTab]       = useState<'active' | 'completed'>('active');
 
-  const renderAppointment = ({ item }: { item: typeof appointments[0] }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.timeBadge}>
-          <Ionicons name="time-outline" size={14} color="#2563eb" />
-          <Text style={styles.timeText}>{item.time}</Text>
+  const fetchAppointments = useCallback(async () => {
+    setErrorMsg('');
+    try {
+      const { data, error } = await supabase
+        .from('triages')
+        .select(`
+          id,
+          patient_id,
+          urgency_level,
+          reported_symptoms,
+          created_at,
+          patients (
+            id,
+            profiles (
+              full_name,
+              identity_card
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error consultas:', JSON.stringify(error));
+        throw new Error(error.message);
+      }
+
+      const formatted: Appointment[] = (data || []).map((t: any) => {
+        const profile = t.patients?.profiles;
+        const name = profile?.full_name || 'Paciente';
+        const ci   = profile?.identity_card || '—';
+        const mins = Math.max(1, Math.round(
+          (Date.now() - new Date(t.created_at).getTime()) / 60000
+        ));
+        return {
+          id:          t.id,
+          patientId:   t.patient_id || t.patients?.id || '',
+          patientName: name,
+          patientCI:   ci,
+          urgency:     t.urgency_level || 'Medium',
+          waitingMins: mins,
+          type:        t.reported_symptoms
+            ? t.reported_symptoms.substring(0, 40) + '...'
+            : 'Consulta General',
+        };
+      });
+
+      setAppointments(formatted);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al cargar las consultas.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  const onRefresh = () => { setRefreshing(true); fetchAppointments(); };
+
+  const renderItem = ({ item }: { item: Appointment }) => {
+    const color = urgencyColor(item.urgency);
+    return (
+      <View style={styles.card}>
+        {/* Cabecera de la tarjeta */}
+        <View style={styles.cardHeader}>
+          <View style={[styles.urgencyDot, { backgroundColor: color }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.patientName}>{item.patientName}</Text>
+            <Text style={styles.patientCI}>CI: {item.patientCI}</Text>
+          </View>
+          <View style={[styles.urgencyBadge, { backgroundColor: color + '20', borderColor: color + '50' }]}>
+            <Text style={[styles.urgencyText, { color }]}>{urgencyLabel(item.urgency)}</Text>
+          </View>
         </View>
-        <View style={[styles.statusBadge, item.status === 'waiting' ? styles.statusWaiting : styles.statusScheduled]}>
-          <Text style={[styles.statusText, item.status === 'waiting' ? styles.textWaiting : styles.textScheduled]}>
-            {item.status === 'waiting' ? 'En Sala de Espera' : 'Programada'}
-          </Text>
+
+        {/* Síntomas */}
+        <View style={styles.symptomsRow}>
+          <Ionicons name="clipboard-outline" size={14} color="#94a3b8" />
+          <Text style={styles.symptomsText} numberOfLines={2}>{item.type}</Text>
+        </View>
+
+        {/* Tiempo de espera */}
+        <View style={styles.waitRow}>
+          <Ionicons name="time-outline" size={14} color="#64748b" />
+          <Text style={styles.waitText}>Esperando {item.waitingMins} min</Text>
+        </View>
+
+        {/* Acciones */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnVideo]}
+            activeOpacity={0.8}
+            onPress={() => router.push({
+              pathname: '/videocall' as any,
+              params: {
+                role:        'doctor',
+                patientId:   item.patientId,
+                patientName: item.patientName,
+                triageId:    item.id,
+                doctorName:  'Dr.'
+              }
+            })}
+          >
+            <Ionicons name="videocam" size={16} color="#ffffff" />
+            <Text style={styles.btnTextVideo}>Iniciar Llamada</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.btn, styles.btnRecord]}
+            activeOpacity={0.8}
+            onPress={() => router.push({
+              pathname: '/medical-record' as any,
+              params: {
+                patientId:   item.patientId,
+                patientName: item.patientName,
+                triageId:    item.id,
+              }
+            })}
+          >
+            <Ionicons name="document-text" size={16} color="#2563eb" />
+            <Text style={styles.btnTextRecord}>Registro</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <Text style={styles.patientName}>{item.patientName}</Text>
-      <Text style={styles.appointmentType}>{item.type}</Text>
-
-      <View style={styles.actionRow}>
-        <TouchableOpacity 
-          style={[styles.button, styles.btnVideo]} 
-          activeOpacity={0.8}
-          onPress={() => router.push({
-            pathname: '/videocall' as any,
-            params: {
-              role: 'doctor',
-              patientId: item.id === '1' ? '95432c20-caed-43ca-8a01-4255e7a9dc1c' : '62e604f7-ebf0-4fa9-83c4-42fcfb839803',
-              patientName: item.patientName,
-              triageId: item.id === '1' ? '82ef740e-7440-424a-b50a-f0f0c05f0cf0' : `room_${item.id}`,
-              doctorName: 'Dr. Marco Antonio'
-            }
-          })}
-        >
-          <Ionicons name="videocam" size={18} color="#ffffff" />
-          <Text style={styles.btnTextVideo}>Iniciar Llamada</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, styles.btnRecord]} 
-          activeOpacity={0.8}
-          onPress={() => router.push('/medical-record')}
-        >
-          <Ionicons name="document-text" size={18} color="#3b82f6" />
-          <Text style={styles.btnTextRecord}>Historial</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Encabezado */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Consultas Activas</Text>
-        <Text style={styles.headerSubtitle}>Tus citas programadas para hoy</Text>
+        <View>
+          <Text style={styles.headerTitle}>Consultas Activas</Text>
+          <Text style={styles.headerSubtitle}>Pacientes en sala de espera</Text>
+        </View>
+        <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} disabled={loading}>
+          <Ionicons name="refresh" size={22} color="#64748b" />
+        </TouchableOpacity>
       </View>
 
-      {/* Selector de Pestañas */}
+      {/* Tabs */}
       <View style={styles.tabsContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'active' && styles.tabActive]}
           onPress={() => setActiveTab('active')}
-          activeOpacity={0.6}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'active' && styles.tabTextActive]}>Citas de Hoy</Text>
+          <Text style={[styles.tabText, activeTab === 'active' && styles.tabTextActive]}>
+            En Espera ({appointments.length})
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'history' && styles.tabActive]}
-          onPress={() => setActiveTab('history')}
-          activeOpacity={0.6}
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'completed' && styles.tabActive]}
+          onPress={() => router.push('/historial' as any)}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>Completadas</Text>
+          <Text style={[styles.tabText, activeTab === 'completed' && styles.tabTextActive]}>
+            Mis Registros
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={activeTab === 'active' ? appointments : []} // En 'history' estaría vacío por ahora
-        keyExtractor={item => item.id}
-        renderItem={renderAppointment}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="checkmark-circle-outline" size={48} color="#cbd5e1" />
-            <Text style={styles.emptyStateText}>No tienes citas en esta sección.</Text>
-          </View>
-        }
-      />
+      {/* Contenido */}
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Cargando pacientes en espera...</Text>
+        </View>
+      ) : errorMsg ? (
+        <View style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={52} color="#ef4444" />
+          <Text style={styles.errorText}>{errorMsg}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
+            <Text style={styles.retryText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={appointments}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListEmptyComponent={
+            <View style={styles.center}>
+              <View style={styles.emptyIconBg}>
+                <Ionicons name="checkmark-done-circle" size={48} color="#10b981" />
+              </View>
+              <Text style={styles.emptyTitle}>Sin pacientes en espera</Text>
+              <Text style={styles.emptySubtitle}>
+                No hay triajes activos en este momento. Pulsa el botón de actualizar para verificar.
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     paddingTop: Platform.OS === 'android' ? 40 : 20,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  tabsContainer: {
+  headerTitle:    { fontSize: 24, fontWeight: '800', color: '#0f172a', letterSpacing: -0.5 },
+  headerSubtitle: { fontSize: 13, color: '#64748b', marginTop: 3, fontWeight: '500' },
+  refreshBtn:     { padding: 8 },
+  tabsContainer:  {
     flexDirection: 'row',
-    paddingHorizontal: 16,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
@@ -154,21 +272,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabActive: {
-    borderBottomColor: '#2563eb',
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  tabTextActive: {
-    color: '#2563eb',
-  },
-  listContainer: {
-    padding: 16,
-    paddingBottom: 100, // Espacio extra para que no tape la barra de navegación en celular
-  },
+  tabActive:     { borderBottomColor: '#2563eb' },
+  tabText:       { fontSize: 14, fontWeight: '600', color: '#64748b' },
+  tabTextActive: { color: '#2563eb' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  loadingText:   { marginTop: 14, color: '#64748b', fontSize: 15, fontWeight: '500' },
+  errorText:     { color: '#ef4444', textAlign: 'center', fontSize: 15, fontWeight: '600', marginTop: 12, marginBottom: 16 },
+  retryBtn:      { backgroundColor: '#2563eb', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+  retryText:     { color: '#ffffff', fontWeight: '700' },
+  emptyIconBg:   { width: 88, height: 88, borderRadius: 44, backgroundColor: '#d1fae5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyTitle:    { fontSize: 18, fontWeight: '800', color: '#334155', marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20, paddingHorizontal: 16 },
+  listContainer: { padding: 16, paddingBottom: 100 },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -182,101 +297,20 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 2,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  timeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  timeText: {
-    marginLeft: 4,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#2563eb',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusWaiting: {
-    backgroundColor: '#fef2f2',
-  },
-  statusScheduled: {
-    backgroundColor: '#f1f5f9',
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  textWaiting: {
-    color: '#ef4444',
-  },
-  textScheduled: {
-    color: '#64748b',
-  },
-  patientName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  appointmentType: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 16,
-    fontWeight: '500',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  button: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  btnVideo: {
-    backgroundColor: '#2563eb',
-  },
-  btnRecord: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  btnTextVideo: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
-    marginLeft: 6,
-  },
-  btnTextRecord: {
-    color: '#3b82f6',
-    fontWeight: '700',
-    fontSize: 13,
-    marginLeft: 6,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-  },
-  emptyStateText: {
-    color: '#94a3b8',
-    fontSize: 16,
-    marginTop: 12,
-    fontWeight: '500',
-  }
+  cardHeader:    { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  urgencyDot:    { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+  patientName:   { fontSize: 17, fontWeight: '800', color: '#1e293b' },
+  patientCI:     { fontSize: 12, color: '#94a3b8', fontWeight: '600', marginTop: 2 },
+  urgencyBadge:  { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+  urgencyText:   { fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
+  symptomsRow:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+  symptomsText:  { flex: 1, marginLeft: 6, fontSize: 13, color: '#475569', lineHeight: 18 },
+  waitRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  waitText:      { marginLeft: 6, fontSize: 12, color: '#64748b', fontWeight: '600' },
+  actionRow:     { flexDirection: 'row', gap: 10 },
+  btn:           { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 10 },
+  btnVideo:      { backgroundColor: '#2563eb' },
+  btnRecord:     { backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe' },
+  btnTextVideo:  { color: '#ffffff', fontWeight: '700', fontSize: 13, marginLeft: 6 },
+  btnTextRecord: { color: '#2563eb', fontWeight: '700', fontSize: 13, marginLeft: 6 },
 });

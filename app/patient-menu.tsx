@@ -1,14 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, Href } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
-import { useState } from 'react';
 
 export default function PatientMenuScreen() {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [patientName, setPatientName] = useState('Paciente');
+
+  useEffect(() => {
+    const fetchPatientProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+          if (data && data.full_name) {
+            setPatientName(data.full_name);
+          }
+        }
+      } catch (err) {
+        console.error('Error al cargar perfil del paciente:', err);
+      }
+    };
+    fetchPatientProfile();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -27,7 +48,7 @@ export default function PatientMenuScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Hola, Paciente</Text>
+          <Text style={styles.headerTitle}>Hola, {patientName}</Text>
           <Text style={styles.headerSubtitle}>Bienvenido a Telemedicina IA</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={() => setLogoutModalVisible(true)}>
@@ -54,7 +75,20 @@ export default function PatientMenuScreen() {
           <Ionicons name="chevron-forward" size={24} color="#94a3b8" />
         </TouchableOpacity>
 
-        {/* Puedes añadir más opciones aquí en el futuro */}
+        <TouchableOpacity 
+          style={[styles.card, { marginTop: 16 }]} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/patient-records' as Href)}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: '#10b981' }]}>
+            <Ionicons name="receipt" size={32} color="#ffffff" />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle}>Mi Historial Clínico y Recetas</Text>
+            <Text style={styles.cardDesc}>Consulta tus diagnósticos, recetas y planes de tratamiento indicados por tus médicos.</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#94a3b8" />
+        </TouchableOpacity>
       </ScrollView>
 
       <CustomModal

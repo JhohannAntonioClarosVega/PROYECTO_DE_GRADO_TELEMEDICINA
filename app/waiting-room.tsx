@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WaitingRoomScreen() {
   const { triageId } = useLocalSearchParams();
@@ -95,7 +95,7 @@ export default function WaitingRoomScreen() {
             {/* Animación del radar/pulsador de espera */}
             <View style={styles.radarContainer}>
               <View style={[
-                styles.radarPulseOuter, 
+                styles.radarPulseOuter,
                 { transform: [{ scale: glowingScale }] }
               ]} />
               <View style={styles.radarCenter}>
@@ -114,7 +114,7 @@ export default function WaitingRoomScreen() {
                 <Ionicons name="document-text-outline" size={20} color="#94a3b8" />
                 <Text style={styles.cardHeaderTitle}>Resumen de tu Evaluación IA</Text>
               </View>
-              
+
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Paciente:</Text>
                 <Text style={styles.infoValue}>{patientName}</Text>
@@ -140,7 +140,7 @@ export default function WaitingRoomScreen() {
             {/* Consejos rápidos */}
             <View style={styles.tipsCard}>
               <Text style={styles.tipsTitle}>Recomendaciones para tu llamada:</Text>
-              
+
               <View style={styles.tipItem}>
                 <Ionicons name="volume-high-outline" size={18} color="#10b981" style={styles.tipIcon} />
                 <Text style={styles.tipText}>Usa audífonos para evitar eco y escuchar mejor al doctor.</Text>
@@ -158,8 +158,8 @@ export default function WaitingRoomScreen() {
             </View>
 
             {/* Acción de Entrada a la llamada */}
-            <TouchableOpacity 
-              style={styles.joinBtn} 
+            <TouchableOpacity
+              style={styles.joinBtn}
               activeOpacity={0.8}
               onPress={() => router.push({
                 pathname: '/videocall' as any,
@@ -176,8 +176,8 @@ export default function WaitingRoomScreen() {
               <Text style={styles.joinBtnText}>Entrar a Sala de Videoconsulta</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.cancelBtn} 
+            <TouchableOpacity
+              style={styles.cancelBtn}
               activeOpacity={0.6}
               onPress={() => router.replace('/')}
             >
