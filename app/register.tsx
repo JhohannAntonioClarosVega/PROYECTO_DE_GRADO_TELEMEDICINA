@@ -102,6 +102,9 @@ export default function RegisterScreen() {
 
       if (profileError) {
         console.error("Error en profiles:", profileError);
+        if (profileError.code === '23505' || profileError.message.includes('profiles_identity_card_key')) {
+          throw new Error('El Carnet de Identidad (CI) ya está registrado en el sistema. Por favor verifica tus datos o inicia sesión.');
+        }
         throw new Error('Error al guardar el perfil: ' + profileError.message);
       }
 

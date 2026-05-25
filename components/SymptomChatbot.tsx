@@ -106,7 +106,7 @@ export default function SymptomChatbot() {
 
       try {
         const result = await triageService.createTriage({
-          patient_id: '95432c20-caed-43ca-8a01-4255e7a9dc1c',
+          patient_id: currentUserId || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
           reported_symptoms: finalSymptomReport,
           ai_raw_analysis: 'Pendiente de evaluación de IA...',
           urgency_level: 'Medium',

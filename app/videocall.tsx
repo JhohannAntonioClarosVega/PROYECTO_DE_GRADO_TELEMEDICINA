@@ -44,6 +44,12 @@ export default function VideoCallScreen() {
   // Datos de triaje del paciente (Doctor)
   const [patientTriage, setPatientTriage] = useState<any>(null);
 
+  // Estados para ver el registro médico (Paciente)
+  const [showPatientRecord, setShowPatientRecord] = useState(false);
+  const [medicalRecord, setMedicalRecord] = useState<any>(null);
+  const [fetchingRecord, setFetchingRecord] = useState(false);
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
+
   // Referencias para la cámara local en Web
   const localVideoRef = useRef<any>(null);
   const localStreamRef = useRef<any>(null);
@@ -138,6 +144,198 @@ export default function VideoCallScreen() {
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
     }
+  };
+
+  // Obtener el appointment_id y activar consulta periódica para el paciente
+  useEffect(() => {
+    if (isDoctor) return;
+
+    let active = true;
+    let pollInterval: any = null;
+
+    const initPatientPolling = async () => {
+      if (!triageId) return;
+      try {
+        const { data: appt } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('triage_id', triageId)
+          .limit(1)
+          .maybeSingle();
+
+        if (appt && active) {
+          setAppointmentId(appt.id);
+          // Primera búsqueda
+          fetchPatientRecord(appt.id);
+          
+          // Encuesta cada 5 segundos
+          pollInterval = setInterval(() => {
+            if (active) {
+              fetchPatientRecord(appt.id);
+            }
+          }, 5000);
+        } else if (active) {
+          // Si no hay appointment aún, intentamos buscar de todas formas cada 5 segundos
+          fetchPatientRecord();
+          pollInterval = setInterval(() => {
+            if (active) {
+              fetchPatientRecord();
+            }
+          }, 5000);
+        }
+      } catch (err) {
+        console.error('Error al inicializar consulta de registro:', err);
+      }
+    };
+
+    initPatientPolling();
+
+    return () => {
+      active = false;
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [triageId]);
+
+  // Suscripción Realtime para la tabla medical_records del paciente
+  useEffect(() => {
+    if (isDoctor || !patientId) return;
+
+    const channel = supabase
+      .channel('realtime_patient_medical_record')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'medical_records',
+          filter: `patient_id=eq.${patientId}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setMedicalRecord((prev: any) => {
+              if (!prev) {
+                setModalConfig({
+                  visible: true,
+                  title: 'Nueva Indicación Médica',
+                  message: 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
+                  type: 'alert',
+                  confirmText: 'Ver Registro',
+                  onConfirm: () => {
+                    closeModal();
+                    setShowPatientRecord(true);
+                    setShowChat(false);
+                  },
+                  onCancel: closeModal,
+                });
+              }
+              return payload.new;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [patientId]);
+
+  const fetchPatientRecord = async (apptId?: string) => {
+    try {
+      let targetApptId = apptId || appointmentId;
+      
+      // Intentar obtener el appointment_id asociado al triage si no lo tenemos
+      if (!targetApptId && triageId) {
+        const { data: appt } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('triage_id', triageId)
+          .limit(1)
+          .maybeSingle();
+        if (appt) {
+          targetApptId = appt.id;
+          setAppointmentId(appt.id);
+        }
+      }
+
+      // Si tenemos un appointment_id, buscamos por él
+      if (targetApptId) {
+        const { data, error } = await supabase
+          .from('medical_records')
+          .select('*')
+          .eq('appointment_id', targetApptId)
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data) {
+          setMedicalRecord((prev: any) => {
+            if (!prev) {
+              setModalConfig({
+                visible: true,
+                title: 'Nueva Indicación Médica',
+                message: 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
+                type: 'alert',
+                confirmText: 'Ver Registro',
+                onConfirm: () => {
+                  closeModal();
+                  setShowPatientRecord(true);
+                  setShowChat(false);
+                },
+                onCancel: closeModal,
+              });
+            }
+            return data;
+          });
+          return;
+        }
+      }
+
+      // Fallback: buscar el último registro médico reciente de este paciente (última hora)
+      if (patientId) {
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from('medical_records')
+          .select('*')
+          .eq('patient_id', patientId)
+          .gte('created_at', oneHourAgo)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (data) {
+          setMedicalRecord((prev: any) => {
+            if (!prev) {
+              setModalConfig({
+                visible: true,
+                title: 'Nueva Indicación Médica',
+                message: 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
+                type: 'alert',
+                confirmText: 'Ver Registro',
+                onConfirm: () => {
+                  closeModal();
+                  setShowPatientRecord(true);
+                  setShowChat(false);
+                },
+                onCancel: closeModal,
+              });
+            }
+            return data;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Error al buscar registro médico del paciente:', err);
+    }
+  };
+
+  const handleOpenPatientRecord = async () => {
+    setShowPatientRecord(true);
+    setShowChat(false);
+    setFetchingRecord(true);
+    await fetchPatientRecord();
+    setFetchingRecord(false);
   };
 
   const fetchTriageData = async () => {
@@ -371,6 +569,7 @@ export default function VideoCallScreen() {
           onPress={() => {
             setShowChat(!showChat);
             setShowNotes(false);
+            setShowPatientRecord(false);
           }}
           activeOpacity={0.7}
         >
@@ -378,7 +577,7 @@ export default function VideoCallScreen() {
           {messages.length > 0 && <View style={styles.badgeDot} />}
         </TouchableOpacity>
 
-        {isDoctor && (
+        {isDoctor ? (
           <TouchableOpacity 
             style={[styles.controlBtn, showNotes && styles.controlBtnActivePanel]}
             onPress={() => {
@@ -388,6 +587,21 @@ export default function VideoCallScreen() {
             activeOpacity={0.7}
           >
             <Ionicons name="document-text" size={22} color="#ffffff" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.controlBtn, showPatientRecord && styles.controlBtnActivePanel]}
+            onPress={() => {
+              if (showPatientRecord) {
+                setShowPatientRecord(false);
+              } else {
+                handleOpenPatientRecord();
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="document-text" size={22} color="#ffffff" />
+            {medicalRecord && <View style={[styles.badgeDot, { backgroundColor: '#10b981' }]} />}
           </TouchableOpacity>
         )}
 
@@ -531,6 +745,80 @@ export default function VideoCallScreen() {
                 </>
               )}
             </TouchableOpacity>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Panel Deslizable Lateral: Registro Médico para Pacientes */}
+      {showPatientRecord && !isDoctor && (
+        <View style={[styles.sidePanel, styles.notesPanel]}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.panelTitle}>Mi Registro de Consulta</Text>
+            <TouchableOpacity onPress={() => setShowPatientRecord(false)}>
+              <Ionicons name="close" size={24} color="#94a3b8" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.notesScrollContent}>
+            {fetchingRecord ? (
+              <View style={styles.centerContainer}>
+                <ActivityIndicator size="small" color="#3b82f6" />
+                <Text style={{ color: '#94a3b8', marginTop: 10, fontWeight: '500' }}>Buscando indicaciones...</Text>
+              </View>
+            ) : medicalRecord ? (
+              <View>
+                <View style={styles.triageBriefCard}>
+                  <Text style={styles.triageBriefTitle}>INFORMACIÓN DE LA CONSULTA</Text>
+                  <Text style={styles.triageBriefLabel}>Médico Tratante:</Text>
+                  <Text style={[styles.triageBriefValue, { color: '#3b82f6' }]}>
+                    {doctorNameParam}
+                  </Text>
+                  
+                  <Text style={styles.triageBriefLabel}>Fecha y Hora:</Text>
+                  <Text style={styles.triageBriefText}>
+                    {new Date(medicalRecord.created_at).toLocaleString('es-BO', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Diagnóstico Clínico</Text>
+                  <View style={styles.patientRecordBox}>
+                    <Text style={styles.patientRecordText}>
+                      {medicalRecord.diagnosis || 'No especificado'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Tratamiento / Receta Electrónica</Text>
+                  <View style={[styles.patientRecordBox, { borderColor: 'rgba(16, 185, 129, 0.4)' }]}>
+                    <Text style={styles.patientRecordText}>
+                      {medicalRecord.treatment_plan || 'No especificado'}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 12, lineHeight: 16 }}>
+                  Este registro ya está disponible en tu historial clínico del menú principal.
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.centerContainer, { paddingVertical: 40 }]}>
+                <Ionicons name="document-text-outline" size={48} color="#475569" />
+                <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 12, fontSize: 14, fontWeight: '600' }}>
+                  Aún no se ha guardado el registro.
+                </Text>
+                <Text style={{ color: '#64748b', textAlign: 'center', marginTop: 6, fontSize: 12, lineHeight: 18 }}>
+                  El médico está registrando tu diagnóstico y receta. Se mostrará aquí de forma automática en cuanto se guarde.
+                </Text>
+              </View>
+            )}
           </ScrollView>
         </View>
       )}
@@ -896,5 +1184,19 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '800',
     fontSize: 15,
+  },
+  patientRecordBox: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 80,
+    marginTop: 4,
+  },
+  patientRecordText: {
+    color: '#ffffff',
+    fontSize: 14,
+    lineHeight: 20,
   }
 });
