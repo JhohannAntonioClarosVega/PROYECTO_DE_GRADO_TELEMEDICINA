@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -7,35 +7,71 @@ import CustomModal from '@/components/CustomModal';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const menuItems: { icon: IconName; label: string; route: string }[] = [
-  { icon: 'grid-outline', label: 'Dashboard', route: '/dashboard' },
-  { icon: 'medkit-outline', label: 'Consultas Activas', route: '/consultas' },
-  { icon: 'clipboard-outline', label: 'Mis Consultas', route: '/historial' },
-  { icon: 'people-outline', label: 'Pacientes', route: '/pacientes' },
-  { icon: 'settings-outline', label: 'Ajustes', route: '/ajustes' }
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
-  const [doctorName, setDoctorName] = useState('Dr.');
+  const [doctorName, setDoctorName] = useState('Usuario');
+  const [userRole, setUserRole] = useState<string>('doctor');
+  const [isOnline, setIsOnline] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDoctorName = async () => {
+    const fetchUserData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data } = await supabase
+          setUserId(user.id);
+          const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name')
+            .select('full_name, role')
             .eq('id', user.id)
             .single();
-          if (data?.full_name) setDoctorName(data.full_name);
+
+          if (profile?.full_name) setDoctorName(profile.full_name);
+          if (profile?.role) setUserRole(profile.role);
+
+          // Si es médico, consultar su estado is_online
+          if (profile?.role === 'doctor') {
+            const { data: doctor } = await supabase
+              .from('doctors')
+              .select('is_online')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (doctor) {
+              setIsOnline(!!doctor.is_online);
+            }
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Error al cargar información del usuario en Sidebar:', e);
+      }
     };
-    fetchDoctorName();
+    fetchUserData();
   }, []);
+
+  const toggleAvailability = async (value: boolean) => {
+    if (!userId || updatingStatus) return;
+    setIsOnline(value);
+    setUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('doctors')
+        .update({ is_online: value })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error al actualizar disponibilidad:', error);
+        setIsOnline(!value); // Revertir en caso de fallo
+      }
+    } catch (err) {
+      console.error('Exception al actualizar disponibilidad:', err);
+      setIsOnline(!value);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -49,12 +85,45 @@ export default function Sidebar() {
     }
   };
 
+  // Construir elementos del menú dinámicamente según el rol
+  const menuItems: { icon: IconName; label: string; route: string }[] = [
+    { icon: 'grid-outline', label: 'Dashboard', route: '/dashboard' },
+    { icon: 'medkit-outline', label: 'Consultas Activas', route: '/consultas' },
+    { icon: 'clipboard-outline', label: 'Mis Consultas', route: '/historial' },
+    { icon: 'person-outline', label: 'Mi Perfil', route: '/profile' },
+  ];
+
+  if (userRole === 'admin') {
+    menuItems.push({ icon: 'checkmark-done-circle-outline', label: 'Aprobar Médicos', route: '/admin-dashboard' });
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Telemedicina IA</Text>
+        <Text style={styles.headerSubtitle}>G.A.M. Cochabamba</Text>
       </View>
       
+      {/* Control de Disponibilidad Médica (RF8) */}
+      {userRole === 'doctor' && (
+        <View style={styles.availabilityCard}>
+          <View style={styles.availabilityStatusRow}>
+            <View style={[styles.statusDot, { backgroundColor: isOnline ? '#10b981' : '#64748b' }]} />
+            <Text style={styles.availabilityText}>
+              {isOnline ? 'En línea / Disponible' : 'Ocupado / Inactivo'}
+            </Text>
+          </View>
+          <Switch
+            trackColor={{ false: '#334155', true: '#10b981' }}
+            thumbColor={isOnline ? '#ffffff' : '#94a3b8'}
+            ios_backgroundColor="#334155"
+            onValueChange={toggleAvailability}
+            value={isOnline}
+            disabled={updatingStatus}
+          />
+        </View>
+      )}
+
       <View style={styles.nav}>
         {menuItems.map((item, index) => {
           const isActive = pathname === item.route;
@@ -78,9 +147,9 @@ export default function Sidebar() {
       </View>
 
       <View style={styles.footer}>
-        <View>
-          <Text style={styles.footerText}>{doctorName}</Text>
-          <Text style={styles.roleText}>Médico de Guardia</Text>
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text style={styles.footerText} numberOfLines={1}>{doctorName}</Text>
+          <Text style={styles.roleText}>{userRole === 'admin' ? 'Administrador' : 'Médico de Guardia'}</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={() => setLogoutModalVisible(true)} activeOpacity={0.7}>
           <Ionicons name="log-out-outline" size={20} color="#ef4444" />
@@ -102,26 +171,59 @@ export default function Sidebar() {
 
 const styles = StyleSheet.create({
   container: {
-    width: 256, // Equivalente a w-64
+    width: 256,
     height: '100%',
-    backgroundColor: '#0f172a', // bg-slate-900
+    backgroundColor: '#0f172a',
     padding: 16,
     flexDirection: 'column',
     borderRightWidth: 1,
     borderRightColor: '#1e293b',
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155', // border-slate-700
-    paddingBottom: 16,
+    borderBottomColor: '#334155',
+    paddingBottom: 12,
     paddingTop: Platform.OS === 'android' ? 30 : 10,
   },
   headerText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#3b82f6',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  availabilityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1e293b',
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  availabilityStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  availabilityText: {
+    color: '#e2e8f0',
+    fontSize: 12,
+    fontWeight: '700',
   },
   nav: {
     flex: 1,
@@ -130,18 +232,18 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    padding: 12,
     borderRadius: 10,
   },
   menuItemActive: {
-    backgroundColor: '#1e293b', // hover:bg-slate-800
+    backgroundColor: '#1e293b',
   },
   icon: {
-    marginRight: 14,
+    marginRight: 12,
   },
   label: {
     color: '#94a3b8',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
   },
   labelActive: {
@@ -163,7 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   roleText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
     marginTop: 2,
   },
@@ -173,3 +275,4 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   }
 });
+

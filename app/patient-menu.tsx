@@ -89,6 +89,21 @@ export default function PatientMenuScreen() {
           </View>
           <Ionicons name="chevron-forward" size={24} color="#94a3b8" />
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.card, { marginTop: 16 }]} 
+          activeOpacity={0.8}
+          onPress={() => router.push('/profile')}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: '#8b5cf6' }]}>
+            <Ionicons name="person-circle" size={32} color="#ffffff" />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle}>Mi Perfil</Text>
+            <Text style={styles.cardDesc}>Actualiza tus datos de contacto, teléfono, dirección y antecedentes clínicos.</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color="#94a3b8" />
+        </TouchableOpacity>
       </ScrollView>
 
       <CustomModal
