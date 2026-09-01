@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Linking, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Linking, RefreshControl, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
@@ -10,6 +10,7 @@ interface DoctorItem {
   id: string;
   license_number: string;
   is_active: boolean;
+  rejection_reason?: string | null;
   title_document_url: string | null;
   specialty_id: string;
   profiles: {
@@ -28,12 +29,18 @@ export default function AdminDashboardScreen() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'pending' | 'active'>('pending');
+  const [currentTab, setCurrentTab] = useState<'pending' | 'active' | 'rejected'>('pending');
   const [pendingDoctors, setPendingDoctors] = useState<DoctorItem[]>([]);
   const [activeDoctors, setActiveDoctors] = useState<DoctorItem[]>([]);
+  const [rejectedDoctors, setRejectedDoctors] = useState<DoctorItem[]>([]);
   const [allSpecialties, setAllSpecialties] = useState<any[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedSpecialtiesMap, setSelectedSpecialtiesMap] = useState<Record<string, string>>({});
+
+  // Estado para el flujo de rechazo (Bug 2)
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectingDoctorId, setRejectingDoctorId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const [modalConfig, setModalConfig] = useState({
     visible: false,
@@ -116,7 +123,7 @@ export default function AdminDashboardScreen() {
       if (specErr) throw specErr;
       if (specData) setAllSpecialties(specData);
 
-      // 3. Cargar Médicos pendientes de aprobación (is_active = false)
+      // 3. Cargar Médicos pendientes de aprobación (is_active = false Y rejection_reason IS NULL)
       const { data: pendingData, error: pendingErr } = await supabase
         .from('doctors')
         .select(`
@@ -132,11 +139,12 @@ export default function AdminDashboardScreen() {
             name
           )
         `)
-        .eq('is_active', false);
+        .eq('is_active', false)
+        .is('rejection_reason', null);
 
       if (pendingErr) throw pendingErr;
 
-      // 4. Cargar Médicos activos (is_active = true) para reasignación de especialidades (Problema 3)
+      // 4. Cargar Médicos activos (is_active = true) para reasignación de especialidades
       const { data: activeData, error: activeErr } = await supabase
         .from('doctors')
         .select(`
@@ -156,6 +164,27 @@ export default function AdminDashboardScreen() {
 
       if (activeErr) throw activeErr;
 
+      // 5. Cargar Médicos rechazados (is_active = false Y rejection_reason IS NOT NULL)
+      const { data: rejectedData, error: rejectedErr } = await supabase
+        .from('doctors')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            identity_card,
+            email,
+            phone_number
+          ),
+          specialties (
+            id,
+            name
+          )
+        `)
+        .eq('is_active', false)
+        .not('rejection_reason', 'is', null);
+
+      if (rejectedErr) throw rejectedErr;
+
       const initialMap: Record<string, string> = {};
 
       if (pendingData) {
@@ -168,6 +197,13 @@ export default function AdminDashboardScreen() {
       if (activeData) {
         setActiveDoctors(activeData as DoctorItem[]);
         activeData.forEach((d: any) => {
+          initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
+        });
+      }
+
+      if (rejectedData) {
+        setRejectedDoctors(rejectedData as DoctorItem[]);
+        rejectedData.forEach((d: any) => {
           initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
         });
       }
@@ -201,18 +237,19 @@ export default function AdminDashboardScreen() {
         throw new Error('Por favor selecciona una especialidad antes de aprobar.');
       }
 
-      const { error, count } = await supabase
+      const { error } = await supabase
         .from('doctors')
         .update({
           is_active: true,
-          specialty_id: chosenSpecialty
+          specialty_id: chosenSpecialty,
+          rejection_reason: null // Limpia cualquier rechazo previo al aprobar
         })
         .eq('id', doctorId)
         .select(); // fuerza retorno para detectar si RLS silenció el UPDATE
 
       if (error) throw error;
 
-      // Re-fetch inmediato (no esperar al modal) para que la tarjeta desaparezca de Pendientes
+      // Re-fetch inmediato (no esperar al modal) para que la tarjeta desaparezca de Pendientes/Rechazados
       await checkAdminAndFetchData();
 
       setModalConfig({
@@ -263,6 +300,72 @@ export default function AdminDashboardScreen() {
       handleErrorModal(err, 'Error al Actualizar Especialidad');
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  // 3. Rechazar solicitud de médico (Bug 2)
+  const openRejectModal = (doctorId: string) => {
+    setRejectingDoctorId(doctorId);
+    setRejectReason('');
+    setRejectModalVisible(true);
+  };
+
+  const handleRejectDoctor = async () => {
+    if (!rejectingDoctorId) return;
+    if (!rejectReason.trim()) {
+      setModalConfig({
+        visible: true,
+        title: 'Motivo requerido',
+        message: 'Por favor ingresa un motivo de rechazo antes de continuar.',
+        type: 'alert',
+        confirmText: 'Entendido',
+        onConfirm: closeModal,
+      });
+      return;
+    }
+
+    setRejectModalVisible(false);
+    setProcessingId(rejectingDoctorId);
+    try {
+      // Marcar como rechazado con motivo (no se elimina la cuenta — trazabilidad académica)
+      const { error } = await supabase
+        .from('doctors')
+        .update({
+          is_active: false,
+          rejection_reason: rejectReason.trim(),
+        })
+        .eq('id', rejectingDoctorId);
+
+      if (error) throw error;
+
+      // Re-fetch inmediato
+      await checkAdminAndFetchData();
+
+      setModalConfig({
+        visible: true,
+        title: 'Solicitud Rechazada',
+        message: `La solicitud fue rechazada. Motivo registrado: "${rejectReason.trim()}". El médico verá este mensaje al intentar iniciar sesión.`,
+        type: 'alert',
+        confirmText: 'Aceptar',
+        onConfirm: closeModal,
+      });
+    } catch (err: any) {
+      handleErrorModal(err, 'Error al Rechazar Solicitud');
+    } finally {
+      setProcessingId(null);
+      setRejectingDoctorId(null);
+      setRejectReason('');
+    }
+  };
+
+  // 4. Cerrar sesión (Bug 3)
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.replace('/');
+    } catch (err) {
+      console.error('Error al cerrar sesión:', err);
+      router.replace('/');
     }
   };
 
@@ -325,24 +428,47 @@ export default function AdminDashboardScreen() {
     const ci = item.profiles?.identity_card || 'No registrado';
     const email = item.profiles?.email || '—';
     const currentSpecialtyId = selectedSpecialtiesMap[item.id] || item.specialty_id;
-    const isPending = !item.is_active;
+    const isPending = !item.is_active && !item.rejection_reason;
+    const isRejected = !item.is_active && !!item.rejection_reason;
+    const isActive = item.is_active;
 
     return (
       <View style={styles.doctorCard}>
         <View style={styles.cardHeader}>
-          <View style={[styles.avatar, { backgroundColor: isPending ? '#eff6ff' : '#ecfdf5' }]}>
-            <Ionicons name="medkit" size={24} color={isPending ? '#2563eb' : '#059669'} />
+          <View style={[
+            styles.avatar, 
+            { backgroundColor: isActive ? '#ecfdf5' : isPending ? '#eff6ff' : '#fef2f2' }
+          ]}>
+            <Ionicons 
+              name={isActive ? 'shield-checkmark' : isPending ? 'time' : 'close-circle'} 
+              size={24} 
+              color={isActive ? '#059669' : isPending ? '#2563eb' : '#ef4444'} 
+            />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.doctorName}>{name}</Text>
             <Text style={styles.doctorSub}>CI: {ci} | {email}</Text>
           </View>
-          <View style={isPending ? styles.pendingBadge : styles.activeBadge}>
-            <Text style={isPending ? styles.pendingBadgeText : styles.activeBadgeText}>
-              {isPending ? 'PENDIENTE' : 'ACTIVO'}
+          <View style={
+            isActive ? styles.activeBadge : isPending ? styles.pendingBadge : styles.rejectedBadge
+          }>
+            <Text style={
+              isActive ? styles.activeBadgeText : isPending ? styles.pendingBadgeText : styles.rejectedBadgeText
+            }>
+              {isActive ? 'ACTIVO' : isPending ? 'PENDIENTE' : 'RECHAZADO'}
             </Text>
           </View>
         </View>
+
+        {isRejected && (
+          <View style={styles.rejectionNoticeBox}>
+            <Ionicons name="information-circle" size={18} color="#ef4444" style={{ marginTop: 2 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rejectionNoticeTitle}>Motivo del Rechazo:</Text>
+              <Text style={styles.rejectionNoticeText}>{item.rejection_reason}</Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.divider} />
 
@@ -367,7 +493,7 @@ export default function AdminDashboardScreen() {
         {/* Asignación o Reasignación de Especialidad */}
         <View style={styles.specialtySection}>
           <Text style={styles.infoLabel}>
-            {isPending ? 'Especialidad a Asignar' : 'Especialidad Médica Asignada'}
+            {isActive ? 'Especialidad Médica Asignada' : 'Especialidad a Asignar'}
           </Text>
           <View style={styles.pickerContainer}>
             <Picker
@@ -385,23 +511,42 @@ export default function AdminDashboardScreen() {
         </View>
 
         {/* Acciones según el estado del médico */}
-        {isPending ? (
-          <TouchableOpacity 
-            style={styles.approveBtn}
-            onPress={() => handleApproveDoctor(item.id)}
-            disabled={processingId === item.id}
-            activeOpacity={0.8}
-          >
-            {processingId === item.id ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" />
-                <Text style={styles.approveBtnText}>Aprobar e Habilitar Médico</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        ) : (
+        {isPending && (
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.rejectBtn}
+              onPress={() => openRejectModal(item.id)}
+              disabled={processingId === item.id}
+              activeOpacity={0.8}
+            >
+              {processingId === item.id ? (
+                <ActivityIndicator color="#ef4444" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="close-circle-outline" size={18} color="#ef4444" />
+                  <Text style={styles.rejectBtnText}>Rechazar</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.approveBtn}
+              onPress={() => handleApproveDoctor(item.id)}
+              disabled={processingId === item.id}
+              activeOpacity={0.8}
+            >
+              {processingId === item.id ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" />
+                  <Text style={styles.approveBtnText}>Aprobar</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {isActive && (
           <TouchableOpacity 
             style={styles.updateBtn}
             onPress={() => handleUpdateDoctorSpecialty(item.id)}
@@ -418,11 +563,33 @@ export default function AdminDashboardScreen() {
             )}
           </TouchableOpacity>
         )}
+
+        {isRejected && (
+          <TouchableOpacity 
+            style={styles.reconsiderBtn}
+            onPress={() => handleApproveDoctor(item.id)}
+            disabled={processingId === item.id}
+            activeOpacity={0.8}
+          >
+            {processingId === item.id ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Ionicons name="refresh-circle-outline" size={20} color="#ffffff" />
+                <Text style={styles.reconsiderBtnText}>Reconsiderar y Habilitar Médico</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
 
-  const displayedList = currentTab === 'pending' ? pendingDoctors : activeDoctors;
+  const displayedList = currentTab === 'pending' 
+    ? pendingDoctors 
+    : currentTab === 'active' 
+    ? activeDoctors 
+    : rejectedDoctors;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -437,9 +604,13 @@ export default function AdminDashboardScreen() {
         <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} disabled={loading}>
           <Ionicons name="refresh" size={22} color="#64748b" />
         </TouchableOpacity>
+        {/* Botón Cerrar Sesión — Bug 3 */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={22} color="#ef4444" />
+        </TouchableOpacity>
       </View>
 
-      {/* Pestañas para Pendientes y Activos (Problema 3) */}
+      {/* Pestañas para Pendientes, Activos y Rechazados */}
       <View style={styles.tabBar}>
         <TouchableOpacity 
           style={[styles.tabBtn, currentTab === 'pending' && styles.tabBtnActive]}
@@ -448,7 +619,7 @@ export default function AdminDashboardScreen() {
         >
           <Ionicons 
             name="time-outline" 
-            size={18} 
+            size={16} 
             color={currentTab === 'pending' ? '#2563eb' : '#64748b'} 
           />
           <Text style={[styles.tabBtnText, currentTab === 'pending' && styles.tabBtnTextActive]}>
@@ -463,27 +634,58 @@ export default function AdminDashboardScreen() {
         >
           <Ionicons 
             name="shield-checkmark-outline" 
-            size={18} 
+            size={16} 
             color={currentTab === 'active' ? '#2563eb' : '#64748b'} 
           />
           <Text style={[styles.tabBtnText, currentTab === 'active' && styles.tabBtnTextActive]}>
-            Médicos Activos ({activeDoctors.length})
+            Activos ({activeDoctors.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.tabBtn, currentTab === 'rejected' && styles.tabBtnActive]}
+          onPress={() => setCurrentTab('rejected')}
+          activeOpacity={0.8}
+        >
+          <Ionicons 
+            name="close-circle-outline" 
+            size={16} 
+            color={currentTab === 'rejected' ? '#ef4444' : '#64748b'} 
+          />
+          <Text style={[
+            styles.tabBtnText, 
+            currentTab === 'rejected' && [styles.tabBtnTextActive, { color: '#ef4444' }]
+          ]}>
+            Rechazados ({rejectedDoctors.length})
           </Text>
         </TouchableOpacity>
       </View>
 
       {displayedList.length === 0 ? (
         <View style={styles.centerContainer}>
-          <View style={styles.emptyIconBg}>
-            <Ionicons name="checkmark-done-circle" size={50} color="#10b981" />
+          <View style={[
+            styles.emptyIconBg,
+            currentTab === 'rejected' && { backgroundColor: '#fef2f2' }
+          ]}>
+            <Ionicons 
+              name={currentTab === 'rejected' ? 'checkmark-circle-outline' : 'checkmark-done-circle'} 
+              size={50} 
+              color={currentTab === 'rejected' ? '#ef4444' : '#10b981'} 
+            />
           </View>
           <Text style={styles.emptyTitle}>
-            {currentTab === 'pending' ? '¡Todo al Día!' : 'Sin Médicos Activos'}
+            {currentTab === 'pending' 
+              ? '¡Todo al Día!' 
+              : currentTab === 'active' 
+              ? 'Sin Médicos Activos' 
+              : 'Sin Solicitudes Rechazadas'}
           </Text>
           <Text style={styles.emptySub}>
             {currentTab === 'pending' 
               ? 'No hay solicitudes de médicos pendientes de aprobación.'
-              : 'Aún no hay médicos habilitados en el sistema.'}
+              : currentTab === 'active'
+              ? 'Aún no hay médicos habilitados en el sistema.'
+              : 'No existen registros de médicos rechazados.'}
           </Text>
         </View>
       ) : (
@@ -505,6 +707,48 @@ export default function AdminDashboardScreen() {
         onConfirm={modalConfig.onConfirm}
         confirmText={modalConfig.confirmText}
       />
+
+      {/* Modal de rechazo con input de motivo — Bug 2 */}
+      {rejectModalVisible && (
+        <View style={styles.rejectOverlay}>
+          <View style={styles.rejectModal}>
+            <View style={styles.rejectModalHeader}>
+              <Ionicons name="close-circle" size={32} color="#ef4444" />
+              <Text style={styles.rejectModalTitle}>Rechazar Solicitud</Text>
+            </View>
+            <Text style={styles.rejectModalDesc}>
+              Ingresa el motivo del rechazo. Este mensaje será visible para el médico al intentar iniciar sesión.
+            </Text>
+            <TextInput
+              style={styles.rejectInput}
+              placeholder="Ej: Documento ilegible, título no válido..."
+              placeholderTextColor="#94a3b8"
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              multiline
+              numberOfLines={3}
+              maxLength={300}
+            />
+            <Text style={styles.rejectCharCount}>{rejectReason.length}/300</Text>
+            <View style={styles.rejectBtnRow}>
+              <TouchableOpacity
+                style={styles.rejectCancelBtn}
+                onPress={() => { setRejectModalVisible(false); setRejectReason(''); }}
+              >
+                <Text style={styles.rejectCancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.rejectConfirmBtn}
+                onPress={handleRejectDoctor}
+                disabled={!rejectReason.trim()}
+              >
+                <Ionicons name="close-circle-outline" size={18} color="#ffffff" />
+                <Text style={styles.rejectConfirmBtnText}>Confirmar Rechazo</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -786,5 +1030,197 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '800',
-  }
+  },
+  // Bug 3 — logout en header
+  logoutBtn: {
+    padding: 8,
+    marginLeft: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: 8,
+  },
+  // Bug 2 — fila de acciones (rechazar + aprobar)
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  rejectBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fef2f2',
+    padding: 14,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  rejectBtnText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  approveBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    padding: 14,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  approveBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  // Modal de rechazo con input
+  rejectOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    zIndex: 999,
+  },
+  rejectModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 480,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  rejectModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  rejectModalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  rejectModalDesc: {
+    fontSize: 14,
+    color: '#475569',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  rejectInput: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: '#0f172a',
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  rejectCharCount: {
+    fontSize: 11,
+    color: '#94a3b8',
+    textAlign: 'right',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  rejectBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  rejectCancelBtn: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+  },
+  rejectCancelBtnText: {
+    fontWeight: '700',
+    color: '#64748b',
+    fontSize: 15,
+  },
+  rejectConfirmBtn: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
+  },
+  rejectConfirmBtnText: {
+    fontWeight: '800',
+    color: '#ffffff',
+    fontSize: 15,
+  },
+  // Estilos para médicos rechazados
+  rejectedBadge: {
+    backgroundColor: '#fef2f2',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  rejectedBadgeText: {
+    color: '#dc2626',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  rejectionNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+  },
+  rejectionNoticeTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#e11d48',
+    marginBottom: 2,
+  },
+  rejectionNoticeText: {
+    fontSize: 13,
+    color: '#9f1239',
+    lineHeight: 18,
+  },
+  reconsiderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#d97706',
+    padding: 14,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#d97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reconsiderBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
 });

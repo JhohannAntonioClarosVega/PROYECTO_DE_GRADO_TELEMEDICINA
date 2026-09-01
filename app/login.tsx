@@ -19,6 +19,10 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Estado para el modal de rechazo médico (Ajuste 2)
+  const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
+  const [rejectionReasonText, setRejectionReasonText] = useState('');
+
   const handleLogin = async () => {
     if (!email || !password) {
       setErrorMsg('Por favor ingresa tu correo y contraseña.');
@@ -63,7 +67,7 @@ export default function LoginScreen() {
         // Verificar si el médico está activo / aprobado por un admin
         const { data: docData, error: docErr } = await supabase
           .from('doctors')
-          .select('is_active')
+          .select('is_active, rejection_reason')
           .eq('id', data.user.id)
           .single();
 
@@ -73,8 +77,16 @@ export default function LoginScreen() {
           throw new Error('Error al verificar el estado de tu cuenta médica. Intenta de nuevo.');
         }
 
+        if (docData?.rejection_reason) {
+          // Médico fue rechazado activamente: desautenticar y mostrar modal dedicado (Ajuste 2)
+          await supabase.auth.signOut();
+          setRejectionReasonText(docData.rejection_reason);
+          setRejectionModalVisible(true);
+          return;
+        }
+
         if (!docData?.is_active) {
-          // Médico existe pero no ha sido aprobado aún
+          // Médico existe pero aún no ha sido revisado
           await supabase.auth.signOut();
           throw new Error('Tu cuenta médica está pendiente de aprobación por un administrador.');
         }
@@ -175,6 +187,43 @@ export default function LoginScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Modal dedicado para solicitud médica rechazada (Ajuste 2) */}
+      {rejectionModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.rejectionModalBox}>
+            <View style={styles.rejectionModalIconContainer}>
+              <Ionicons name="close-circle" size={54} color="#ef4444" />
+            </View>
+            <Text style={styles.rejectionModalTitle}>Solicitud Rechazada</Text>
+            <Text style={styles.rejectionModalSubtitle}>
+              Tu solicitud de registro médico ha sido revisada y rechazada por la administración.
+            </Text>
+
+            <View style={styles.rejectionReasonCard}>
+              <Text style={styles.rejectionReasonLabel}>MOTIVO REGISTRADO:</Text>
+              <Text style={styles.rejectionReasonMessage}>
+                "{rejectionReasonText}"
+              </Text>
+            </View>
+
+            <Text style={styles.rejectionContactText}>
+              Si consideras que se trata de un error o deseas regularizar tu documentación, por favor contacta al Administrador del G.A.M. Cochabamba.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.rejectionCloseBtn}
+              onPress={() => {
+                setRejectionModalVisible(false);
+                setRejectionReasonText('');
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.rejectionCloseBtnText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -295,5 +344,96 @@ const styles = StyleSheet.create({
   registerLink: {
     fontSize: 15,
     fontWeight: '700',
-  }
+  },
+  // Modal de rechazo dedicado (Ajuste 2)
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    zIndex: 999,
+  },
+  rejectionModalBox: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  rejectionModalIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#fef2f2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  rejectionModalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  rejectionModalSubtitle: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  rejectionReasonCard: {
+    width: '100%',
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  rejectionReasonLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#e11d48',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  rejectionReasonMessage: {
+    fontSize: 14,
+    color: '#881337',
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  rejectionContactText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  rejectionCloseBtn: {
+    width: '100%',
+    backgroundColor: '#0f172a',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rejectionCloseBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });

@@ -79,22 +79,37 @@ export default function RegisterScreen() {
     try {
       const cleanEmail = email.trim().toLowerCase();
 
-      // 0. Verificar disponibilidad de correo en la base de datos (Fig 2.6)
-      const { data: existingProfile, error: checkError } = await supabase
+      // 0a. Verificar disponibilidad de correo en profiles (Fig 2.6)
+      const { data: existingByEmail, error: checkEmailError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', cleanEmail)
         .maybeSingle();
 
-      if (checkError) {
-        console.warn('Advertencia en verificación previa de email:', checkError);
+      if (checkEmailError) {
+        console.warn('Advertencia en verificación previa de email:', checkEmailError);
       }
 
-      if (existingProfile) {
+      if (existingByEmail) {
         throw new Error('El correo electrónico ya está registrado. Por favor inicia sesión o usa otro correo.');
       }
 
-      // 1. Crear el usuario en Auth
+      // 0b. Verificar CI ANTES de crear el usuario en Auth (previene cuentas huérfanas)
+      const { data: existingByCI, error: checkCIError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('identity_card', identityCard.trim())
+        .maybeSingle();
+
+      if (checkCIError) {
+        console.warn('Advertencia en verificación previa de CI:', checkCIError);
+      }
+
+      if (existingByCI) {
+        throw new Error('El Carnet de Identidad (CI) ya está registrado en el sistema. Por favor verifica tus datos o inicia sesión.');
+      }
+
+      // 1. Crear el usuario en Auth (solo si email y CI son únicos)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -105,24 +120,27 @@ export default function RegisterScreen() {
       const userId = authData.user?.id;
       if (!userId) throw new Error('No se pudo crear el usuario.');
 
-      // 2. Insertar o Actualizar en Profiles (Upsert es más seguro si hay triggers en la base de datos)
+      // 2. Insertar o Actualizar en Profiles
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         full_name: fullName,
-        identity_card: identityCard,
+        identity_card: identityCard.trim(),
         phone_number: phoneNumber,
         role: isDoctor ? 'doctor' : 'patient',
         address: address,
         gender: gender,
-        email: email
+        email: cleanEmail
       });
 
       if (profileError) {
-        console.error("Error en profiles:", profileError);
+        // Si falla la inserción del perfil, cerrar sesión para evitar cuenta huérfana en Auth.
+        // El usuario debe intentar nuevamente con los datos corregidos.
+        await supabase.auth.signOut();
+        console.error('Error en profiles (cuenta huérfana revertida):', profileError);
         if (profileError.code === '23505' || profileError.message.includes('profiles_identity_card_key')) {
-          throw new Error('El Carnet de Identidad (CI) ya está registrado en el sistema. Por favor verifica tus datos o inicia sesión.');
+          throw new Error('El Carnet de Identidad (CI) ya está registrado. La operación fue cancelada. Intenta con otro CI.');
         }
-        throw new Error('Error al guardar el perfil: ' + profileError.message);
+        throw new Error('Error al guardar el perfil. La operación fue cancelada. Intenta nuevamente.');
       }
 
       // 3. Insertar datos específicos según el rol
