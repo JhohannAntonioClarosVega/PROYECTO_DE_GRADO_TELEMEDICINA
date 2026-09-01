@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Picker } from '@react-native-picker/picker';
 import CustomModal from '@/components/CustomModal';
 
-interface DoctorPending {
+interface DoctorItem {
   id: string;
   license_number: string;
   is_active: boolean;
@@ -28,7 +28,9 @@ export default function AdminDashboardScreen() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pendingDoctors, setPendingDoctors] = useState<DoctorPending[]>([]);
+  const [currentTab, setCurrentTab] = useState<'pending' | 'active'>('pending');
+  const [pendingDoctors, setPendingDoctors] = useState<DoctorItem[]>([]);
+  const [activeDoctors, setActiveDoctors] = useState<DoctorItem[]>([]);
   const [allSpecialties, setAllSpecialties] = useState<any[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedSpecialtiesMap, setSelectedSpecialtiesMap] = useState<Record<string, string>>({});
@@ -43,6 +45,42 @@ export default function AdminDashboardScreen() {
   });
 
   const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
+
+  // Helper para distinguir errores de red vs lógica de base de datos (Problema 4)
+  const handleErrorModal = (err: any, defaultTitle: string) => {
+    console.error(`${defaultTitle}:`, err);
+    const errMsg = (err?.message || '').toLowerCase();
+    const isNetworkError = 
+      errMsg.includes('fetch') || 
+      errMsg.includes('network') || 
+      errMsg.includes('failed to fetch') ||
+      errMsg.includes('timeout') ||
+      errMsg.includes('connection') ||
+      err?.name === 'TypeError';
+
+    let userMessage = err?.message || 'Ocurrió un error inesperado al procesar la solicitud.';
+
+    if (isNetworkError) {
+      userMessage = 'Error de conexión. Por favor verifica tu conexión a internet e intenta nuevamente.';
+    } else if (err?.code) {
+      if (err.code === '23503') {
+        userMessage = 'La especialidad médica seleccionada no es válida o no existe en la base de datos.';
+      } else if (err.code === '42501') {
+        userMessage = 'No tienes permisos de administrador suficientes para realizar esta operación.';
+      } else if (err.code === '23505') {
+        userMessage = 'Conflicto de clave duplicada en la base de datos.';
+      }
+    }
+
+    setModalConfig({
+      visible: true,
+      title: defaultTitle,
+      message: userMessage,
+      type: 'alert',
+      confirmText: 'Entendido',
+      onConfirm: closeModal
+    });
+  };
 
   const checkAdminAndFetchData = useCallback(async () => {
     setLoading(true);
@@ -70,14 +108,16 @@ export default function AdminDashboardScreen() {
       setIsAdmin(true);
 
       // 2. Cargar Especialidades disponibles
-      const { data: specData } = await supabase
+      const { data: specData, error: specErr } = await supabase
         .from('specialties')
-        .select('id, name');
+        .select('id, name')
+        .order('name');
 
+      if (specErr) throw specErr;
       if (specData) setAllSpecialties(specData);
 
       // 3. Cargar Médicos pendientes de aprobación (is_active = false)
-      const { data: docsData, error: docsErr } = await supabase
+      const { data: pendingData, error: pendingErr } = await supabase
         .from('doctors')
         .select(`
           *,
@@ -94,19 +134,48 @@ export default function AdminDashboardScreen() {
         `)
         .eq('is_active', false);
 
-      if (docsErr) throw docsErr;
+      if (pendingErr) throw pendingErr;
 
-      if (docsData) {
-        setPendingDoctors(docsData as DoctorPending[]);
-        // Inicializar mapa de especialidades seleccionadas
-        const initialMap: Record<string, string> = {};
-        docsData.forEach((d: any) => {
+      // 4. Cargar Médicos activos (is_active = true) para reasignación de especialidades (Problema 3)
+      const { data: activeData, error: activeErr } = await supabase
+        .from('doctors')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            identity_card,
+            email,
+            phone_number
+          ),
+          specialties (
+            id,
+            name
+          )
+        `)
+        .eq('is_active', true);
+
+      if (activeErr) throw activeErr;
+
+      const initialMap: Record<string, string> = {};
+
+      if (pendingData) {
+        setPendingDoctors(pendingData as DoctorItem[]);
+        pendingData.forEach((d: any) => {
           initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
         });
-        setSelectedSpecialtiesMap(initialMap);
       }
+
+      if (activeData) {
+        setActiveDoctors(activeData as DoctorItem[]);
+        activeData.forEach((d: any) => {
+          initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
+        });
+      }
+
+      setSelectedSpecialtiesMap(initialMap);
+
     } catch (err: any) {
-      console.error('Error en admin dashboard:', err);
+      handleErrorModal(err, 'Error al Cargar Datos');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -122,15 +191,57 @@ export default function AdminDashboardScreen() {
     checkAdminAndFetchData();
   };
 
+  // 1. Aprobar e Habilitar Médico Inicial (RF3 / Fig 2.8)
   const handleApproveDoctor = async (doctorId: string) => {
     setProcessingId(doctorId);
     try {
       const chosenSpecialty = selectedSpecialtiesMap[doctorId];
-      
-      const { error } = await supabase
+
+      if (!chosenSpecialty) {
+        throw new Error('Por favor selecciona una especialidad antes de aprobar.');
+      }
+
+      const { error, count } = await supabase
         .from('doctors')
         .update({
           is_active: true,
+          specialty_id: chosenSpecialty
+        })
+        .eq('id', doctorId)
+        .select(); // fuerza retorno para detectar si RLS silenció el UPDATE
+
+      if (error) throw error;
+
+      // Re-fetch inmediato (no esperar al modal) para que la tarjeta desaparezca de Pendientes
+      await checkAdminAndFetchData();
+
+      setModalConfig({
+        visible: true,
+        title: 'Médico Aprobado ✅',
+        message: 'La cuenta médica ha sido activada exitosamente y la especialidad ha sido asignada. El médico ya puede iniciar sesión.',
+        type: 'alert',
+        confirmText: 'Genial',
+        onConfirm: closeModal,
+      });
+    } catch (err: any) {
+      handleErrorModal(err, 'Error al Aprobar Médico');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // 2. Reasignar Especialidad a Médico ya Activo (Problema 3 / RF3)
+  const handleUpdateDoctorSpecialty = async (doctorId: string) => {
+    setProcessingId(doctorId);
+    try {
+      const chosenSpecialty = selectedSpecialtiesMap[doctorId];
+      if (!chosenSpecialty) {
+        throw new Error('Por favor selecciona una especialidad válida.');
+      }
+
+      const { error } = await supabase
+        .from('doctors')
+        .update({
           specialty_id: chosenSpecialty
         })
         .eq('id', doctorId);
@@ -139,25 +250,17 @@ export default function AdminDashboardScreen() {
 
       setModalConfig({
         visible: true,
-        title: 'Médico Aprobado',
-        message: 'La cuenta médica ha sido activada exitosamente y ahora puede atender consultas.',
+        title: 'Especialidad Actualizada',
+        message: 'La especialidad del médico ha sido actualizada correctamente en el sistema.',
         type: 'alert',
-        confirmText: 'Genial',
+        confirmText: 'Aceptar',
         onConfirm: () => {
           closeModal();
           checkAdminAndFetchData();
         }
       });
     } catch (err: any) {
-      console.error('Error aprobando médico:', err);
-      setModalConfig({
-        visible: true,
-        title: 'Error al Aprobar',
-        message: err.message || 'No se pudo actualizar el estado del médico.',
-        type: 'alert',
-        confirmText: 'Entendido',
-        onConfirm: closeModal
-      });
+      handleErrorModal(err, 'Error al Actualizar Especialidad');
     } finally {
       setProcessingId(null);
     }
@@ -217,24 +320,27 @@ export default function AdminDashboardScreen() {
     );
   }
 
-  const renderDoctorCard = ({ item }: { item: DoctorPending }) => {
+  const renderDoctorCard = ({ item }: { item: DoctorItem }) => {
     const name = item.profiles?.full_name || 'Médico Sin Nombre';
     const ci = item.profiles?.identity_card || 'No registrado';
     const email = item.profiles?.email || '—';
     const currentSpecialtyId = selectedSpecialtiesMap[item.id] || item.specialty_id;
+    const isPending = !item.is_active;
 
     return (
       <View style={styles.doctorCard}>
         <View style={styles.cardHeader}>
-          <View style={styles.avatar}>
-            <Ionicons name="medkit" size={24} color="#2563eb" />
+          <View style={[styles.avatar, { backgroundColor: isPending ? '#eff6ff' : '#ecfdf5' }]}>
+            <Ionicons name="medkit" size={24} color={isPending ? '#2563eb' : '#059669'} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.doctorName}>{name}</Text>
             <Text style={styles.doctorSub}>CI: {ci} | {email}</Text>
           </View>
-          <View style={styles.pendingBadge}>
-            <Text style={styles.pendingBadgeText}>PENDIENTE</Text>
+          <View style={isPending ? styles.pendingBadge : styles.activeBadge}>
+            <Text style={isPending ? styles.pendingBadgeText : styles.activeBadgeText}>
+              {isPending ? 'PENDIENTE' : 'ACTIVO'}
+            </Text>
           </View>
         </View>
 
@@ -253,14 +359,16 @@ export default function AdminDashboardScreen() {
               onPress={() => handleOpenDocument(item.title_document_url)}
             >
               <Ionicons name="document-text-outline" size={16} color="#2563eb" />
-              <Text style={styles.docBtnText}>Ver Título PDF</Text>
+              <Text style={styles.docBtnText}>Ver Documento</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Asignación de Especialidad */}
+        {/* Asignación o Reasignación de Especialidad */}
         <View style={styles.specialtySection}>
-          <Text style={styles.infoLabel}>Especialidad Médica Asignada</Text>
+          <Text style={styles.infoLabel}>
+            {isPending ? 'Especialidad a Asignar' : 'Especialidad Médica Asignada'}
+          </Text>
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={currentSpecialtyId}
@@ -276,25 +384,45 @@ export default function AdminDashboardScreen() {
           </View>
         </View>
 
-        {/* Acciones */}
-        <TouchableOpacity 
-          style={styles.approveBtn}
-          onPress={() => handleApproveDoctor(item.id)}
-          disabled={processingId === item.id}
-          activeOpacity={0.8}
-        >
-          {processingId === item.id ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" />
-              <Text style={styles.approveBtnText}>Aprobar e Habilitar Médico</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {/* Acciones según el estado del médico */}
+        {isPending ? (
+          <TouchableOpacity 
+            style={styles.approveBtn}
+            onPress={() => handleApproveDoctor(item.id)}
+            disabled={processingId === item.id}
+            activeOpacity={0.8}
+          >
+            {processingId === item.id ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#ffffff" />
+                <Text style={styles.approveBtnText}>Aprobar e Habilitar Médico</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity 
+            style={styles.updateBtn}
+            onPress={() => handleUpdateDoctorSpecialty(item.id)}
+            disabled={processingId === item.id}
+            activeOpacity={0.8}
+          >
+            {processingId === item.id ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={20} color="#ffffff" />
+                <Text style={styles.updateBtnText}>Guardar Especialidad</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
+
+  const displayedList = currentTab === 'pending' ? pendingDoctors : activeDoctors;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -303,7 +431,7 @@ export default function AdminDashboardScreen() {
           <Ionicons name="arrow-back" size={24} color="#0f172a" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Aprobación de Personal Médico</Text>
+          <Text style={styles.headerTitle}>Gestión de Personal Médico</Text>
           <Text style={styles.headerSubtitle}>Administración G.A.M. Cochabamba</Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} disabled={loading}>
@@ -311,17 +439,56 @@ export default function AdminDashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {pendingDoctors.length === 0 ? (
+      {/* Pestañas para Pendientes y Activos (Problema 3) */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity 
+          style={[styles.tabBtn, currentTab === 'pending' && styles.tabBtnActive]}
+          onPress={() => setCurrentTab('pending')}
+          activeOpacity={0.8}
+        >
+          <Ionicons 
+            name="time-outline" 
+            size={18} 
+            color={currentTab === 'pending' ? '#2563eb' : '#64748b'} 
+          />
+          <Text style={[styles.tabBtnText, currentTab === 'pending' && styles.tabBtnTextActive]}>
+            Pendientes ({pendingDoctors.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.tabBtn, currentTab === 'active' && styles.tabBtnActive]}
+          onPress={() => setCurrentTab('active')}
+          activeOpacity={0.8}
+        >
+          <Ionicons 
+            name="shield-checkmark-outline" 
+            size={18} 
+            color={currentTab === 'active' ? '#2563eb' : '#64748b'} 
+          />
+          <Text style={[styles.tabBtnText, currentTab === 'active' && styles.tabBtnTextActive]}>
+            Médicos Activos ({activeDoctors.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {displayedList.length === 0 ? (
         <View style={styles.centerContainer}>
           <View style={styles.emptyIconBg}>
             <Ionicons name="checkmark-done-circle" size={50} color="#10b981" />
           </View>
-          <Text style={styles.emptyTitle}>¡Todo al Día!</Text>
-          <Text style={styles.emptySub}>No hay solicitudes de médicos pendientes de aprobación.</Text>
+          <Text style={styles.emptyTitle}>
+            {currentTab === 'pending' ? '¡Todo al Día!' : 'Sin Médicos Activos'}
+          </Text>
+          <Text style={styles.emptySub}>
+            {currentTab === 'pending' 
+              ? 'No hay solicitudes de médicos pendientes de aprobación.'
+              : 'Aún no hay médicos habilitados en el sistema.'}
+          </Text>
         </View>
       ) : (
         <FlatList
-          data={pendingDoctors}
+          data={displayedList}
           keyExtractor={item => item.id}
           renderItem={renderDoctorCard}
           contentContainerStyle={styles.listContainer}
@@ -372,6 +539,39 @@ const styles = StyleSheet.create({
   },
   refreshBtn: {
     padding: 8,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    gap: 12,
+  },
+  tabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    gap: 8,
+  },
+  tabBtnActive: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  tabBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  tabBtnTextActive: {
+    color: '#2563eb',
+    fontWeight: '800',
   },
   centerContainer: {
     flex: 1,
@@ -457,7 +657,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -482,6 +681,19 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: {
     color: '#b45309',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  activeBadge: {
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  activeBadgeText: {
+    color: '#15803d',
     fontSize: 10,
     fontWeight: '800',
   },
@@ -552,6 +764,25 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   approveBtnText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  updateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
+    padding: 14,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  updateBtnText: {
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '800',

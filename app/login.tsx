@@ -6,7 +6,13 @@ import { supabase } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const { role } = useLocalSearchParams();
+  const isAdmin = role === 'admin';
   const isDoctor = role === 'doctor';
+
+  const themeColor = isAdmin ? '#4f46e5' : isDoctor ? '#2563eb' : '#059669';
+  const themeBg = isAdmin ? '#eef2ff' : isDoctor ? '#eff6ff' : '#ecfdf5';
+  const themeIcon = isAdmin ? 'shield-checkmark' : isDoctor ? 'medkit' : 'body';
+  const screenTitle = isAdmin ? 'Acceso Administrador' : isDoctor ? 'Acceso Médico' : 'Acceso Paciente';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,8 +29,9 @@ export default function LoginScreen() {
     setErrorMsg('');
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: cleanEmail,
         password,
       });
 
@@ -36,11 +43,48 @@ export default function LoginScreen() {
         throw error;
       }
 
-      // Si el login es exitoso, navegamos al destino correcto
-      if (isDoctor) {
-        router.push('/dashboard');
+      if (!data.user) {
+        throw new Error('No se pudo verificar la sesión del usuario.');
+      }
+
+      // 1. Consultar el rol real en la base de datos (profiles.role) - RF2 / Fig 2.7
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileErr || !profile) {
+        throw new Error('Error al obtener la información de perfil.');
+      }
+
+      // 2. Lógica condicional de acceso según el rol real
+      if (profile.role === 'doctor') {
+        // Verificar si el médico está activo / aprobado por un admin
+        const { data: docData, error: docErr } = await supabase
+          .from('doctors')
+          .select('is_active')
+          .eq('id', data.user.id)
+          .single();
+
+        if (docErr) {
+          // Error real de BD — distinto de "no aprobado"
+          await supabase.auth.signOut();
+          throw new Error('Error al verificar el estado de tu cuenta médica. Intenta de nuevo.');
+        }
+
+        if (!docData?.is_active) {
+          // Médico existe pero no ha sido aprobado aún
+          await supabase.auth.signOut();
+          throw new Error('Tu cuenta médica está pendiente de aprobación por un administrador.');
+        }
+
+        router.replace('/dashboard');
+      } else if (profile.role === 'admin') {
+        router.replace('/admin-dashboard');
       } else {
-        router.push('/patient-menu');
+        // Rol 'patient' o predeterminado
+        router.replace('/patient-menu');
       }
     } catch (error: any) {
       setErrorMsg(error.message || 'Error al iniciar sesión.');
@@ -61,11 +105,11 @@ export default function LoginScreen() {
 
         <View style={styles.content}>
           <View style={styles.header}>
-            <View style={[styles.iconCircle, { backgroundColor: isDoctor ? '#eff6ff' : '#ecfdf5' }]}>
-              <Ionicons name={isDoctor ? "medkit" : "body"} size={40} color={isDoctor ? "#2563eb" : "#059669"} />
+            <View style={[styles.iconCircle, { backgroundColor: themeBg }]}>
+              <Ionicons name={themeIcon as any} size={40} color={themeColor} />
             </View>
-            <Text style={styles.title}>{isDoctor ? 'Acceso Médico' : 'Acceso Paciente'}</Text>
-            <Text style={styles.subtitle}>Inicia sesión para continuar con el triaje</Text>
+            <Text style={styles.title}>{screenTitle}</Text>
+            <Text style={styles.subtitle}>Inicia sesión para continuar al sistema</Text>
           </View>
 
           <View style={styles.form}>
@@ -108,7 +152,7 @@ export default function LoginScreen() {
             </View>
 
             <TouchableOpacity 
-              style={[styles.loginBtn, { backgroundColor: isDoctor ? '#2563eb' : '#059669' }]}
+              style={[styles.loginBtn, { backgroundColor: themeColor }]}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.8}
@@ -120,12 +164,14 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
 
-            <View style={styles.registerContainer}>
-              <Text style={styles.registerText}>¿No tienes cuenta? </Text>
-              <TouchableOpacity onPress={() => router.push(`/register?role=${isDoctor ? 'doctor' : 'patient'}`)}>
-                <Text style={[styles.registerLink, { color: isDoctor ? '#2563eb' : '#059669' }]}>Regístrate aquí</Text>
-              </TouchableOpacity>
-            </View>
+            {!isAdmin && (
+              <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>¿No tienes cuenta? </Text>
+                <TouchableOpacity onPress={() => router.push(`/register?role=${isDoctor ? 'doctor' : 'patient'}`)}>
+                  <Text style={[styles.registerLink, { color: themeColor }]}>Regístrate aquí</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </KeyboardAvoidingView>

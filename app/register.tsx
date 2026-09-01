@@ -77,9 +77,26 @@ export default function RegisterScreen() {
     setErrorMsg('');
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+
+      // 0. Verificar disponibilidad de correo en la base de datos (Fig 2.6)
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (checkError) {
+        console.warn('Advertencia en verificación previa de email:', checkError);
+      }
+
+      if (existingProfile) {
+        throw new Error('El correo electrónico ya está registrado. Por favor inicia sesión o usa otro correo.');
+      }
+
       // 1. Crear el usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
       });
 

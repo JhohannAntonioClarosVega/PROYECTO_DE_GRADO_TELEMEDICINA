@@ -51,6 +51,18 @@ export default function WelcomeScreen() {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Acceso Administrativo (Problema 0) */}
+        <View style={styles.adminAccessContainer}>
+          <TouchableOpacity 
+            style={styles.adminLink}
+            activeOpacity={0.7}
+            onPress={() => router.push({ pathname: '/login', params: { role: 'admin' } })}
+          >
+            <Ionicons name="shield-checkmark-outline" size={16} color="#64748b" />
+            <Text style={styles.adminLinkText}>Portal Administrativo (G.A.M. Cochabamba)</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -166,5 +178,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     marginRight: 6,
+  },
+  adminAccessContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  adminLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  adminLinkText: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '700',
   }
 });

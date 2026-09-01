@@ -4,12 +4,34 @@ import Sidebar from '@/components/Sidebar';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function DashboardLayout() {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [userRole, setUserRole] = useState<string>('doctor');
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          if (profile?.role) {
+            setUserRole(profile.role);
+          }
+        }
+      } catch (err) {
+        console.warn('Error cargando rol en DashboardLayout:', err);
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   // Si la pantalla es ancha (Web, Tablet), mostramos el Sidebar.
   const isLargeScreen = width >= 768;
@@ -18,7 +40,9 @@ export default function DashboardLayout() {
     { icon: 'grid', outlineIcon: 'grid-outline', label: 'Inicio', route: '/dashboard' },
     { icon: 'medkit', outlineIcon: 'medkit-outline', label: 'Consultas', route: '/consultas' },
     { icon: 'clipboard', outlineIcon: 'clipboard-outline', label: 'Historial', route: '/historial' },
-    { icon: 'settings', outlineIcon: 'settings-outline', label: 'Ajustes', route: '/ajustes' },
+    ...(userRole === 'admin'
+      ? [{ icon: 'shield-checkmark', outlineIcon: 'shield-checkmark-outline', label: 'Admin', route: '/admin-dashboard' }]
+      : [{ icon: 'settings', outlineIcon: 'settings-outline', label: 'Ajustes', route: '/ajustes' }]),
   ];
 
   const handleLogout = async () => {
