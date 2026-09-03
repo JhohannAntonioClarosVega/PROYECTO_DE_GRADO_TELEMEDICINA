@@ -7,6 +7,7 @@ export interface TriageInsert {
   urgency_level: 'Critical' | 'Medium' | 'Low';
   ai_recommendation: string;
   detected_language: string;
+  recommended_specialty?: string;
 }
 
 export const triageService = {
@@ -35,6 +36,9 @@ export const triageService = {
    * para obtener el nombre del paciente.
    */
   async getActiveTriages() {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
     const { data, error } = await supabase
       .from('triages')
       .select(`
@@ -49,6 +53,7 @@ export const triageService = {
           )
         )
       `)
+      .gte('created_at', yesterday.toISOString())
       .order('created_at', { ascending: false });
 
     if (error) {

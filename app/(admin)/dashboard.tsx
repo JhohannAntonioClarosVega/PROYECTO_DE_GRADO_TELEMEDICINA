@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Linking, RefreshControl, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Linking, RefreshControl, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { Picker } from '@react-native-picker/picker';
 import CustomModal from '@/components/CustomModal';
+import { WebView } from 'react-native-webview';
 
 interface DoctorItem {
   id: string;
@@ -42,16 +43,34 @@ export default function AdminDashboardScreen() {
   const [rejectingDoctorId, setRejectingDoctorId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  const [modalConfig, setModalConfig] = useState({
+  // Estado para gestión de especialidades
+  const [specialtiesModalVisible, setSpecialtiesModalVisible] = useState(false);
+  const [newSpecialtyName, setNewSpecialtyName] = useState('');
+  const [isAddingSpecialty, setIsAddingSpecialty] = useState(false);
+  const [editingSpecialtyId, setEditingSpecialtyId] = useState<string | null>(null);
+  const [editingSpecialtyName, setEditingSpecialtyName] = useState('');
+
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'alert' | 'confirm';
+    confirmText: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
     visible: false,
     title: '',
     message: '',
-    type: 'alert' as 'alert' | 'confirm',
+    type: 'alert',
     confirmText: 'Aceptar',
-    onConfirm: () => {},
   });
 
   const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
+
+  // Estado para visor de documentos
+  const [docViewerVisible, setDocViewerVisible] = useState(false);
+  const [docViewerUrl, setDocViewerUrl] = useState<string | null>(null);
 
   // Helper para distinguir errores de red vs lógica de base de datos (Problema 4)
   const handleErrorModal = (err: any, defaultTitle: string) => {
@@ -107,6 +126,10 @@ export default function AdminDashboardScreen() {
         .single();
 
       if (profile?.role !== 'admin') {
+        if (profile?.role === 'doctor') {
+          router.replace('/(doctor)/dashboard');
+          return;
+        }
         setIsAdmin(false);
         setLoading(false);
         return;
@@ -369,6 +392,58 @@ export default function AdminDashboardScreen() {
     }
   };
 
+  const handleAddSpecialty = async () => {
+    if (!newSpecialtyName.trim()) return;
+    setIsAddingSpecialty(true);
+    try {
+      const { data, error } = await supabase
+        .from('specialties')
+        .insert([{ name: newSpecialtyName.trim() }])
+        .select();
+
+      if (error) throw error;
+      
+      setNewSpecialtyName('');
+      await checkAdminAndFetchData(); // Refrescar lista
+      
+      setModalConfig({
+        visible: true,
+        title: 'Éxito',
+        message: 'Especialidad añadida correctamente.',
+        type: 'alert',
+        confirmText: 'Aceptar',
+        onConfirm: closeModal
+      });
+    } catch (err: any) {
+      handleErrorModal(err, 'Error al añadir especialidad');
+    } finally {
+      setIsAddingSpecialty(false);
+    }
+  };
+
+  const handleDeleteSpecialty = async (id: string) => {
+    try {
+      const { error } = await supabase.from('specialties').delete().eq('id', id);
+      if (error) throw error;
+      await checkAdminAndFetchData();
+    } catch (err: any) {
+      handleErrorModal(err, 'No se puede eliminar porque hay médicos asignados a esta especialidad.');
+    }
+  };
+
+  const handleUpdateSpecialty = async () => {
+    if (!editingSpecialtyId || !editingSpecialtyName.trim()) return;
+    try {
+      const { error } = await supabase.from('specialties').update({ name: editingSpecialtyName.trim() }).eq('id', editingSpecialtyId);
+      if (error) throw error;
+      setEditingSpecialtyId(null);
+      setEditingSpecialtyName('');
+      await checkAdminAndFetchData();
+    } catch (err: any) {
+      handleErrorModal(err, 'Error al actualizar especialidad');
+    }
+  };
+
   const handleOpenDocument = (url: string | null) => {
     if (!url) {
       setModalConfig({
@@ -377,15 +452,15 @@ export default function AdminDashboardScreen() {
         message: 'Este médico no ha adjuntado una URL de documento de título.',
         type: 'alert',
         confirmText: 'Entendido',
-        onConfirm: closeModal
+        onConfirm: closeModal,
+        onCancel: closeModal
       });
       return;
     }
-    if (Platform.OS === 'web') {
-      window.open(url, '_blank');
-    } else {
-      Linking.openURL(url).catch(err => console.error('Error al abrir URL:', err));
-    }
+    
+    // En lugar de sacarlos de la app, mostrarlo en nuestro propio Modal
+    setDocViewerUrl(url);
+    setDocViewerVisible(true);
   };
 
   if (loading) {
@@ -604,10 +679,6 @@ export default function AdminDashboardScreen() {
         <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} disabled={loading}>
           <Ionicons name="refresh" size={22} color="#64748b" />
         </TouchableOpacity>
-        {/* Botón Cerrar Sesión — Bug 3 */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-        </TouchableOpacity>
       </View>
 
       {/* Pestañas para Pendientes, Activos y Rechazados */}
@@ -704,7 +775,8 @@ export default function AdminDashboardScreen() {
         title={modalConfig.title}
         message={modalConfig.message}
         type={modalConfig.type}
-        onConfirm={modalConfig.onConfirm}
+        onConfirm={modalConfig.onConfirm || closeModal}
+        onCancel={modalConfig.onCancel || closeModal}
         confirmText={modalConfig.confirmText}
       />
 
@@ -749,6 +821,47 @@ export default function AdminDashboardScreen() {
           </View>
         </View>
       )}
+
+      {/* Modal para visualizar el documento */}
+      <Modal
+        visible={docViewerVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setDocViewerVisible(false)}
+      >
+        <View style={styles.viewerModalContainer}>
+          <View style={styles.viewerHeader}>
+            <Text style={styles.viewerTitle}>Visor de Documentos</Text>
+            <TouchableOpacity 
+              onPress={() => setDocViewerVisible(false)} 
+              style={styles.viewerCloseBtn}
+            >
+              <Ionicons name="close" size={24} color="#334155" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.viewerContent}>
+            {docViewerUrl && (
+              Platform.OS === 'web' ? (
+                <iframe src={docViewerUrl} style={{ width: '100%', height: '100%', border: 'none' }} />
+              ) : (
+                <WebView 
+                  source={{ uri: docViewerUrl }} 
+                  style={{ flex: 1 }}
+                  startInLoadingState={true}
+                  renderLoading={() => (
+                    <ActivityIndicator 
+                      color="#3b82f6" 
+                      size="large" 
+                      style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -18 }, { translateY: -18 }] }} 
+                    />
+                  )}
+                />
+              )
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -993,25 +1106,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 50,
   },
-  approveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#059669',
-    padding: 14,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  approveBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
+
   updateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1222,5 +1317,39 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '800',
+  },
+  // Estilos del visor de documentos
+  viewerModalContainer: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+    marginTop: Platform.OS === 'ios' ? 40 : 0,
+  },
+  viewerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  viewerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  viewerCloseBtn: {
+    padding: 8,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+  },
+  viewerContent: {
+    flex: 1,
+    backgroundColor: '#e2e8f0',
   },
 });

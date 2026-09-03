@@ -24,6 +24,7 @@ export default function VideoCallScreen() {
   const [camActive, setCamActive] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [connecting, setConnecting] = useState(true);
+  const [isCallEnded, setIsCallEnded] = useState(false);
 
   // Paneles de interacción
   const [showChat, setShowChat] = useState(false);
@@ -55,14 +56,20 @@ export default function VideoCallScreen() {
   const localStreamRef = useRef<any>(null);
 
   // Configuración del modal de alertas
-  const [modalConfig, setModalConfig] = useState({
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'alert' | 'confirm';
+    confirmText: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
     visible: false,
     title: '',
     message: '',
-    type: 'alert' as 'alert'|'confirm',
+    type: 'alert',
     confirmText: 'Aceptar',
-    onConfirm: () => {},
-    onCancel: () => {}
   });
 
   const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
@@ -95,6 +102,15 @@ export default function VideoCallScreen() {
       setCallDuration(prev => prev + 1);
     }, 1000);
 
+    // Limpiar historial previo si cambia el paciente (Expo Router reusa el componente)
+    setDiagnosis('');
+    setTreatment('');
+    setNotes('');
+    setMedicalRecord(null);
+    setShowNotes(false);
+    setShowPatientRecord(false);
+    setShowChat(false);
+
     // Obtener datos del triaje si es doctor
     if (isDoctor && triageId) {
       fetchTriageData();
@@ -110,14 +126,13 @@ export default function VideoCallScreen() {
     };
   }, []);
 
-  // Control de la cámara local física en Web
   useEffect(() => {
-    if (Platform.OS === 'web' && camActive && !connecting) {
+    if (Platform.OS === 'web' && camActive && !connecting && !isCallEnded) {
       startLocalCamera();
     } else {
       stopLocalCamera();
     }
-  }, [camActive, connecting]);
+  }, [camActive, connecting, isCallEnded]);
 
   const startLocalCamera = async () => {
     try {
@@ -196,49 +211,79 @@ export default function VideoCallScreen() {
     };
   }, [triageId]);
 
-  // Suscripción Realtime para la tabla medical_records del paciente
+  // Suscripción Realtime para indicaciones médicas y fin de llamada (Paciente)
   useEffect(() => {
-    if (isDoctor || !patientId) return;
+    if (isDoctor || !triageId) return;
 
-    const channel = supabase
-      .channel('realtime_patient_medical_record')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'medical_records',
-          filter: `patient_id=eq.${patientId}`,
-        },
-        (payload) => {
-          if (payload.new) {
-            setMedicalRecord((prev: any) => {
-              if (!prev) {
-                setModalConfig({
-                  visible: true,
-                  title: 'Nueva Indicación Médica',
-                  message: 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
-                  type: 'alert',
-                  confirmText: 'Ver Registro',
-                  onConfirm: () => {
-                    closeModal();
-                    setShowPatientRecord(true);
-                    setShowChat(false);
-                  },
-                  onCancel: closeModal,
-                });
-              }
-              return payload.new;
-            });
-          }
-        }
-      )
+    // 1. Canal para cuando el doctor finaliza y guarda la receta
+    const callChannel = supabase
+      .channel(`rt_call_${triageId}`)
+      .on('broadcast', { event: 'call_ended' }, async (payload) => {
+        setIsCallEnded(true);
+        
+        // El paciente actualiza su propio triage a completado para evitar bloqueos de RLS del doctor
+        await supabase.from('triages').update({ status: 'completed' }).eq('id', triageId);
+
+        setMedicalRecord({
+          diagnosis: payload.payload.diagnosis,
+          treatment_plan: payload.payload.treatment_plan,
+          created_at: new Date().toISOString()
+        });
+        setModalConfig({
+          visible: true,
+          title: 'Consulta Finalizada',
+          message: 'El doctor ha finalizado la consulta y emitido tu receta digital. La videollamada ha terminado.',
+          type: 'alert',
+          confirmText: 'Ver Receta Digital',
+          onConfirm: () => {
+            closeModal();
+            setShowPatientRecord(true);
+            setShowChat(false);
+          },
+        });
+      })
       .subscribe();
 
+    // 2. Canal tradicional a nivel DB (por si falla el broadcast)
+    let dbChannel: any = null;
+    if (appointmentId) {
+      dbChannel = supabase
+        .channel(`rt_db_${appointmentId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'medical_records', filter: `appointment_id=eq.${appointmentId}` },
+          (payload) => {
+            if (payload.new) {
+              setMedicalRecord((prev: any) => {
+                if (!prev) {
+                  setIsCallEnded(true);
+                  setModalConfig({
+                    visible: true,
+                    title: 'Nueva Indicación Médica',
+                    message: 'El doctor ha registrado tu diagnóstico y tratamiento.',
+                    type: 'alert',
+                    confirmText: 'Ver Registro',
+                    onConfirm: () => {
+                      closeModal();
+                      setShowPatientRecord(true);
+                      setShowChat(false);
+                    },
+                    onCancel: closeModal,
+                  });
+                }
+                return payload.new;
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(callChannel);
+      if (dbChannel) supabase.removeChannel(dbChannel);
     };
-  }, [patientId]);
+  }, [triageId, appointmentId]);
 
   const fetchPatientRecord = async (apptId?: string) => {
     try {
@@ -290,41 +335,8 @@ export default function VideoCallScreen() {
           return;
         }
       }
-
-      // Fallback: buscar el último registro médico reciente de este paciente (última hora)
-      if (patientId) {
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-        const { data, error } = await supabase
-          .from('medical_records')
-          .select('*')
-          .eq('patient_id', patientId)
-          .gte('created_at', oneHourAgo)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) throw error;
-        if (data) {
-          setMedicalRecord((prev: any) => {
-            if (!prev) {
-              setModalConfig({
-                visible: true,
-                title: 'Nueva Indicación Médica',
-                message: 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
-                type: 'alert',
-                confirmText: 'Ver Registro',
-                onConfirm: () => {
-                  closeModal();
-                  setShowPatientRecord(true);
-                  setShowChat(false);
-                },
-                onCancel: closeModal,
-              });
-            }
-            return data;
-          });
-        }
-      }
+      // NOTA: Se eliminó el "fallback" por patientId porque causaba que se cargaran
+      // recetas antiguas de otras consultas si el paciente probaba la app varias veces.
     } catch (err) {
       console.warn('Error al buscar registro médico del paciente:', err);
     }
@@ -438,17 +450,41 @@ export default function VideoCallScreen() {
 
       if (error) throw error;
 
+      // 4. Marcar el triage como completado
+      if (triageId) {
+        const { error: updateTriageError } = await supabase.from('triages').update({ status: 'completed' }).eq('id', triageId).select().single();
+        if (updateTriageError) {
+           console.error('Error al completar el triaje:', updateTriageError);
+           throw new Error('El registro se guardó, pero falló el cambio de estado de la cita. Supabase dice: ' + updateTriageError.message + ' (Code: ' + updateTriageError.code + ')');
+        }
+      }
+
+      // 5. Señal Broadcast instantánea al paciente para cortar su llamada
+      if (triageId) {
+        const channel = supabase.channel(`rt_call_${triageId}`);
+        channel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.send({
+              type: 'broadcast',
+              event: 'call_ended',
+              payload: { diagnosis, treatment_plan: treatment }
+            });
+          }
+        });
+      }
+
       setSavingNotes(false);
+      setIsCallEnded(true); // Corta la cámara del doctor instantáneamente
       setModalConfig({
         visible: true,
         title: 'Historial Guardado',
-        message: 'El registro e historial médico ha sido guardado exitosamente.',
+        message: 'El registro e historial médico ha sido guardado exitosamente. La llamada ha finalizado.',
         type: 'alert',
-        confirmText: 'Aceptar',
+        confirmText: 'Volver al Inicio',
         onCancel: closeModal,
         onConfirm: () => {
           closeModal();
-          router.replace('/dashboard');
+          router.replace('/(doctor)/dashboard');
         }
       });
     } catch (error: any) {
@@ -470,7 +506,8 @@ export default function VideoCallScreen() {
     if (isDoctor) {
       // Si el doctor cuelga, le recordamos guardar la ficha
       if (diagnosis && treatment) {
-        router.replace('/dashboard');
+        setIsCallEnded(true);
+        router.replace('/(doctor)/dashboard');
       } else {
         setModalConfig({
           visible: true,
@@ -479,30 +516,59 @@ export default function VideoCallScreen() {
           type: 'confirm',
           confirmText: 'Salir sin guardar',
           onCancel: closeModal,
-          onConfirm: () => {
+          onConfirm: async () => {
             closeModal();
-            router.replace('/dashboard');
+            setIsCallEnded(true);
+            
+            // Forzar completado del triage si el médico se va
+            if (triageId) {
+              await supabase.from('triages').update({ status: 'completed' }).eq('id', triageId);
+              const channel = supabase.channel(`rt_call_${triageId}`);
+              channel.subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                  await channel.send({
+                    type: 'broadcast',
+                    event: 'call_ended',
+                    payload: { diagnosis: 'Consulta finalizada sin registro.', treatment_plan: 'Contacte a administración.' }
+                  });
+                }
+              });
+            }
+            
+            router.replace('/(doctor)/dashboard');
           }
         });
         setShowNotes(true);
       }
     } else {
-      router.replace('/patient-menu');
+      setIsCallEnded(true);
+      router.replace('/(patient)/menu');
     }
   };
 
-  const roomName = `Telemedicina_Cochabamba_${triageId || 'sala_general'}`;
-  const jitsiUrl = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false`;
+  // Usamos Whereby (Líder en WebRTC para iframes, diseño súper limpio)
+  const WHEREBY_BASE_URL = 'https://telemedicina.whereby.com/consultad2702ad1-6c7d-474a-b4dd-afeba02617c8';
+  
+  // Parámetros mágicos de Whereby para ocultar todo lo innecesario y forzar el modo incrustado
+  const wherebyParams = new URLSearchParams({
+    embed: 'true',
+    audio: 'on',
+    video: 'on',
+    chat: 'off',
+    people: 'off',
+    leaveButton: 'off', // APAGADO para evitar el error 'Ha salido de la sala'
+    background: 'off',
+    displayName: isDoctor ? 'Doctor' : 'Paciente'
+  }).toString();
 
-  // Enlace a Jitsi Meet real para videollamada funcional WebRTC (Por si se quiere abrir externo)
-  const launchJitsiMeet = () => {
-    const roomName = `Telemedicina_Cochabamba_${triageId || 'consulta'}`;
-    const jitsiUrl = `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false`;
+  const videoUrl = `${WHEREBY_BASE_URL}?${wherebyParams}`;
+  
+  // Enlace externo (Por si se quiere abrir fuera de la app)
+  const launchExternalMeet = () => {
     if (Platform.OS === 'web') {
-      window.open(jitsiUrl, '_blank');
+      window.open(videoUrl, '_blank');
     } else {
-      // En móvil redirige mediante WebBrowser o enlace directo
-      router.push(jitsiUrl as any);
+      router.push(videoUrl as any);
     }
   };
 
@@ -510,24 +576,34 @@ export default function VideoCallScreen() {
     <SafeAreaView style={styles.container}>
       {/* Contenido de Video Principal */}
       <View style={styles.videoGrid}>
-        {connecting ? (
+        {isCallEnded ? (
+          <View style={[styles.centerContainer, { backgroundColor: '#0f172a' }]}>
+            <Ionicons name="shield-checkmark" size={80} color="#10b981" />
+            <Text style={[styles.connectingText, { color: '#ffffff', marginTop: 20 }]}>Consulta Finalizada</Text>
+            {isDoctor ? (
+              <Text style={[styles.subConnectingText, { color: '#94a3b8' }]}>El registro clínico fue guardado con éxito.</Text>
+            ) : (
+              <Text style={[styles.subConnectingText, { color: '#94a3b8' }]}>Por favor revisa tu receta digital.</Text>
+            )}
+          </View>
+        ) : connecting ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={styles.connectingText}>Estableciendo canal seguro encriptado...</Text>
+            <Text style={styles.connectingText}>Estableciendo canal seguro...</Text>
             <Text style={styles.subConnectingText}>Telemedicina IA - Cochabamba</Text>
           </View>
         ) : (
           <View style={styles.remoteVideoContainer}>
-            {/* Videollamada Real con Jitsi incrustado */}
+            {/* Videollamada Real con MiroTalk SFU */}
             {Platform.OS === 'web' ? (
               <iframe 
-                src={jitsiUrl}
+                src={videoUrl}
                 allow="camera; microphone; fullscreen; display-capture; autoplay"
                 style={{ width: '100%', height: '100%', border: 'none' }}
               />
             ) : (
               <WebView
-                source={{ uri: jitsiUrl }}
+                source={{ uri: videoUrl }}
                 style={{ flex: 1 }}
                 allowsInlineMediaPlayback={true}
                 mediaPlaybackRequiresUserAction={false}
@@ -538,31 +614,9 @@ export default function VideoCallScreen() {
         )}
       </View>
 
-      {/* Barra de Herramientas Flotante Inferior */}
+      {/* Barra de Herramientas Flotante Inferior (Solo funciones extra y salir) */}
       <View style={styles.controlBar}>
-        <TouchableOpacity 
-          style={[styles.controlBtn, !micActive && styles.controlBtnActive]}
-          onPress={() => setMicActive(!micActive)}
-          activeOpacity={0.7}
-        >
-          <Ionicons 
-            name={micActive ? "mic" : "mic-off"} 
-            size={22} 
-            color={micActive ? "#ffffff" : "#ef4444"} 
-          />
-        </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.controlBtn, !camActive && styles.controlBtnActive]}
-          onPress={() => setCamActive(!camActive)}
-          activeOpacity={0.7}
-        >
-          <Ionicons 
-            name={camActive ? "videocam" : "videocam-off"} 
-            size={22} 
-            color={camActive ? "#ffffff" : "#ef4444"} 
-          />
-        </TouchableOpacity>
 
         <TouchableOpacity 
           style={[styles.controlBtn, showChat && styles.controlBtnActivePanel]}
@@ -607,11 +661,11 @@ export default function VideoCallScreen() {
 
         <TouchableOpacity 
           style={[styles.controlBtn, styles.jitsiBtn]}
-          onPress={launchJitsiMeet}
+          onPress={launchExternalMeet}
           activeOpacity={0.7}
         >
-          <Ionicons name="globe-outline" size={20} color="#10b981" />
-          <Text style={styles.jitsiBtnText}>Jitsi</Text>
+          <Ionicons name="videocam-outline" size={20} color="#10b981" />
+          <Text style={styles.jitsiBtnText}>Llamada</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -826,7 +880,7 @@ export default function VideoCallScreen() {
       {/* Botón flotante para salir directamente en la esquina superior */}
       <TouchableOpacity 
         style={styles.closeCallHeaderBtn} 
-        onPress={() => router.replace(isDoctor ? '/dashboard' : '/patient-menu')}
+        onPress={() => router.replace(isDoctor ? '/(doctor)/dashboard' : '/(patient)/menu')}
       >
         <Ionicons name="close" size={24} color="#ffffff" />
       </TouchableOpacity>
@@ -836,7 +890,7 @@ export default function VideoCallScreen() {
         title={modalConfig.title}
         message={modalConfig.message}
         type={modalConfig.type}
-        onConfirm={modalConfig.onConfirm}
+        onConfirm={modalConfig.onConfirm || closeModal}
         onCancel={modalConfig.onCancel}
         confirmText={modalConfig.confirmText}
       />
@@ -952,13 +1006,13 @@ const styles = StyleSheet.create({
   },
   controlBar: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 60 : 40,
-    alignSelf: 'center',
-    flexDirection: 'row',
+    right: 16, // Pegado a la derecha
+    top: '30%', // Centrado verticalmente
+    flexDirection: 'column', // Botones apilados verticalmente
     backgroundColor: 'rgba(15, 23, 42, 0.85)', // Glassmorphic
     borderRadius: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 20,
     gap: 16,
     alignItems: 'center',
     borderWidth: 1,
@@ -1036,6 +1090,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#1e293b',
     zIndex: 30,
     flexDirection: 'column',
+    paddingTop: Platform.OS === 'ios' ? 55 : 30,
   },
   notesPanel: {
     maxWidth: 400,

@@ -27,14 +27,20 @@ export default function MedicalRecordScreen() {
     { id: '3', name: 'Farmacias Bolivia - Zona Sur' }
   ]);
 
-  const [modalConfig, setModalConfig] = useState({
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'alert' | 'confirm';
+    confirmText: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
     visible: false,
     title: '',
     message: '',
-    type: 'alert' as 'alert' | 'confirm',
+    type: 'alert',
     confirmText: 'Aceptar',
-    onConfirm: () => {},
-    onCancel: () => {}
   });
 
   const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
@@ -459,7 +465,7 @@ export default function MedicalRecordScreen() {
         title={modalConfig.title}
         message={modalConfig.message}
         type={modalConfig.type}
-        onConfirm={modalConfig.onConfirm}
+        onConfirm={modalConfig.onConfirm || closeModal}
         onCancel={modalConfig.onCancel}
         confirmText={modalConfig.confirmText}
       />

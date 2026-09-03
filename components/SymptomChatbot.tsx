@@ -5,11 +5,14 @@ import { triageService } from '@/services/triage.service';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
+import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 
 // Tipos para los mensajes
 type Message = {
   id: string;
   text: string;
+  quechuaText?: string;
   sender: 'bot' | 'user';
   timestamp: Date;
 };
@@ -21,10 +24,21 @@ export default function SymptomChatbot() {
     {
       id: '1',
       text: '¡Hola! Soy tu asistente médico virtual. Para comenzar, ¿cuál es tu síntoma principal o motivo de consulta?',
+      quechuaText: '¡Allinllachu! Ñuqa kani hampiq yanapaqniyki. Qallarinapaq, ¿Ima nanayniykitataq utaq unquyniykitataq willariwankiman?',
       sender: 'bot',
       timestamp: new Date()
     }
   ]);
+
+  const speakMessage = (text: string, quechuaText?: string) => {
+    Speech.stop();
+    if (quechuaText) {
+      Speech.speak(quechuaText, { language: 'es-BO', rate: 0.9 });
+      Speech.speak(text, { language: 'es-BO', rate: 1.0 });
+    } else {
+      Speech.speak(text, { language: 'es-BO', rate: 1.0 });
+    }
+  };
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatStep, setChatStep] = useState(0);
@@ -37,6 +51,11 @@ export default function SymptomChatbot() {
   const flatListRef = useRef<FlatList>(null);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+
+  // Estados para grabación de voz
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBase64, setAudioBase64] = useState<string | null>(null);
 
   // Obtener el ID del paciente logueado al montar
   useEffect(() => {
@@ -59,6 +78,56 @@ export default function SymptomChatbot() {
     };
     fetchUser();
   }, []);
+
+  // Funciones de grabación
+  async function startRecording() {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status === 'granted') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+        setRecording(recording);
+        setIsRecording(true);
+      } else {
+        setAlertMessage('Permiso de micrófono denegado');
+        setAlertVisible(true);
+      }
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
+  }
+
+  async function stopRecording() {
+    setRecording(null);
+    setIsRecording(false);
+    if (!recording) return;
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (uri) {
+        // En web y móvil podemos hacer un fetch para obtener el blob y luego pasarlo a base64
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          // Remover "data:audio/m4a;base64," del inicio
+          const base64 = base64data.split(',')[1];
+          setAudioBase64(base64);
+          setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
+        };
+      }
+    } catch (err) {
+      console.error('Failed to stop recording', err);
+    }
+  }
 
   const sendMessage = async () => {
     if (inputText.trim().length === 0) return;
@@ -83,11 +152,12 @@ export default function SymptomChatbot() {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           text: 'Comprendo. ¿Hace cuánto tiempo empezaron estos síntomas y del 1 al 10 qué tan fuerte es el malestar?',
+          quechuaText: 'Entiendeni. ¿Hayk\'aqmanta pachataq chay nanaykuna qallarirqan, hinallataq 1manta 10kama, mayna sinchitaq nanasunki?',
           sender: 'bot',
           timestamp: new Date()
         }]);
         setIsTyping(false);
-      }, 1000);
+      }, 300);
     } else if (chatStep === 1) {
       setCollectedData(prev => ({ ...prev, time: currentText }));
       setChatStep(2);
@@ -95,23 +165,46 @@ export default function SymptomChatbot() {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           text: 'Entendido. Por último, ¿has tomado algún medicamento el día de hoy para tratar de aliviar esto?',
+          quechuaText: 'Allinmi. Tukupanapaq, ¿Upyarqankichu ima hampitapas kunan p\'unchaw chay nanay ch\'inyachinapaq?',
           sender: 'bot',
           timestamp: new Date()
         }]);
         setIsTyping(false);
-      }, 1000);
+      }, 300);
     } else if (chatStep === 2) {
       // Paso final: Juntar todo y enviar a Supabase
       const finalSymptomReport = `Síntomas principales: ${collectedData.main}\nTiempo/Intensidad: ${collectedData.time}\nMedicamentos previos: ${currentText}`;
 
       try {
+        // 1. Consultar a nuestro nuevo Motor IA (FastAPI)
+        const apiUrl = process.env.EXPO_PUBLIC_AI_API_URL || 'http://localhost:8000';
+        const aiResponse = await fetch(`${apiUrl}/api/analyze-symptoms`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            patient_id: currentUserId || 'guest',
+            reported_symptoms: finalSymptomReport,
+            ...(audioBase64 && { audio_base64: audioBase64 })
+          })
+        });
+
+        if (!aiResponse.ok) {
+          throw new Error('No se pudo conectar con el motor de Inteligencia Artificial.');
+        }
+
+        const aiData = await aiResponse.json();
+
+        // 2. Guardar el resultado estructurado en Supabase
         const result = await triageService.createTriage({
           patient_id: currentUserId || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
           reported_symptoms: finalSymptomReport,
-          ai_raw_analysis: 'Pendiente de evaluación de IA...',
-          urgency_level: 'Medium',
-          ai_recommendation: 'Análisis en proceso.',
-          detected_language: 'es'
+          ai_raw_analysis: aiData.standardized_symptoms,
+          urgency_level: aiData.urgency_level as any,
+          ai_recommendation: aiData.ai_recommendation,
+          detected_language: aiData.detected_language,
+          recommended_specialty: aiData.recommended_specialty
         });
 
         if (result && result.id) {
@@ -121,12 +214,13 @@ export default function SymptomChatbot() {
         setTimeout(() => {
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
-            text: '✅ ¡He creado tu informe clínico y se ha enviado al doctor! Por favor presiona el botón inferior para ingresar a la sala de espera.',
+            text: '✅ ¡He analizado tus síntomas! Para ingresar a la sala de espera y ser atendido, por favor presiona el botón inferior para proceder al pago.',
+            quechuaText: '✅ ¡Ñañam qillqapusqayki unquyniykimanta! Suyana wasiman yaykunaykipaqqa, ama hina kaspa urapi kaq ñit\'inata ñit\'iy qullqita qunaykipaq.',
             sender: 'bot',
             timestamp: new Date()
           }]);
           setIsTyping(false);
-        }, 1500);
+        }, 300);
         
         setChatStep(3); // Fin de la conversación
       } catch (error: any) {
@@ -157,12 +251,28 @@ export default function SymptomChatbot() {
           </View>
         )}
         <View style={[styles.messageBubble, isBot ? styles.messageBubbleBot : styles.messageBubbleUser]}>
+          {item.quechuaText && (
+            <Text style={[styles.messageText, isBot ? styles.messageTextBotQuechua : styles.messageTextUser]}>
+              {item.quechuaText}
+            </Text>
+          )}
           <Text style={[styles.messageText, isBot ? styles.messageTextBot : styles.messageTextUser]}>
             {item.text}
           </Text>
-          <Text style={[styles.timeText, isBot ? styles.timeTextBot : styles.timeTextUser]}>
-            {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
+          
+          <View style={styles.messageFooter}>
+            {isBot && (
+              <TouchableOpacity 
+                style={styles.ttsButton}
+                onPress={() => speakMessage(item.text, item.quechuaText)}
+              >
+                <Ionicons name="volume-high" size={16} color="#059669" />
+              </TouchableOpacity>
+            )}
+            <Text style={[styles.timeText, isBot ? styles.timeTextBot : styles.timeTextUser]}>
+              {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -171,11 +281,12 @@ export default function SymptomChatbot() {
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
     >
       {/* Cabecera del Chat */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/patient-menu')}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(patient)/menu')}>
           <Ionicons name="arrow-back" size={24} color="#64748b" />
         </TouchableOpacity>
         <View style={styles.headerIcon}>
@@ -211,26 +322,34 @@ export default function SymptomChatbot() {
           <TouchableOpacity 
             style={styles.waitingRoomBtn}
             onPress={() => router.push({
-              pathname: '/waiting-room' as any,
+              pathname: '/(patient)/payment' as any,
               params: { triageId: createdTriageId }
             })}
             activeOpacity={0.8}
           >
-            <Ionicons name="videocam" size={20} color="#ffffff" />
-            <Text style={styles.waitingRoomBtnText}>Ingresar a la Sala de Espera</Text>
+            <Ionicons name="card" size={20} color="#ffffff" />
+            <Text style={styles.waitingRoomBtnText}>Proceder al Pago</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Escribe tus síntomas aquí..."
+            placeholder="Escribe o graba tus síntomas..."
             placeholderTextColor="#9ca3af"
             value={inputText}
             onChangeText={setInputText}
             multiline
             maxLength={500}
           />
+          <TouchableOpacity
+            style={[styles.micButton, isRecording && styles.micButtonRecording]}
+            onPress={isRecording ? stopRecording : startRecording}
+            activeOpacity={0.8}
+            disabled={chatStep === 3}
+          >
+            <Ionicons name={isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#ef4444" : "#64748b"} />
+          </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.sendButton, (!inputText.trim() || chatStep === 3) && styles.sendButtonDisabled]} 
             onPress={sendMessage}
@@ -281,7 +400,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#ecfdf5',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -317,7 +436,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#10b981',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
@@ -340,7 +459,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   messageBubbleUser: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#059669',
     borderBottomRightRadius: 4,
   },
   messageText: {
@@ -349,6 +468,23 @@ const styles = StyleSheet.create({
   },
   messageTextBot: {
     color: '#334155',
+  },
+  messageTextBotQuechua: {
+    color: '#059669',
+    fontStyle: 'italic',
+    fontWeight: '500',
+    marginBottom: 6,
+  },
+  messageFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginTop: 6,
+  },
+  ttsButton: {
+    padding: 6,
+    backgroundColor: '#ecfdf5',
+    borderRadius: 12,
   },
   messageTextUser: {
     color: '#ffffff',
@@ -362,7 +498,7 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
   },
   timeTextUser: {
-    color: '#93c5fd', // Light blue for contrast on dark background
+    color: '#a7f3d0',
   },
   typingIndicator: {
     flexDirection: 'row',
@@ -399,7 +535,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
@@ -420,13 +556,13 @@ const styles = StyleSheet.create({
   },
   waitingRoomBtn: {
     width: '100%',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#059669',
     paddingVertical: 14,
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563eb',
+    shadowColor: '#059669',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -437,5 +573,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
     marginLeft: 8,
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  micButtonRecording: {
+    backgroundColor: '#fee2e2',
   }
 });
