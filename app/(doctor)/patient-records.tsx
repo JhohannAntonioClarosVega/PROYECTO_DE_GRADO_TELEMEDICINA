@@ -4,254 +4,340 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
+interface PatientProfile {
+  id: string;
+  full_name: string;
+  identity_card: string;
+  phone_number: string;
+  gender: string;
+  blood_type: string;
+  allergies: string;
+  emergency_contact: string;
+}
+
 interface MedicalRecord {
   id: string;
   diagnosis: string;
   treatment_plan: string;
   clinical_notes: string | null;
   created_at: string;
-  doctors: {
-    profiles: {
-      full_name: string;
-    } | null;
-  } | null;
-  allied_pharmacies: {
-    name: string;
-  } | null;
 }
 
 export default function PatientRecordsScreen() {
+  const [viewMode, setViewMode] = useState<'directory' | 'detail'>('directory');
   const [loading, setLoading] = useState(true);
-  const [records, setRecords] = useState<MedicalRecord[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  
+  const [patients, setPatients] = useState<PatientProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  
+  const [selectedPatient, setSelectedPatient] = useState<PatientProfile | null>(null);
+  const [patientRecords, setPatientRecords] = useState<MedicalRecord[]>([]);
 
-  const fetchRecords = async () => {
+  useEffect(() => {
+    if (viewMode === 'directory') {
+      fetchDirectory();
+    }
+  }, [viewMode]);
+
+  const fetchDirectory = async () => {
     setLoading(true);
-    setErrorMsg('');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('No se pudo encontrar una sesión activa de paciente.');
-      }
+      if (!user) return;
 
-      // Paso 1: Buscar también por el ID del paciente en la tabla patients (por si el patient_id guardado es el patients.id y no auth.uid directamente)
-      const { data: patientRow } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      // Paso 2: Traer los registros médicos (query simple sin joins complejos para evitar problemas de RLS)
-      const { data: rawRecords, error } = await supabase
+      // 1. Obtener todos los medical_records creados por este doctor
+      const { data: records, error } = await supabase
         .from('medical_records')
-        .select('id, diagnosis, treatment_plan, clinical_notes, created_at, doctor_id, allied_pharmacy_id')
-        .eq('patient_id', user.id)
-        .order('created_at', { ascending: false });
+        .select('patient_id')
+        .eq('doctor_id', user.id);
 
-      if (error) {
-        console.error('Supabase error en medical_records:', JSON.stringify(error));
-        throw new Error(`Error de base de datos: ${error.message}`);
-      }
+      if (error) throw error;
 
-      if (!rawRecords || rawRecords.length === 0) {
-        setRecords([]);
+      // 2. Extraer los IDs únicos de los pacientes
+      const patientIds = [...new Set(records.map(r => r.patient_id).filter(Boolean))];
+
+      if (patientIds.length === 0) {
+        setPatients([]);
         return;
       }
 
-      // Paso 3: Traer los perfiles de los doctores
-      const doctorIds = [...new Set(rawRecords.map((r: any) => r.doctor_id).filter(Boolean))];
-      const pharmacyIds = [...new Set(rawRecords.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
+      // 3. Consultar perfiles y datos médicos base de esos pacientes
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, identity_card, phone_number, gender')
+        .in('id', patientIds);
 
-      const [doctorsResult, pharmaciesResult] = await Promise.all([
-        doctorIds.length > 0
-          ? supabase.from('profiles').select('id, full_name').in('id', doctorIds)
-          : Promise.resolve({ data: [] }),
-        pharmacyIds.length > 0
-          ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
-          : Promise.resolve({ data: [] })
-      ]);
+      const { data: patientsData } = await supabase
+        .from('patients')
+        .select('id, blood_type, allergies, emergency_contact')
+        .in('id', patientIds);
 
-      const doctorMap: Record<string, string> = {};
-      (doctorsResult.data || []).forEach((d: any) => { doctorMap[d.id] = d.full_name; });
+      const patientMap = new Map();
+      patientsData?.forEach(p => patientMap.set(p.id, p));
 
-      const pharmacyMap: Record<string, string> = {};
-      (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
+      const formattedPatients: PatientProfile[] = (profilesData || []).map(profile => {
+        const pData = patientMap.get(profile.id) || {};
+        return {
+          id: profile.id,
+          full_name: profile.full_name || 'Paciente Desconocido',
+          identity_card: profile.identity_card || 'S/N',
+          phone_number: profile.phone_number || '-',
+          gender: profile.gender || 'No especificado',
+          blood_type: pData.blood_type || 'No reg.',
+          allergies: pData.allergies || 'Ninguna registrada',
+          emergency_contact: pData.emergency_contact || '-'
+        };
+      });
 
-      const formattedRecords: MedicalRecord[] = rawRecords.map((item: any) => ({
-        id: item.id,
-        diagnosis: item.diagnosis || '',
-        treatment_plan: item.treatment_plan || '',
-        clinical_notes: item.clinical_notes || null,
-        created_at: item.created_at,
-        doctors: item.doctor_id
-          ? { profiles: { full_name: doctorMap[item.doctor_id] || 'Médico General' } }
-          : null,
-        allied_pharmacies: item.allied_pharmacy_id
-          ? { name: pharmacyMap[item.allied_pharmacy_id] || '' }
-          : null
-      }));
-
-      setRecords(formattedRecords);
-    } catch (err: any) {
-      console.error('Error cargando registros del paciente:', err);
-      setErrorMsg(err.message || 'Error al conectar con el servidor.');
+      // Ordenar alfabéticamente
+      formattedPatients.sort((a, b) => a.full_name.localeCompare(b.full_name));
+      setPatients(formattedPatients);
+    } catch (err) {
+      console.error('Error cargando directorio:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRecords();
-  }, []);
+  const openPatientDetail = async (patient: PatientProfile) => {
+    setSelectedPatient(patient);
+    setViewMode('detail');
+    setLoadingDetail(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Consultar historial del paciente (solo los creados por este doctor por seguridad RLS actual)
+      const { data: records, error } = await supabase
+        .from('medical_records')
+        .select('id, diagnosis, treatment_plan, clinical_notes, created_at')
+        .eq('patient_id', patient.id)
+        .eq('doctor_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPatientRecords(records || []);
+    } catch (err) {
+      console.error('Error cargando historial del paciente:', err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString('es-BO', {
         day: '2-digit',
-        month: 'long',
+        month: 'short',
         year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
       });
     } catch (e) {
       return dateStr;
     }
   };
 
-  // Filtrar registros por diagnóstico o por nombre del médico
-  const filteredRecords = records.filter(record => {
-    const doctorName = record.doctors?.profiles?.full_name || 'Médico General';
-    const diagnosisText = record.diagnosis || '';
-    const treatmentText = record.treatment_plan || '';
-    const query = searchQuery.toLowerCase();
-
-    return (
-      doctorName.toLowerCase().includes(query) ||
-      diagnosisText.toLowerCase().includes(query) ||
-      treatmentText.toLowerCase().includes(query)
-    );
+  const filteredPatients = patients.filter(p => {
+    const q = searchQuery.toLowerCase();
+    return p.full_name.toLowerCase().includes(q) || p.identity_card.toLowerCase().includes(q);
   });
 
-  const renderRecordCard = ({ item }: { item: MedicalRecord }) => {
-    const doctorName = item.doctors?.profiles?.full_name || 'Médico General';
-    const pharmacyName = item.allied_pharmacies?.name || '';
-    const hasPharmacy = !!pharmacyName;
+  // =====================
+  // RENDER DIRECTORY
+  // =====================
+  const renderPatientCard = ({ item }: { item: PatientProfile }) => (
+    <TouchableOpacity 
+      style={styles.card} 
+      activeOpacity={0.7} 
+      onPress={() => openPatientDetail(item)}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{item.full_name.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={styles.cardHeaderInfo}>
+          <Text style={styles.patientName}>{item.full_name}</Text>
+          <Text style={styles.patientId}>CI: {item.identity_card}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color="#cbd5e1" />
+      </View>
+      <View style={styles.cardFooter}>
+        <View style={styles.footerItem}>
+          <Ionicons name="water" size={14} color="#ef4444" />
+          <Text style={styles.footerText}>{item.blood_type}</Text>
+        </View>
+        <View style={styles.footerItem}>
+          <Ionicons name="call" size={14} color="#64748b" />
+          <Text style={styles.footerText}>{item.phone_number}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
+  if (viewMode === 'directory') {
     return (
-      <View style={styles.recordCard}>
-        <View style={styles.cardHeader}>
-          <View style={styles.doctorInfo}>
-            <View style={styles.doctorAvatar}>
-              <Ionicons name="person" size={16} color="#2563eb" />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#0f172a" />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>Expedientes Clínicos</Text>
+            <Text style={styles.headerSubtitle}>Directorio de pacientes atendidos</Text>
+          </View>
+          <TouchableOpacity style={styles.refreshBtn} onPress={fetchDirectory} disabled={loading}>
+            <Ionicons name="refresh" size={22} color="#64748b" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="Buscar por Nombre o CI..."
+            placeholderTextColor="#94a3b8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color="#94a3b8" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#2563eb" />
+            <Text style={styles.loadingText}>Cargando directorio...</Text>
+          </View>
+        ) : filteredPatients.length === 0 ? (
+          <View style={styles.centerContainer}>
+            <View style={styles.emptyIconBg}>
+              <Ionicons name="people-outline" size={48} color="#94a3b8" />
             </View>
-            <View>
-              <Text style={styles.doctorLabel}>Atendido por</Text>
-              <Text style={styles.doctorName}>Dr. {doctorName}</Text>
-            </View>
-          </View>
-          <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.contentSection}>
-          <View style={styles.sectionTitleRow}>
-            <Ionicons name="pulse" size={16} color="#ef4444" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Diagnóstico Médico</Text>
-          </View>
-          <Text style={styles.sectionText}>{item.diagnosis}</Text>
-        </View>
-
-        <View style={styles.contentSection}>
-          <View style={styles.sectionTitleRow}>
-            <Ionicons name="receipt-outline" size={16} color="#059669" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Plan de Tratamiento y Receta</Text>
-          </View>
-          <Text style={styles.sectionText}>{item.treatment_plan}</Text>
-        </View>
-
-        {hasPharmacy && (
-          <View style={styles.pharmacyBadge}>
-            <Ionicons name="medical" size={14} color="#047857" />
-            <Text style={styles.pharmacyText}>
-              Receta derivada a: <Text style={styles.pharmacyName}>{pharmacyName}</Text>
+            <Text style={styles.emptyTitle}>
+              {searchQuery ? 'Sin resultados' : 'Directorio Vacío'}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              {searchQuery 
+                ? 'No hay pacientes que coincidan con la búsqueda.' 
+                : 'Aún no has registrado atenciones médicas.'}
             </Text>
           </View>
+        ) : (
+          <FlatList
+            data={filteredPatients}
+            keyExtractor={item => item.id}
+            renderItem={renderPatientCard}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
         )}
-      </View>
+      </SafeAreaView>
     );
-  };
+  }
 
+  // =====================
+  // RENDER DETAIL
+  // =====================
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => setViewMode('directory')}>
           <Ionicons name="arrow-back" size={24} color="#0f172a" />
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <Text style={styles.headerTitle}>Mi Historial Clínico</Text>
-          <Text style={styles.headerSubtitle}>Diagnósticos y recetas electrónicas</Text>
+          <Text style={styles.headerTitle}>Historia Clínica</Text>
+          <Text style={styles.headerSubtitle}>Perfil del paciente</Text>
         </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={fetchRecords} disabled={loading}>
-          <Ionicons name="refresh" size={22} color="#64748b" />
-        </TouchableOpacity>
       </View>
 
-      {/* Buscador */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#94a3b8" style={styles.searchIcon} />
-        <TextInput 
-          style={styles.searchInput}
-          placeholder="Buscar por diagnóstico, médico o medicamento..."
-          placeholderTextColor="#94a3b8"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery !== '' && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color="#94a3b8" />
-          </TouchableOpacity>
-        )}
-      </View>
+      <FlatList
+        data={patientRecords}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.detailContainer}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={() => (
+          <View>
+            {selectedPatient && (
+              <View style={styles.profileCard}>
+                <View style={styles.profileHeaderRow}>
+                  <View style={[styles.avatar, { width: 56, height: 56, borderRadius: 28 }]}>
+                    <Text style={[styles.avatarText, { fontSize: 24 }]}>{selectedPatient.full_name.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View style={styles.profileHeaderText}>
+                    <Text style={styles.profileName}>{selectedPatient.full_name}</Text>
+                    <Text style={styles.profileId}>CI: {selectedPatient.identity_card}</Text>
+                  </View>
+                </View>
 
-      {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Cargando tu historial médico...</Text>
-        </View>
-      ) : errorMsg ? (
-        <View style={styles.centerContainer}>
-          <Ionicons name="alert-circle-outline" size={60} color="#ef4444" />
-          <Text style={styles.errorText}>{errorMsg}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchRecords}>
-            <Text style={styles.retryText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      ) : filteredRecords.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <View style={styles.emptyIconBg}>
-            <Ionicons name="folder-open-outline" size={48} color="#94a3b8" />
+                <View style={styles.profileGrid}>
+                  <View style={styles.profileDataBox}>
+                    <Text style={styles.dataLabel}>Género</Text>
+                    <Text style={styles.dataValue}>{selectedPatient.gender}</Text>
+                  </View>
+                  <View style={styles.profileDataBox}>
+                    <Text style={styles.dataLabel}>Sangre</Text>
+                    <Text style={[styles.dataValue, { color: '#ef4444' }]}>{selectedPatient.blood_type}</Text>
+                  </View>
+                  <View style={styles.profileDataBox}>
+                    <Text style={styles.dataLabel}>Teléfono</Text>
+                    <Text style={styles.dataValue}>{selectedPatient.phone_number}</Text>
+                  </View>
+                  <View style={styles.profileDataBox}>
+                    <Text style={styles.dataLabel}>C. Emergencia</Text>
+                    <Text style={styles.dataValue}>{selectedPatient.emergency_contact}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.allergiesBox}>
+                  <View style={styles.allergiesHeader}>
+                    <Ionicons name="warning" size={16} color="#f59e0b" />
+                    <Text style={styles.allergiesTitle}>Alergias Conocidas</Text>
+                  </View>
+                  <Text style={styles.allergiesText}>{selectedPatient.allergies}</Text>
+                </View>
+              </View>
+            )}
+
+            <Text style={styles.timelineTitle}>Línea de Tiempo de Atenciones</Text>
+
+            {loadingDetail && (
+              <View style={[styles.centerContainer, { padding: 40 }]}>
+                <ActivityIndicator size="small" color="#2563eb" />
+              </View>
+            )}
+
+            {!loadingDetail && patientRecords.length === 0 && (
+              <Text style={styles.noRecordsText}>No hay registros médicos disponibles.</Text>
+            )}
           </View>
-          <Text style={styles.emptyTitle}>
-            {searchQuery ? 'No se encontraron resultados' : 'Historial Clínico Vacío'}
-          </Text>
-          <Text style={styles.emptySubtitle}>
-            {searchQuery 
-              ? 'Prueba modificando los términos de tu búsqueda.' 
-              : 'Aún no tienes registros médicos guardados en el sistema.'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredRecords}
-          keyExtractor={item => item.id}
-          renderItem={renderRecordCard}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+        )}
+        renderItem={({ item }) => (
+          <View style={styles.timelineItem}>
+            <View style={styles.timelineDot} />
+            <View style={styles.timelineLine} />
+            <View style={styles.timelineContent}>
+              <Text style={styles.recordDate}>{formatDate(item.created_at)}</Text>
+              
+              <Text style={styles.recordSectionTitle}>Diagnóstico</Text>
+              <Text style={styles.recordText}>{item.diagnosis}</Text>
+              
+              <Text style={styles.recordSectionTitle}>Plan de Tratamiento</Text>
+              <Text style={styles.recordText}>{item.treatment_plan}</Text>
+
+              {item.clinical_notes && (
+                <>
+                  <Text style={styles.recordSectionTitle}>Notas Clínicas</Text>
+                  <Text style={styles.recordText}>{item.clinical_notes}</Text>
+                </>
+              )}
+            </View>
+          </View>
+        )}
+      />
     </SafeAreaView>
   );
 }
@@ -269,6 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
+    zIndex: 10,
   },
   backBtn: {
     padding: 8,
@@ -322,24 +409,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  errorText: {
-    color: '#ef4444',
-    textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  retryBtn: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
   emptyIconBg: {
     width: 90,
     height: 90,
@@ -366,100 +435,218 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  recordCard: {
+  card: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 4,
     elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  doctorInfo: {
-    flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    marginBottom: 12,
   },
-  doctorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#eff6ff',
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2563eb',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
-  doctorLabel: {
-    fontSize: 10,
+  avatarText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  cardHeaderInfo: {
+    flex: 1,
+  },
+  patientName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 2,
+  },
+  patientId: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
+    gap: 16,
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  
+  // DETAIL STYLES
+  detailContainer: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  profileCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  profileHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  profileHeaderText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  profileId: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  profileGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  profileDataBox: {
+    width: '47%',
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  dataLabel: {
+    fontSize: 11,
     color: '#64748b',
     textTransform: 'uppercase',
     fontWeight: '700',
+    marginBottom: 4,
   },
-  doctorName: {
+  dataValue: {
     fontSize: 14,
+    color: '#0f172a',
     fontWeight: '700',
-    color: '#1e293b',
   },
-  dateText: {
-    fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '600',
-    textAlign: 'right',
+  allergiesBox: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 10,
+    padding: 12,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#f1f5f9',
-    marginVertical: 14,
-  },
-  contentSection: {
-    marginBottom: 14,
-  },
-  sectionTitleRow: {
+  allergiesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
+    gap: 6,
   },
-  sectionIcon: {
-    marginRight: 6,
-  },
-  sectionTitle: {
-    fontSize: 11,
+  allergiesTitle: {
+    fontSize: 13,
+    color: '#d97706',
     fontWeight: '800',
-    color: '#475569',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  sectionText: {
+  allergiesText: {
+    fontSize: 14,
+    color: '#92400e',
+    fontWeight: '500',
+  },
+  timelineTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  noRecordsText: {
+    color: '#64748b',
+    textAlign: 'center',
+    padding: 20,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    paddingHorizontal: 8,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#2563eb',
+    marginTop: 6,
+    zIndex: 2,
+  },
+  timelineLine: {
+    position: 'absolute',
+    left: 13.5,
+    top: 18,
+    bottom: -30,
+    width: 2,
+    backgroundColor: '#e2e8f0',
+    zIndex: 1,
+  },
+  timelineContent: {
+    flex: 1,
+    marginLeft: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  recordDate: {
+    fontSize: 12,
+    color: '#2563eb',
+    fontWeight: '800',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
+  recordSectionTitle: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  recordText: {
     fontSize: 14,
     color: '#334155',
     lineHeight: 20,
-    paddingLeft: 22,
-  },
-  pharmacyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ecfdf5',
-    borderColor: '#a7f3d0',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 6,
-  },
-  pharmacyText: {
-    marginLeft: 6,
-    fontSize: 12,
-    color: '#065f46',
-  },
-  pharmacyName: {
-    fontWeight: '700',
+    marginBottom: 12,
   }
 });

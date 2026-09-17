@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, ActivityIndicator, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Camera } from 'expo-camera';
-import { Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -81,7 +80,7 @@ export default function VideoCallScreen() {
       if (Platform.OS !== 'web') {
         try {
           const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-          const { status: audioStatus } = await Audio.requestPermissionsAsync();
+          const { status: audioStatus } = await Camera.requestMicrophonePermissionsAsync();
           if (cameraStatus !== 'granted' || audioStatus !== 'granted') {
             console.warn('Los permisos de cámara/micrófono son necesarios.');
           }
@@ -577,13 +576,13 @@ export default function VideoCallScreen() {
       {/* Contenido de Video Principal */}
       <View style={styles.videoGrid}>
         {isCallEnded ? (
-          <View style={[styles.centerContainer, { backgroundColor: '#0f172a' }]}>
+          <View style={[styles.centerContainer, { backgroundColor: '#ffffff' }]}>
             <Ionicons name="shield-checkmark" size={80} color="#10b981" />
-            <Text style={[styles.connectingText, { color: '#ffffff', marginTop: 20 }]}>Consulta Finalizada</Text>
+            <Text style={[styles.connectingText, { color: '#0f172a', marginTop: 20 }]}>Consulta Finalizada</Text>
             {isDoctor ? (
-              <Text style={[styles.subConnectingText, { color: '#94a3b8' }]}>El registro clínico fue guardado con éxito.</Text>
+              <Text style={[styles.subConnectingText, { color: '#475569' }]}>El registro clínico fue guardado con éxito.</Text>
             ) : (
-              <Text style={[styles.subConnectingText, { color: '#94a3b8' }]}>Por favor revisa tu receta digital.</Text>
+              <Text style={[styles.subConnectingText, { color: '#475569' }]}>Por favor revisa tu receta digital.</Text>
             )}
           </View>
         ) : connecting ? (
@@ -1094,6 +1093,7 @@ const styles = StyleSheet.create({
   },
   notesPanel: {
     maxWidth: 400,
+    backgroundColor: '#ffffff',
   },
   panelHeader: {
     flexDirection: 'row',
@@ -1101,11 +1101,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: '#e2e8f0',
     paddingTop: Platform.OS === 'android' ? 40 : 16,
   },
   panelTitle: {
-    color: '#ffffff',
+    color: '#0f172a',
     fontSize: 16,
     fontWeight: '800',
   },
@@ -1169,22 +1169,22 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   triageBriefCard: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#f8fafc',
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#e2e8f0',
     marginBottom: 20,
   },
   triageBriefTitle: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 11,
     fontWeight: '800',
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   triageBriefLabel: {
-    color: '#64748b',
+    color: '#94a3b8',
     fontSize: 11,
     fontWeight: '700',
     marginTop: 8,
@@ -1194,9 +1194,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     marginTop: 2,
+    color: '#0f172a',
   },
   triageBriefText: {
-    color: '#e2e8f0',
+    color: '#334155',
     fontSize: 13,
     lineHeight: 18,
     marginTop: 2,
@@ -1205,19 +1206,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    color: '#94a3b8',
+    color: '#64748b',
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 6,
   },
   panelTextArea: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#e2e8f0',
     borderRadius: 10,
     padding: 12,
     minHeight: 85,
-    color: '#ffffff',
+    color: '#0f172a',
     fontSize: 14,
   },
   saveBtn: {
@@ -1241,16 +1242,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   patientRecordBox: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#e2e8f0',
     borderRadius: 10,
     padding: 12,
     minHeight: 80,
     marginTop: 4,
   },
   patientRecordText: {
-    color: '#ffffff',
+    color: '#0f172a',
     fontSize: 14,
     lineHeight: 20,
   }

@@ -6,7 +6,9 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, RecordingPresets } from 'expo-audio';
+import { Camera } from 'expo-camera';
+import * as FileSystem from 'expo-file-system';
 
 // Tipos para los mensajes
 type Message = {
@@ -53,7 +55,7 @@ export default function SymptomChatbot() {
   const [alertMessage, setAlertMessage] = useState('');
 
   // Estados para grabación de voz
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
 
@@ -82,16 +84,10 @@ export default function SymptomChatbot() {
   // Funciones de grabación
   async function startRecording() {
     try {
-      const permission = await Audio.requestPermissionsAsync();
+      const permission = await Camera.requestMicrophonePermissionsAsync();
       if (permission.status === 'granted') {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-        const { recording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-        setRecording(recording);
+        await recorder.prepareToRecordAsync();
+        recorder.record();
         setIsRecording(true);
       } else {
         setAlertMessage('Permiso de micrófono denegado');
@@ -103,26 +99,32 @@ export default function SymptomChatbot() {
   }
 
   async function stopRecording() {
-    setRecording(null);
     setIsRecording(false);
-    if (!recording) return;
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      await recorder.stop();
+      const uri = recorder.uri;
       if (uri) {
-        // En web y móvil podemos hacer un fetch para obtener el blob y luego pasarlo a base64
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-          const base64data = reader.result as string;
-          // Remover "data:audio/m4a;base64," del inicio
-          const base64 = base64data.split(',')[1];
+        if (Platform.OS === 'web') {
+          // En web podemos hacer un fetch para obtener el blob (URL temporal)
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            const base64 = base64data.split(',')[1];
+            setAudioBase64(base64);
+            setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
+          };
+        } else {
+          // En móviles, fetch a un archivo local (file://) suele causar timeout, así que usamos FileSystem
+          const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
           setAudioBase64(base64);
           setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
-        };
+        }
       }
     } catch (err) {
       console.error('Failed to stop recording', err);
@@ -181,7 +183,9 @@ export default function SymptomChatbot() {
         const aiResponse = await fetch(`${apiUrl}/api/analyze-symptoms`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Bypass-Tunnel-Reminder': 'true',
+            'ngrok-skip-browser-warning': 'true'
           },
           body: JSON.stringify({
             patient_id: currentUserId || 'guest',
@@ -191,7 +195,9 @@ export default function SymptomChatbot() {
         });
 
         if (!aiResponse.ok) {
-          throw new Error('No se pudo conectar con el motor de Inteligencia Artificial.');
+          const errorText = await aiResponse.text();
+          console.error('API Error:', aiResponse.status, errorText);
+          throw new Error(`Error del servidor (${aiResponse.status}). Verifica la conexión o localtunnel.`);
         }
 
         const aiData = await aiResponse.json();

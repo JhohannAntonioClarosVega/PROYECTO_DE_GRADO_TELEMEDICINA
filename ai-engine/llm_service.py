@@ -117,6 +117,6 @@ def analyze_symptoms_with_gemini(raw_symptoms: str, audio_base64: str = None) ->
     except Exception as e:
         error_msg = f"Error procesando con Gemini (API REST): {e}\nRaw response: {text_response if 'text_response' in locals() else 'None'}"
         print(error_msg)
-        with open("d:/proyecto_grado/ai-engine/error_log.txt", "w", encoding="utf-8") as f:
+        with open("error_log.txt", "w", encoding="utf-8") as f:
             f.write(error_msg)
         return fallback

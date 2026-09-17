@@ -1,4 +1,3 @@
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions } from 'react-native';
@@ -9,9 +8,8 @@ export default function PatientLayout() {
   const isDesktop = width >= 960;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer
-        drawerContent={(props) => <CustomDrawer {...props} />}
+    <Drawer
+      drawerContent={(props) => <CustomDrawer {...props} />}
         screenOptions={{
           drawerType: isDesktop ? 'permanent' : 'front',
           drawerStyle: {
@@ -80,6 +78,5 @@ export default function PatientLayout() {
           }}
         />
       </Drawer>
-    </GestureHandlerRootView>
   );
 }
