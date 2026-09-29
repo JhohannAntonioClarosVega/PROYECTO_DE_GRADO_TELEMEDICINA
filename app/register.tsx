@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity,
+  KeyboardAvoidingView, 
+  Platform, 
+  ActivityIndicator, 
+  ScrollView 
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
@@ -79,37 +89,29 @@ export default function RegisterScreen() {
     try {
       const cleanEmail = email.trim().toLowerCase();
 
-      // 0a. Verificar disponibilidad de correo en profiles (Fig 2.6)
+      // 0a. Verificar disponibilidad de correo en profiles
       const { data: existingByEmail, error: checkEmailError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', cleanEmail)
         .maybeSingle();
 
-      if (checkEmailError) {
-        console.warn('Advertencia en verificación previa de email:', checkEmailError);
-      }
-
       if (existingByEmail) {
-        throw new Error('El correo electrónico ya está registrado. Por favor inicia sesión o usa otro correo.');
+        throw new Error('El correo electrónico ya está registrado. Por favor inicia sesión.');
       }
 
-      // 0b. Verificar CI ANTES de crear el usuario en Auth (previene cuentas huérfanas)
+      // 0b. Verificar CI
       const { data: existingByCI, error: checkCIError } = await supabase
         .from('profiles')
         .select('id')
         .eq('identity_card', identityCard.trim())
         .maybeSingle();
 
-      if (checkCIError) {
-        console.warn('Advertencia en verificación previa de CI:', checkCIError);
-      }
-
       if (existingByCI) {
-        throw new Error('El Carnet de Identidad (CI) ya está registrado en el sistema. Por favor verifica tus datos o inicia sesión.');
+        throw new Error('El Carnet de Identidad (CI) ya está registrado en el sistema.');
       }
 
-      // 1. Crear el usuario en Auth (solo si email y CI son únicos)
+      // 1. Crear el usuario en Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -133,26 +135,17 @@ export default function RegisterScreen() {
       });
 
       if (profileError) {
-        // Si falla la inserción del perfil, cerrar sesión para evitar cuenta huérfana en Auth.
-        // El usuario debe intentar nuevamente con los datos corregidos.
         await supabase.auth.signOut();
-        console.error('Error en profiles (cuenta huérfana revertida):', profileError);
-        if (profileError.code === '23505' || profileError.message.includes('profiles_identity_card_key')) {
-          throw new Error('El Carnet de Identidad (CI) ya está registrado. La operación fue cancelada. Intenta con otro CI.');
-        }
-        throw new Error('Error al guardar el perfil. La operación fue cancelada. Intenta nuevamente.');
+        throw new Error('Error al guardar el perfil. La operación fue cancelada.');
       }
 
       // 3. Insertar datos específicos según el rol
       if (isDoctor) {
-        // Subir documento
         let documentUrl = '';
         if (document) {
           const fileExt = document.name.split('.').pop();
           const fileName = `${userId}-${Date.now()}.${fileExt}`;
           
-          // Nota: Si es web, document.file existe. Si es React Native, usamos uri.
-          // Para que funcione en web y móvil usando fetch y blobs:
           const response = await fetch(document.uri);
           const blob = await response.blob();
           
@@ -189,7 +182,6 @@ export default function RegisterScreen() {
         });
 
         if (patientError) {
-          console.error("Error en patients:", patientError);
           throw new Error('Error al guardar datos de paciente: ' + patientError.message);
         }
 
@@ -205,199 +197,191 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
       <KeyboardAvoidingView 
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={28} color="#64748b" />
-        </TouchableOpacity>
+        <View className="absolute top-12 left-6 w-10 h-10 rounded-full bg-white border border-slate-100 z-20" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
+          <TouchableOpacity 
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} 
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={24} color="#000000" />
+          </TouchableOpacity>
+        </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <View style={[styles.iconCircle, { backgroundColor: isDoctor ? '#eff6ff' : '#ecfdf5' }]}>
-              <Ionicons name={isDoctor ? "medkit" : "person-add"} size={40} color={isDoctor ? "#2563eb" : "#059669"} />
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, maxWidth: 480, width: '100%', alignSelf: 'center', marginTop: Platform.OS === 'ios' ? 80 : 100 }} showsVerticalScrollIndicator={false}>
+          
+          <View className="mb-6 items-center">
+            <View className={`w-16 h-16 rounded-[18px] items-center justify-center mb-4 border border-slate-100 bg-white`} style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
+              <Ionicons name={isDoctor ? "medkit" : "person-add"} size={30} color={isDoctor ? "#007AFF" : "#000000"} />
             </View>
-            <Text style={styles.title}>{isDoctor ? 'Registro Médico' : 'Registro de Paciente'}</Text>
-            <Text style={styles.subtitle}>Crea tu cuenta llenando los siguientes datos</Text>
+            <Text className="text-[26px] font-bold text-slate-900 mb-1">{isDoctor ? 'Registro Médico' : 'Crear Cuenta'}</Text>
+            <Text className="text-[14px] text-slate-500 text-center">Completa tus datos para empezar</Text>
           </View>
 
-          <View style={styles.form}>
+            <View className="w-full">
             {successMsg ? (
-              <View style={styles.successContainer}>
-                <Ionicons name="checkmark-circle" size={80} color="#059669" />
-                <Text style={styles.successTitle}>¡Registro Exitoso!</Text>
-                <Text style={styles.successText}>{successMsg}</Text>
-                <TouchableOpacity 
-                  style={[styles.registerBtn, { backgroundColor: isDoctor ? '#2563eb' : '#059669', width: '100%', marginTop: 30 }]}
-                  onPress={() => router.replace(`/login?role=${isDoctor ? 'doctor' : 'patient'}`)}
+              <View className="items-center justify-center p-8 bg-white rounded-[32px] mt-4 border border-slate-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
+                <View className="w-16 h-16 rounded-full bg-emerald-50 items-center justify-center mb-4">
+                  <Ionicons name="checkmark" size={32} color="#10b981" />
+                </View>
+                <Text className="text-[22px] font-bold text-slate-900 mb-2">¡Todo listo!</Text>
+                <Text className="text-[14px] text-slate-500 text-center mb-6 leading-5">{successMsg}</Text>
+                <View 
+                  className="w-full rounded-[16px]"
+                  style={{ backgroundColor: isDoctor ? '#007AFF' : '#000000', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}
                 >
-                  <Text style={styles.registerBtnText}>Ir a Iniciar Sesión</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={{ paddingVertical: 16, alignItems: 'center' }}
+                    onPress={() => router.replace(`/login?role=${isDoctor ? 'doctor' : 'patient'}`)}
+                  >
+                    <Text className="text-white text-[16px] font-semibold">Ir a Iniciar Sesión</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
-              <>
+              <View className="bg-white rounded-[32px] p-6 sm:p-8 border border-slate-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
                 {errorMsg ? (
-                  <View style={styles.errorBox}>
+                  <View className="flex-row items-center bg-red-50 p-4 rounded-[16px] mb-6 border border-red-100">
                     <Ionicons name="warning" size={18} color="#ef4444" />
-                    <Text style={styles.errorText}>{errorMsg}</Text>
+                    <Text className="text-red-600 ml-2 text-[13px] font-medium flex-1">{errorMsg}</Text>
                   </View>
                 ) : null}
 
-            <Text style={styles.sectionTitle}>Datos de Cuenta</Text>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Correo Electrónico</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.input}
-                  placeholder="ejemplo@correo.com"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Contraseña</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor="#94a3b8"
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
-            </View>
-
-            <Text style={styles.sectionTitle}>Datos Personales</Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nombres y Apellidos</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.input}
-                  placeholder="Ej: Juan Pérez"
-                  placeholderTextColor="#94a3b8"
-                  value={fullName}
-                  onChangeText={setFullName}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Carnet de Identidad (CI)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="card-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.input}
-                  placeholder="Ej: 1234567"
-                  placeholderTextColor="#94a3b8"
-                  value={identityCard}
-                  onChangeText={setIdentityCard}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Número de Teléfono</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="call-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.input}
-                  placeholder="Ej: 71234567"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Dirección</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="location-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                <TextInput 
-                  style={styles.input}
-                  placeholder="Ej: Av. Blanco Galindo Km 2"
-                  placeholderTextColor="#94a3b8"
-                  value={address}
-                  onChangeText={setAddress}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Género</Text>
-              <View style={[styles.inputContainer, { paddingHorizontal: 0, overflow: 'hidden' }]}>
-                <Picker
-                  selectedValue={gender}
-                  style={styles.picker}
-                  onValueChange={(itemValue) => setGender(itemValue)}
-                >
-                  <Picker.Item label="Masculino" value="Masculino" />
-                  <Picker.Item label="Femenino" value="Femenino" />
-                </Picker>
-              </View>
-            </View>
-
-            {isDoctor && (
-              <>
-                <Text style={styles.sectionTitle}>Datos Profesionales</Text>
+                <Text className="text-[14px] font-semibold text-slate-400 uppercase tracking-wider mb-4 ml-1">Cuenta</Text>
                 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Especialidad</Text>
-                  <View style={[styles.inputContainer, { paddingHorizontal: 0, overflow: 'hidden' }]}>
+                <View className="space-y-4 mb-8">
+                  <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                    <TextInput 
+                      className="text-[16px] text-slate-900 h-full"
+                      placeholder="Correo Electrónico"
+                      placeholderTextColor="#94a3b8"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
+                    />
+                  </View>
+                  <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                    <TextInput 
+                      className="text-[16px] text-slate-900 h-full"
+                      placeholder="Contraseña"
+                      placeholderTextColor="#94a3b8"
+                      secureTextEntry
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+                  </View>
+                </View>
+
+                <Text className="text-[14px] font-semibold text-slate-400 uppercase tracking-wider mb-4 ml-1">Información Personal</Text>
+                
+                <View className="space-y-4 mb-8">
+                  <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                    <TextInput 
+                      className="text-[16px] text-slate-900 h-full"
+                      placeholder="Nombre Completo"
+                      placeholderTextColor="#94a3b8"
+                      value={fullName}
+                      onChangeText={setFullName}
+                    />
+                  </View>
+                  <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                    <TextInput 
+                      className="text-[16px] text-slate-900 h-full"
+                      placeholder="Carnet de Identidad"
+                      placeholderTextColor="#94a3b8"
+                      value={identityCard}
+                      onChangeText={setIdentityCard}
+                    />
+                  </View>
+                  <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                    <TextInput 
+                      className="text-[16px] text-slate-900 h-full"
+                      placeholder="Teléfono"
+                      placeholderTextColor="#94a3b8"
+                      keyboardType="phone-pad"
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                    />
+                  </View>
+                  <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                    <TextInput 
+                      className="text-[16px] text-slate-900 h-full"
+                      placeholder="Dirección"
+                      placeholderTextColor="#94a3b8"
+                      value={address}
+                      onChangeText={setAddress}
+                    />
+                  </View>
+                  <View className="border border-slate-200 rounded-[16px] h-[56px] justify-center overflow-hidden mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
                     <Picker
-                      selectedValue={selectedSpecialty}
-                      style={styles.picker}
-                      onValueChange={(itemValue) => setSelectedSpecialty(itemValue)}
+                      selectedValue={gender}
+                      style={{ height: '100%', width: '100%', color: '#0f172a' }}
+                      onValueChange={(itemValue) => setGender(itemValue)}
                     >
-                      <Picker.Item label="Seleccione una especialidad..." value="" />
-                      {specialties.map(spec => (
-                        <Picker.Item key={spec.id} label={spec.name} value={spec.id} />
-                      ))}
+                      <Picker.Item label="Género: Masculino" value="Masculino" />
+                      <Picker.Item label="Género: Femenino" value="Femenino" />
                     </Picker>
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Título Profesional (PDF o Imagen)</Text>
-                  <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
-                    <Ionicons name="cloud-upload-outline" size={24} color="#64748b" />
-                    <Text style={styles.uploadBtnText}>
-                      {document ? document.name : 'Subir Documento'}
-                    </Text>
+                {isDoctor && (
+                  <>
+                    <Text className="text-[14px] font-semibold text-slate-400 uppercase tracking-wider mb-4 ml-1">Perfil Profesional</Text>
+                    
+                    <View className="space-y-4 mb-8">
+                      <View className="border border-slate-200 rounded-[16px] h-[56px] justify-center overflow-hidden" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                        <Picker
+                          selectedValue={selectedSpecialty}
+                          style={{ height: '100%', width: '100%', color: '#0f172a' }}
+                          onValueChange={(itemValue) => setSelectedSpecialty(itemValue)}
+                        >
+                          <Picker.Item label="Selecciona Especialidad..." value="" />
+                          {specialties.map(spec => (
+                            <Picker.Item key={spec.id} label={spec.name} value={spec.id} />
+                          ))}
+                        </Picker>
+                      </View>
+
+                      <View className="border border-slate-200 rounded-[16px] mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                        <TouchableOpacity 
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16 }} 
+                          onPress={pickDocument}
+                        >
+                          <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: 'rgba(226, 232, 240, 0.5)' }}>
+                            <Ionicons name="document-text" size={20} color="#64748b" />
+                          </View>
+                          <Text className="text-[15px] text-slate-600 flex-1" numberOfLines={1}>
+                            {document ? document.name : 'Adjuntar Título (PDF)'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                <View 
+                  className={`mt-2 rounded-[16px]`}
+                  style={[{ backgroundColor: isDoctor ? '#007AFF' : '#000000', height: 56, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }, loading ? { opacity: 0.7 } : {}]}
+                >
+                  <TouchableOpacity 
+                    style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+                    onPress={handleRegister}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text className="text-white text-[16px] font-semibold tracking-wide">Crear Cuenta</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
-              </>
-            )}
-
-
-
-            <TouchableOpacity 
-              style={[styles.registerBtn, { backgroundColor: isDoctor ? '#2563eb' : '#059669' }]}
-              onPress={handleRegister}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.registerBtnText}>Completar Registro</Text>
-              )}
-            </TouchableOpacity>
-              </>
+              </View>
             )}
           </View>
         </ScrollView>
@@ -405,162 +389,3 @@ export default function RegisterScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  backBtn: {
-    padding: 16,
-    paddingTop: Platform.OS === 'android' ? 40 : 16,
-  },
-  scrollContent: {
-    padding: 24,
-    maxWidth: 600,
-    width: '100%',
-    alignSelf: 'center',
-    paddingBottom: 60,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#64748b',
-    textAlign: 'center'
-  },
-  form: {
-    width: '100%',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginTop: 16,
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    paddingBottom: 8,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  errorText: {
-    color: '#ef4444',
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: Platform.OS === 'ios' ? 16 : 12,
-    fontSize: 16,
-    color: '#0f172a',
-  },
-  picker: {
-    width: '100%',
-    height: Platform.OS === 'ios' ? 50 : 50,
-  },
-  uploadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#94a3b8',
-    borderRadius: 12,
-    padding: 16,
-  },
-  uploadBtnText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#475569',
-    fontWeight: '500',
-  },
-  registerBtn: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  registerBtnText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  successContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#f8fafc',
-    borderRadius: 16,
-    marginTop: 20,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  successText: {
-    fontSize: 16,
-    color: '#475569',
-    textAlign: 'center',
-    marginBottom: 10,
-  }
-});

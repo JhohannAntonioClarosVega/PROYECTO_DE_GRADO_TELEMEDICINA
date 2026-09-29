@@ -572,28 +572,30 @@ export default function VideoCallScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-slate-950">
       {/* Contenido de Video Principal */}
-      <View style={styles.videoGrid}>
+      <View className="flex-1 justify-center items-center">
         {isCallEnded ? (
-          <View style={[styles.centerContainer, { backgroundColor: '#ffffff' }]}>
-            <Ionicons name="shield-checkmark" size={80} color="#10b981" />
-            <Text style={[styles.connectingText, { color: '#0f172a', marginTop: 20 }]}>Consulta Finalizada</Text>
+          <View className="items-center justify-center p-8 bg-slate-900 rounded-[32px] w-[90%] max-w-[400px] border border-slate-800" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 10 }}>
+            <View className="w-20 h-20 bg-emerald-500/20 rounded-full justify-center items-center mb-6">
+              <Ionicons name="shield-checkmark" size={40} color="#10b981" />
+            </View>
+            <Text className="text-white text-[22px] font-extrabold text-center tracking-wide">Consulta Finalizada</Text>
             {isDoctor ? (
-              <Text style={[styles.subConnectingText, { color: '#475569' }]}>El registro clínico fue guardado con éxito.</Text>
+              <Text className="text-slate-400 text-[15px] mt-3 text-center leading-6">El registro clínico fue guardado de forma segura en el sistema.</Text>
             ) : (
-              <Text style={[styles.subConnectingText, { color: '#475569' }]}>Por favor revisa tu receta digital.</Text>
+              <Text className="text-slate-400 text-[15px] mt-3 text-center leading-6">Por favor revisa tu receta digital en tu historial.</Text>
             )}
           </View>
         ) : connecting ? (
-          <View style={styles.centerContainer}>
+          <View className="items-center justify-center p-8">
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={styles.connectingText}>Estableciendo canal seguro...</Text>
-            <Text style={styles.subConnectingText}>Telemedicina IA - Cochabamba</Text>
+            <Text className="text-white text-[18px] font-bold mt-5 tracking-wide">Estableciendo canal seguro...</Text>
+            <Text className="text-slate-500 text-[14px] mt-2 font-medium">Telemedicina IA - Encriptación E2E</Text>
           </View>
         ) : (
-          <View style={styles.remoteVideoContainer}>
-            {/* Videollamada Real con MiroTalk SFU */}
+          <View className="w-full h-full relative bg-slate-900">
+            {/* Videollamada Real con Whereby/Jitsi */}
             {Platform.OS === 'web' ? (
               <iframe 
                 src={videoUrl}
@@ -603,7 +605,7 @@ export default function VideoCallScreen() {
             ) : (
               <WebView
                 source={{ uri: videoUrl }}
-                style={{ flex: 1 }}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
                 allowsInlineMediaPlayback={true}
                 mediaPlaybackRequiresUserAction={false}
                 javaScriptEnabled={true}
@@ -613,12 +615,10 @@ export default function VideoCallScreen() {
         )}
       </View>
 
-      {/* Barra de Herramientas Flotante Inferior (Solo funciones extra y salir) */}
-      <View style={styles.controlBar}>
-
-
+      {/* Barra de Herramientas Flotante Lateral (Glassmorphism) */}
+      <View className="absolute right-4 top-1/4 flex-col rounded-full px-3 py-5 gap-4 items-center z-20" style={{ backgroundColor: 'rgba(15, 23, 42, 0.7)', borderColor: 'rgba(51, 65, 85, 0.5)', borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 10 }}>
         <TouchableOpacity 
-          style={[styles.controlBtn, showChat && styles.controlBtnActivePanel]}
+          className={`w-[46px] h-[46px] rounded-full justify-center items-center relative ${showChat ? 'bg-blue-600' : 'bg-slate-800'}`}
           onPress={() => {
             setShowChat(!showChat);
             setShowNotes(false);
@@ -626,24 +626,24 @@ export default function VideoCallScreen() {
           }}
           activeOpacity={0.7}
         >
-          <Ionicons name="chatbubbles" size={22} color="#ffffff" />
-          {messages.length > 0 && <View style={styles.badgeDot} />}
+          <Ionicons name="chatbubbles" size={20} color="#ffffff" />
+          {messages.length > 0 && <View className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-slate-800" />}
         </TouchableOpacity>
 
         {isDoctor ? (
           <TouchableOpacity 
-            style={[styles.controlBtn, showNotes && styles.controlBtnActivePanel]}
+            className={`w-[46px] h-[46px] rounded-full justify-center items-center ${showNotes ? 'bg-blue-600' : 'bg-slate-800'}`}
             onPress={() => {
               setShowNotes(!showNotes);
               setShowChat(false);
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name="document-text" size={22} color="#ffffff" />
+            <Ionicons name="document-text" size={20} color="#ffffff" />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity 
-            style={[styles.controlBtn, showPatientRecord && styles.controlBtnActivePanel]}
+            className={`w-[46px] h-[46px] rounded-full justify-center items-center relative ${showPatientRecord ? 'bg-blue-600' : 'bg-slate-800'}`}
             onPress={() => {
               if (showPatientRecord) {
                 setShowPatientRecord(false);
@@ -653,22 +653,22 @@ export default function VideoCallScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Ionicons name="document-text" size={22} color="#ffffff" />
-            {medicalRecord && <View style={[styles.badgeDot, { backgroundColor: '#10b981' }]} />}
+            <Ionicons name="document-text" size={20} color="#ffffff" />
+            {medicalRecord && <View className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-800" />}
           </TouchableOpacity>
         )}
 
         <TouchableOpacity 
-          style={[styles.controlBtn, styles.jitsiBtn]}
+          className="bg-emerald-500/20 px-3 py-3 w-[46px] h-[46px] rounded-full justify-center items-center border border-emerald-500/30"
           onPress={launchExternalMeet}
           activeOpacity={0.7}
         >
           <Ionicons name="videocam-outline" size={20} color="#10b981" />
-          <Text style={styles.jitsiBtnText}>Llamada</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.controlBtn, styles.endCallBtn]}
+          className="w-[46px] h-[46px] rounded-full bg-red-500 justify-center items-center rotate-[135deg]"
+          style={{ shadowColor: '#ef4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 }}
           onPress={handleEndCall}
           activeOpacity={0.7}
         >
@@ -678,40 +678,37 @@ export default function VideoCallScreen() {
 
       {/* Panel Deslizable Lateral: Chat */}
       {showChat && (
-        <View style={styles.sidePanel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Chat de Consulta</Text>
-            <TouchableOpacity onPress={() => setShowChat(false)}>
-              <Ionicons name="close" size={24} color="#94a3b8" />
+        <View className="absolute top-0 bottom-0 right-0 w-full max-w-[360px] border-l border-slate-800 z-30 pt-10 sm:pt-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.95)' }}>
+          <View className="flex-row justify-between items-center px-5 py-4 border-b border-slate-800">
+            <Text className="text-white text-[16px] font-extrabold tracking-wide">Chat Seguro</Text>
+            <TouchableOpacity onPress={() => setShowChat(false)} className="bg-slate-800 w-8 h-8 rounded-full items-center justify-center">
+              <Ionicons name="close" size={18} color="#94a3b8" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.messageList} contentContainerStyle={{ padding: 12 }}>
+          <ScrollView className="flex-1 px-4 py-4" contentContainerStyle={{ gap: 12 }}>
             {messages.map(msg => (
               <View 
                 key={msg.id} 
-                style={[
-                  styles.msgBubble, 
-                  msg.sender === 'self' ? styles.msgSelf : styles.msgRemote
-                ]}
+                className={`p-3 rounded-[16px] max-w-[85%] ${msg.sender === 'self' ? 'bg-blue-600 self-end rounded-br-sm' : 'bg-slate-800 self-start rounded-bl-sm'}`}
               >
-                <Text style={styles.msgText}>{msg.text}</Text>
-                <Text style={styles.msgTime}>{msg.time}</Text>
+                <Text className="text-white text-[14px] leading-5">{msg.text}</Text>
+                <Text className="text-white/50 text-[10px] mt-1 self-end font-medium">{msg.time}</Text>
               </View>
             ))}
           </ScrollView>
 
-          <View style={styles.chatInputContainer}>
+          <View className="flex-row px-4 py-4 bg-slate-900 border-t border-slate-800 items-center gap-3">
             <TextInput
-              style={styles.chatInput}
-              placeholder="Escribe un mensaje..."
+              className="flex-1 bg-slate-800 rounded-full px-5 py-3.5 text-white text-[14px]"
+              placeholder="Escribe aquí..."
               placeholderTextColor="#64748b"
               value={chatInput}
               onChangeText={setChatInput}
               onSubmitEditing={handleSendMessage}
             />
-            <TouchableOpacity style={styles.chatSendBtn} onPress={handleSendMessage}>
-              <Ionicons name="send" size={16} color="#ffffff" />
+            <TouchableOpacity className="w-[44px] h-[44px] rounded-full bg-blue-600 justify-center items-center" style={{ shadowColor: '#3b82f6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 2 }} onPress={handleSendMessage}>
+              <Ionicons name="send" size={18} color="#ffffff" className="ml-1" />
             </TouchableOpacity>
           </View>
         </View>
@@ -719,37 +716,40 @@ export default function VideoCallScreen() {
 
       {/* Panel Deslizable Lateral: Registro Clínico (Solo Médico) */}
       {showNotes && isDoctor && (
-        <View style={[styles.sidePanel, styles.notesPanel]}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Registro e Historial Clínico</Text>
-            <TouchableOpacity onPress={() => setShowNotes(false)}>
-              <Ionicons name="close" size={24} color="#94a3b8" />
+        <View className="absolute top-0 bottom-0 right-0 w-full max-w-[420px] bg-white z-30 pt-10 sm:pt-6" style={{ shadowColor: '#000', shadowOffset: { width: -10, height: 0 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 20 }}>
+          <View className="flex-row justify-between items-center px-6 py-5 border-b border-slate-100">
+            <Text className="text-slate-900 text-[18px] font-extrabold">Historial Clínico</Text>
+            <TouchableOpacity onPress={() => setShowNotes(false)} className="bg-slate-100 w-8 h-8 rounded-full items-center justify-center">
+              <Ionicons name="close" size={20} color="#64748b" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.notesScrollContent}>
+          <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
             {/* Resumen del Triaje */}
             {patientTriage && (
-              <View style={styles.triageBriefCard}>
-                <Text style={styles.triageBriefTitle}>RESUMEN DE TRIAJE IA</Text>
-                <Text style={styles.triageBriefLabel}>Nivel de Urgencia:</Text>
-                <Text style={[styles.triageBriefValue, { color: patientTriage.urgency_level === 'Critical' ? '#ef4444' : '#f59e0b' }]}>
+              <View className="bg-slate-50 rounded-[20px] p-5 border border-slate-100 mb-6">
+                <Text className="text-[11px] text-slate-400 font-extrabold tracking-widest mb-3">RESUMEN DE TRIAJE IA</Text>
+                
+                <Text className="text-[11px] text-slate-400 font-bold uppercase mb-1">Nivel de Urgencia</Text>
+                <Text className={`text-[14px] font-extrabold mb-3 ${patientTriage.urgency_level === 'Critical' ? 'text-red-500' : 'text-amber-500'}`}>
                   {patientTriage.urgency_level === 'Critical' ? 'CRÍTICO' : 'MEDIO'}
                 </Text>
-                <Text style={styles.triageBriefLabel}>Síntomas analizados:</Text>
-                <Text style={styles.triageBriefText}>{patientTriage.reported_symptoms}</Text>
-                <Text style={styles.triageBriefLabel}>Recomendación del sistema:</Text>
-                <Text style={styles.triageBriefText}>{patientTriage.ai_recommendation}</Text>
+                
+                <Text className="text-[11px] text-slate-400 font-bold uppercase mb-1">Síntomas analizados</Text>
+                <Text className="text-slate-700 text-[13px] leading-5 mb-3">{patientTriage.reported_symptoms}</Text>
+                
+                <Text className="text-[11px] text-slate-400 font-bold uppercase mb-1">Recomendación IA</Text>
+                <Text className="text-slate-700 text-[13px] leading-5">{patientTriage.ai_recommendation}</Text>
               </View>
             )}
 
             {/* Inputs clínicos */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Diagnóstico Clínico *</Text>
+            <View className="mb-5">
+              <Text className="text-slate-600 text-[13px] font-bold mb-2">Diagnóstico Clínico *</Text>
               <TextInput
-                style={styles.panelTextArea}
+                className="bg-slate-50 border border-slate-200 rounded-[16px] p-4 text-slate-900 text-[14px] min-h-[90px]"
                 placeholder="Indique el diagnóstico final del paciente..."
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 multiline
                 textAlignVertical="top"
                 value={diagnosis}
@@ -757,12 +757,12 @@ export default function VideoCallScreen() {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Tratamiento / Receta Electrónica *</Text>
+            <View className="mb-5">
+              <Text className="text-slate-600 text-[13px] font-bold mb-2">Tratamiento / Receta Electrónica *</Text>
               <TextInput
-                style={styles.panelTextArea}
+                className="bg-slate-50 border border-slate-200 rounded-[16px] p-4 text-slate-900 text-[14px] min-h-[90px]"
                 placeholder="Medicamentos, dosis e indicaciones..."
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 multiline
                 textAlignVertical="top"
                 value={treatment}
@@ -770,12 +770,12 @@ export default function VideoCallScreen() {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Notas Internas</Text>
+            <View className="mb-6">
+              <Text className="text-slate-600 text-[13px] font-bold mb-2">Notas Internas</Text>
               <TextInput
-                style={[styles.panelTextArea, { minHeight: 60 }]}
+                className="bg-slate-50 border border-slate-200 rounded-[16px] p-4 text-slate-900 text-[14px] min-h-[70px]"
                 placeholder="Notas adicionales privadas..."
-                placeholderTextColor="#64748b"
+                placeholderTextColor="#94a3b8"
                 multiline
                 textAlignVertical="top"
                 value={notes}
@@ -784,7 +784,8 @@ export default function VideoCallScreen() {
             </View>
 
             <TouchableOpacity 
-              style={styles.saveBtn} 
+              className={`py-4 rounded-[16px] flex-row justify-center items-center ${savingNotes ? 'bg-emerald-400' : 'bg-emerald-500'}`}
+              style={{ shadowColor: '#10b981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 2 }}
               activeOpacity={0.8}
               onPress={handleSaveMedicalRecord}
               disabled={savingNotes}
@@ -793,8 +794,8 @@ export default function VideoCallScreen() {
                 <ActivityIndicator color="#ffffff" />
               ) : (
                 <>
-                  <Ionicons name="checkmark-circle" size={18} color="#ffffff" />
-                  <Text style={styles.saveBtnText}>Guardar y Cerrar Consulta</Text>
+                  <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                  <Text className="text-white font-extrabold text-[15px] ml-2">Guardar y Finalizar</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -804,71 +805,65 @@ export default function VideoCallScreen() {
 
       {/* Panel Deslizable Lateral: Registro Médico para Pacientes */}
       {showPatientRecord && !isDoctor && (
-        <View style={[styles.sidePanel, styles.notesPanel]}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Mi Registro de Consulta</Text>
-            <TouchableOpacity onPress={() => setShowPatientRecord(false)}>
-              <Ionicons name="close" size={24} color="#94a3b8" />
+        <View className="absolute top-0 bottom-0 right-0 w-full max-w-[420px] bg-white z-30 pt-10 sm:pt-6 shadow-2xl">
+          <View className="flex-row justify-between items-center px-6 py-5 border-b border-slate-100">
+            <Text className="text-slate-900 text-[18px] font-extrabold">Mi Consulta</Text>
+            <TouchableOpacity onPress={() => setShowPatientRecord(false)} className="bg-slate-100 w-8 h-8 rounded-full items-center justify-center">
+              <Ionicons name="close" size={20} color="#64748b" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.notesScrollContent}>
+          <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
             {fetchingRecord ? (
-              <View style={styles.centerContainer}>
+              <View className="items-center py-10">
                 <ActivityIndicator size="small" color="#3b82f6" />
-                <Text style={{ color: '#94a3b8', marginTop: 10, fontWeight: '500' }}>Buscando indicaciones...</Text>
+                <Text className="text-slate-400 mt-4 text-[14px] font-medium">Buscando indicaciones...</Text>
               </View>
             ) : medicalRecord ? (
               <View>
-                <View style={styles.triageBriefCard}>
-                  <Text style={styles.triageBriefTitle}>INFORMACIÓN DE LA CONSULTA</Text>
-                  <Text style={styles.triageBriefLabel}>Médico Tratante:</Text>
-                  <Text style={[styles.triageBriefValue, { color: '#3b82f6' }]}>
-                    {doctorNameParam}
-                  </Text>
+                <View className="bg-blue-50/50 rounded-[20px] p-5 border border-blue-100/50 mb-6">
+                  <Text className="text-[11px] text-blue-400 font-extrabold tracking-widest mb-3">DATOS DE LA RECETA</Text>
                   
-                  <Text style={styles.triageBriefLabel}>Fecha y Hora:</Text>
-                  <Text style={styles.triageBriefText}>
+                  <Text className="text-[11px] text-slate-400 font-bold uppercase mb-1">Médico Tratante</Text>
+                  <Text className="text-[15px] text-blue-600 font-extrabold mb-3">{doctorNameParam}</Text>
+                  
+                  <Text className="text-[11px] text-slate-400 font-bold uppercase mb-1">Fecha de Emisión</Text>
+                  <Text className="text-slate-700 text-[14px] font-medium">
                     {new Date(medicalRecord.created_at).toLocaleString('es-BO', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                      day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     })}
                   </Text>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Diagnóstico Clínico</Text>
-                  <View style={styles.patientRecordBox}>
-                    <Text style={styles.patientRecordText}>
-                      {medicalRecord.diagnosis || 'No especificado'}
-                    </Text>
+                <View className="mb-6">
+                  <Text className="text-slate-600 text-[13px] font-bold mb-2">Diagnóstico Clínico</Text>
+                  <View className="bg-slate-50 border border-slate-200 rounded-[16px] p-5 min-h-[90px]">
+                    <Text className="text-slate-800 text-[14px] leading-6">{medicalRecord.diagnosis || 'No especificado'}</Text>
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Tratamiento / Receta Electrónica</Text>
-                  <View style={[styles.patientRecordBox, { borderColor: 'rgba(16, 185, 129, 0.4)' }]}>
-                    <Text style={styles.patientRecordText}>
-                      {medicalRecord.treatment_plan || 'No especificado'}
-                    </Text>
+                <View className="mb-6">
+                  <Text className="text-emerald-700 text-[13px] font-bold mb-2">Tratamiento / Receta Médica</Text>
+                  <View className="bg-emerald-50 border border-emerald-200/60 rounded-[16px] p-5 min-h-[90px]">
+                    <Text className="text-emerald-900 text-[14px] leading-6 font-medium">{medicalRecord.treatment_plan || 'No especificado'}</Text>
                   </View>
                 </View>
 
-                <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 12, lineHeight: 16 }}>
-                  Este registro ya está disponible en tu historial clínico del menú principal.
-                </Text>
+                <View className="bg-slate-50 rounded-xl p-4 flex-row items-center mt-2 border border-slate-100">
+                  <Ionicons name="information-circle" size={20} color="#94a3b8" />
+                  <Text className="text-slate-500 text-[12px] leading-4 ml-3 flex-1">
+                    Esta receta digital ya está disponible permanentemente en tu historial clínico del menú principal.
+                  </Text>
+                </View>
               </View>
             ) : (
-              <View style={[styles.centerContainer, { paddingVertical: 40 }]}>
-                <Ionicons name="document-text-outline" size={48} color="#475569" />
-                <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 12, fontSize: 14, fontWeight: '600' }}>
-                  Aún no se ha guardado el registro.
-                </Text>
-                <Text style={{ color: '#64748b', textAlign: 'center', marginTop: 6, fontSize: 12, lineHeight: 18 }}>
-                  El médico está registrando tu diagnóstico y receta. Se mostrará aquí de forma automática en cuanto se guarde.
+              <View className="items-center justify-center py-16">
+                <View className="w-20 h-20 rounded-full bg-slate-50 justify-center items-center mb-6">
+                  <Ionicons name="document-text-outline" size={32} color="#94a3b8" />
+                </View>
+                <Text className="text-slate-500 text-[16px] font-bold text-center">Aún sin registros</Text>
+                <Text className="text-slate-400 text-[14px] mt-2 text-center leading-6 max-w-[280px]">
+                  El médico está redactando tu diagnóstico y receta. Aparecerán aquí automáticamente.
                 </Text>
               </View>
             )}
@@ -878,10 +873,11 @@ export default function VideoCallScreen() {
 
       {/* Botón flotante para salir directamente en la esquina superior */}
       <TouchableOpacity 
-        style={styles.closeCallHeaderBtn} 
+        className="absolute top-12 left-6 w-11 h-11 rounded-full bg-slate-900/60 justify-center items-center z-20 border border-slate-700/50"
+        style={{ backdropFilter: 'blur(8px)' }}
         onPress={() => router.replace(isDoctor ? '/(doctor)/dashboard' : '/(patient)/menu')}
       >
-        <Ionicons name="close" size={24} color="#ffffff" />
+        <Ionicons name="arrow-back" size={20} color="#ffffff" />
       </TouchableOpacity>
 
       <CustomModal 
@@ -897,362 +893,3 @@ export default function VideoCallScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#090d16', // Slate dark premium
-  },
-  videoGrid: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 30,
-  },
-  connectingText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '800',
-    marginTop: 20,
-    textAlign: 'center',
-  },
-  subConnectingText: {
-    color: '#64748b',
-    fontSize: 14,
-    marginTop: 6,
-    fontWeight: '500',
-  },
-  remoteVideoContainer: {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
-    backgroundColor: '#111827',
-  },
-  remoteVideoPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0f172a',
-    padding: 24,
-  },
-  remoteAvatar: {
-    marginBottom: 16,
-  },
-  remoteName: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  remoteStatus: {
-    color: '#3b82f6',
-    fontSize: 13,
-    marginTop: 6,
-    fontWeight: '600',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  waveformContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 24,
-    height: 40,
-  },
-  waveBar: {
-    width: 4,
-    backgroundColor: '#10b981', // Verde esmeralda para ondas
-    borderRadius: 2,
-  },
-  localVideoContainer: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 110,
-    height: 160,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#3b82f6',
-    backgroundColor: '#1e293b',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  webVideoElement: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  mobileCameraMock: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#334155',
-  },
-  mobileCamText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  controlBar: {
-    position: 'absolute',
-    right: 16, // Pegado a la derecha
-    top: '30%', // Centrado verticalmente
-    flexDirection: 'column', // Botones apilados verticalmente
-    backgroundColor: 'rgba(15, 23, 42, 0.85)', // Glassmorphic
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 20,
-    gap: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 20,
-  },
-  controlBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#1e293b',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  controlBtnActive: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderWidth: 1,
-    borderColor: '#ef4444',
-  },
-  controlBtnActivePanel: {
-    backgroundColor: '#3b82f6',
-  },
-  badgeDot: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ef4444',
-  },
-  jitsiBtn: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    width: 'auto',
-    borderRadius: 20,
-    gap: 4,
-  },
-  jitsiBtnText: {
-    color: '#10b981',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  endCallBtn: {
-    backgroundColor: '#ef4444', // Red end call button
-    transform: [{ rotate: '135deg' }],
-  },
-  closeCallHeaderBtn: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 40 : 20,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 20,
-  },
-  sidePanel: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: '#0f172a',
-    borderLeftWidth: 1,
-    borderLeftColor: '#1e293b',
-    zIndex: 30,
-    flexDirection: 'column',
-    paddingTop: Platform.OS === 'ios' ? 55 : 30,
-  },
-  notesPanel: {
-    maxWidth: 400,
-    backgroundColor: '#ffffff',
-  },
-  panelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    paddingTop: Platform.OS === 'android' ? 40 : 16,
-  },
-  panelTitle: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  messageList: {
-    flex: 1,
-  },
-  msgBubble: {
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 10,
-    maxWidth: '85%',
-  },
-  msgSelf: {
-    backgroundColor: '#3b82f6',
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 2,
-  },
-  msgRemote: {
-    backgroundColor: '#1e293b',
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 2,
-  },
-  msgText: {
-    color: '#ffffff',
-    fontSize: 14,
-  },
-  msgTime: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 10,
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-  chatInputContainer: {
-    flexDirection: 'row',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-    backgroundColor: '#090d16',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chatInput: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    color: '#ffffff',
-    fontSize: 14,
-  },
-  chatSendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notesScrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  triageBriefCard: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 20,
-  },
-  triageBriefTitle: {
-    color: '#64748b',
-    fontSize: 11,
-    fontWeight: '800',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  triageBriefLabel: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 8,
-    textTransform: 'uppercase',
-  },
-  triageBriefValue: {
-    fontSize: 14,
-    fontWeight: '800',
-    marginTop: 2,
-    color: '#0f172a',
-  },
-  triageBriefText: {
-    color: '#334155',
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    color: '#64748b',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  panelTextArea: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    padding: 12,
-    minHeight: 85,
-    color: '#0f172a',
-    fontSize: 14,
-  },
-  saveBtn: {
-    backgroundColor: '#10b981',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 10,
-    gap: 8,
-    marginTop: 10,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  saveBtnText: {
-    color: '#ffffff',
-    fontWeight: '800',
-    fontSize: 15,
-  },
-  patientRecordBox: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    padding: 12,
-    minHeight: 80,
-    marginTop: 4,
-  },
-  patientRecordText: {
-    color: '#0f172a',
-    fontSize: 14,
-    lineHeight: 20,
-  }
-});

@@ -6,9 +6,10 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
 import * as Speech from 'expo-speech';
-import { useAudioRecorder, RecordingPresets } from 'expo-audio';
+import { useAudioRecorder, RecordingPresets, setAudioModeAsync } from 'expo-audio';
 import { Camera } from 'expo-camera';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Tipos para los mensajes
 type Message = {
@@ -20,6 +21,7 @@ type Message = {
 };
 
 export default function SymptomChatbot() {
+  const insets = useSafeAreaInsets();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([
@@ -55,7 +57,7 @@ export default function SymptomChatbot() {
   const [alertMessage, setAlertMessage] = useState('');
 
   // Estados para grabación de voz
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorder = useAudioRecorder(RecordingPresets.LOW_QUALITY);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
 
@@ -86,6 +88,12 @@ export default function SymptomChatbot() {
     try {
       const permission = await Camera.requestMicrophonePermissionsAsync();
       if (permission.status === 'granted') {
+        if (Platform.OS === 'ios') {
+          await setAudioModeAsync({
+            allowsRecording: true,
+            playsInSilentMode: true,
+          });
+        }
         await recorder.prepareToRecordAsync();
         recorder.record();
         setIsRecording(true);
@@ -98,6 +106,36 @@ export default function SymptomChatbot() {
     }
   }
 
+  const transcribeAudio = async (base64: string) => {
+    setAlertMessage('Transcribiendo audio con IA... Por favor espera.');
+    setAlertVisible(true);
+    
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_AI_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiUrl}/api/transcribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Bypass-Tunnel-Reminder': 'true',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({ audio_base64: base64 })
+      });
+      const data = await res.json();
+      setAlertVisible(false);
+      
+      if (data.transcription && !data.transcription.includes('[Error')) {
+        setInputText(prev => prev ? prev + ' ' + data.transcription : data.transcription);
+      } else {
+        setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
+      }
+    } catch(e) {
+      setAlertVisible(false);
+      console.error('Error al transcribir:', e);
+      setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
+    }
+  };
+
   async function stopRecording() {
     setIsRecording(false);
 
@@ -106,24 +144,22 @@ export default function SymptomChatbot() {
       const uri = recorder.uri;
       if (uri) {
         if (Platform.OS === 'web') {
-          // En web podemos hacer un fetch para obtener el blob (URL temporal)
           const response = await fetch(uri);
           const blob = await response.blob();
           const reader = new FileReader();
           reader.readAsDataURL(blob);
-          reader.onloadend = () => {
+          reader.onloadend = async () => {
             const base64data = reader.result as string;
             const base64 = base64data.split(',')[1];
             setAudioBase64(base64);
-            setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
+            await transcribeAudio(base64);
           };
         } else {
-          // En móviles, fetch a un archivo local (file://) suele causar timeout, así que usamos FileSystem
           const base64 = await FileSystem.readAsStringAsync(uri, {
             encoding: FileSystem.EncodingType.Base64,
           });
           setAudioBase64(base64);
-          setInputText(prev => prev ? prev + ' [Audio adjunto]' : '[Audio adjunto]');
+          await transcribeAudio(base64);
         }
       }
     } catch (err) {
@@ -285,11 +321,11 @@ export default function SymptomChatbot() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
-    >
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       {/* Cabecera del Chat */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(patient)/menu')}>
@@ -338,7 +374,7 @@ export default function SymptomChatbot() {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <TextInput
             style={styles.input}
             placeholder="Escribe o graba tus síntomas..."
@@ -374,11 +410,16 @@ export default function SymptomChatbot() {
         type="alert"
         onConfirm={() => setAlertVisible(false)}
       />
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
@@ -388,7 +429,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ffffff',
     padding: 16,
-    paddingTop: Platform.OS === 'android' ? 40 : 16, // Espacio para la barra de estado en Android
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
     shadowColor: '#000',
@@ -520,7 +560,8 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',

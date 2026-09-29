@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel
-from llm_service import analyze_symptoms_with_gemini
+from llm_service import analyze_symptoms_with_gemini, transcribe_audio_only
 
 app = FastAPI(title="Motor IA de Triaje - Telemedicina Cochabamba")
 
@@ -23,6 +23,9 @@ class SymptomsRequest(BaseModel):
     patient_id: str
     reported_symptoms: str
     audio_base64: Optional[str] = None
+
+class TranscribeRequest(BaseModel):
+    audio_base64: str
 
 class AnalyzeResponse(BaseModel):
     detected_language: str
@@ -50,5 +53,15 @@ def analyze_symptoms(request: SymptomsRequest):
         ai_recommendation=analysis_result.get("ai_recommendation", "Pendiente de evaluación médica"),
         recommended_specialty=analysis_result.get("recommended_specialty", "Medicina General")
     )
+
+@app.post("/api/transcribe")
+def transcribe_audio(request: TranscribeRequest):
+    try:
+        if not request.audio_base64:
+            raise HTTPException(status_code=400, detail="No se proporcionó audio")
+        text = transcribe_audio_only(request.audio_base64)
+        return {"transcription": text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Para ejecutar: uvicorn main:app --reload --host 0.0.0.0 --port 8000

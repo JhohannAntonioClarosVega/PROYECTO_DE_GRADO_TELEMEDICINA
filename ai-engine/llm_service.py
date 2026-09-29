@@ -59,7 +59,7 @@ def analyze_symptoms_with_gemini(raw_symptoms: str, audio_base64: str = None) ->
     Debes analizar esto y devolver EXCLUSIVAMENTE un objeto JSON válido con la siguiente estructura (no agregues texto fuera del JSON, sin formato markdown ```json, solo el JSON):
     {{
         "detected_language": "El idioma o dialecto detectado (ej. Quechuañol (Bolivia) o Español)",
-        "standardized_symptoms": "Los síntomas traducidos a terminología médica clínica y estandarizada (ej. Cefalea moderada, mialgia)",
+        "standardized_symptoms": "IMPORTANTE: Tu respuesta DEBE tener este formato exacto: '\\nTranscripción/Traducción (lo que dijo el paciente): <Aquí transcribe el audio o traduce el texto literal del quechuañol al español claro>. \\n\\nAnálisis Clínico: <Los síntomas traducidos a terminología médica clínica y estandarizada>'",
         "urgency_level": "Clasifica la urgencia en uno de estos tres valores exactos: 'Critical' (Emergencia vital, falta de aire, sangrado grave, dolor en pecho), 'Medium' (Urgencia, dolor moderado a fuerte, fiebre alta), 'Low' (Consulta general, dolor leve, síntomas crónicos)",
         "ai_recommendation": "Una breve recomendación inicial para el paciente (ej. 'Requiere evaluación médica para manejo del dolor. Manténgase hidratado.')",
         "recommended_specialty": "DEBE SER EXACTAMENTE UNA de las siguientes opciones válidas: 'Medicina General', 'Pediatría', 'Traumatología', 'Cardiología', 'Dermatología', 'Otorrinolaringología', 'Neurología', 'Ginecología', 'Gastroenterología'. REGLA ESTRICTA Y ABSOLUTA: Si el reporte menciona la palabra 'hijo', 'hija', 'niño', 'niña', 'bebe', 'bebé' o 'wawa', DEBES ASIGNAR OBLIGATORIAMENTE 'Pediatría'. NO uses Medicina General para niños. Si menciona dolor de oído, garganta o nariz, asignar a 'Otorrinolaringología'. Si menciona golpes fuertes, fracturas o dolor de huesos, asignar a 'Traumatología'. Si menciona corazón o taquicardia, asignar a 'Cardiología'. Si menciona piel, manchas o granos, asignar a 'Dermatología'. Si menciona cabeza, mareos o convulsiones, asignar a 'Neurología'. Si es tema de la mujer o embarazo, asignar a 'Ginecología'. Si menciona estómago, dolor de barriga, vómitos o diarrea, asignar a 'Gastroenterología'. Si son síntomas comunes en adultos (resfrío, dolor leve) usa 'Medicina General'."
@@ -80,13 +80,13 @@ def analyze_symptoms_with_gemini(raw_symptoms: str, audio_base64: str = None) ->
         return fallback
 
     # Usamos HTTP directo (REST API) para evitar problemas con la librería obsoleta
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
     
     contents_parts = [{"text": prompt}]
     if audio_base64:
         contents_parts.append({
             "inlineData": {
-                "mimeType": "audio/m4a",
+                "mimeType": "audio/mp4",
                 "data": audio_base64
             }
         })
@@ -120,3 +120,36 @@ def analyze_symptoms_with_gemini(raw_symptoms: str, audio_base64: str = None) ->
         with open("error_log.txt", "w", encoding="utf-8") as f:
             f.write(error_msg)
         return fallback
+
+def transcribe_audio_only(audio_base64: str) -> str:
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return "[Error: API Key no configurada]"
+        
+    prompt = "Transcribe el siguiente audio exactamente como el usuario lo dijo. Si habla en quechua o dialecto boliviano, devuélvelo directamente traducido a español claro y fluido. IMPORTANTE: Solo devuelve el texto plano de la transcripción/traducción, sin comentarios extra, sin comillas y sin explicaciones."
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={api_key}"
+    payload = json.dumps({
+        "contents": [{"parts": [
+            {"text": prompt},
+            {"inlineData": {"mimeType": "audio/mp4", "data": audio_base64}}
+        ]}]
+    }).encode('utf-8')
+    req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            response_data = json.loads(response.read().decode('utf-8'))
+            text_response = response_data['candidates'][0]['content']['parts'][0]['text'].strip()
+            return text_response
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8')
+        print("Error en transcripción HTTP:", e, err_body)
+        with open("transcribe_error.txt", "w", encoding="utf-8") as f:
+            f.write(f"HTTP Error: {e}\nBody: {err_body}")
+        return "[Error: No se pudo transcribir el audio adjunto]"
+    except Exception as e:
+        print("Error en transcripción general:", e)
+        with open("transcribe_error.txt", "w", encoding="utf-8") as f:
+            f.write(f"Exception: {e}")
+        return "[Error: No se pudo transcribir el audio adjunto]"
