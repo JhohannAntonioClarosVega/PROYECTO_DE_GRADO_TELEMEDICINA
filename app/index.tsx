@@ -3,15 +3,14 @@ import {
   View, 
   Text, 
   TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView, 
+  TouchableOpacity,
   KeyboardAvoidingView, 
   Platform, 
   ActivityIndicator,
-  useWindowDimensions,
-  ScrollView
+  ScrollView,
+  Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
@@ -29,31 +28,29 @@ interface RoleConfig {
 const ROLES_CONFIG: Record<UserRole, RoleConfig> = {
   patient: {
     key: 'patient',
-    tabLabel: 'Pacientes',
-    btnLabel: 'Ingresar como Paciente',
-    accentColor: '#059669', // Verde médico
+    tabLabel: 'Paciente',
+    btnLabel: 'Iniciar sesión como Paciente',
+    accentColor: '#000000', // Estilo Apple oscuro
     icon: 'person',
   },
   doctor: {
     key: 'doctor',
-    tabLabel: 'Médicos',
-    btnLabel: 'Ingresar al Portal Médico',
-    accentColor: '#0284c7', // Azul médico
+    tabLabel: 'Médico',
+    btnLabel: 'Iniciar sesión como Médico',
+    accentColor: '#007AFF', // Azul iOS
     icon: 'medkit',
   },
   admin: {
     key: 'admin',
-    tabLabel: 'Administración',
-    btnLabel: 'Ingresar a Gestión',
-    accentColor: '#0f172a', // Oscuro
+    tabLabel: 'Admin',
+    btnLabel: 'Iniciar sesión (Admin)',
+    accentColor: '#333333',
     icon: 'shield-checkmark',
   }
 };
 
 export default function SplitTelemedicinaLogin() {
   const params = useLocalSearchParams();
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 900;
 
   const initialRole: UserRole = 
     params.role === 'admin' ? 'admin' : 
@@ -65,7 +62,6 @@ export default function SplitTelemedicinaLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedInput, setFocusedInput] = useState<'email' | 'password' | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -144,471 +140,143 @@ export default function SplitTelemedicinaLogin() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
       <KeyboardAvoidingView 
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }} keyboardShouldPersistTaps="handled">
           
-          <View style={[styles.cardContainer, isDesktop && styles.cardContainerDesktop]}>
+          {/* Tarjeta Principal (Estilo Apple: Centrada, Limpia, Blanca) */}
+          <View className="w-full max-w-[420px] bg-white rounded-[32px] p-8 sm:p-10 border border-slate-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}>
             
-            {/* MITAD 1: LOGO E IDENTIDAD MÉDICA */}
-            <View style={[styles.brandSide, isDesktop ? styles.brandSideDesktop : styles.brandSideMobile]}>
-              <View style={styles.brandIconWrapper}>
-                <Ionicons name="medical" size={isDesktop ? 100 : 70} color="#ffffff" />
+            {/* Header Icon & Title */}
+            <View className="items-center mb-8">
+              <View className="w-[72px] h-[72px] rounded-[20px] bg-slate-50 items-center justify-center mb-5 border border-slate-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
+                <Ionicons name="medical" size={32} color={activeRole.accentColor} />
               </View>
-              <Text style={styles.brandTitle}>Telemedicina IA</Text>
-              <Text style={styles.brandSubtitle}>Plataforma de Atención Clínica Digital</Text>
-              
-              {isDesktop && (
-                <View style={styles.brandFeatures}>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="checkmark-circle" size={20} color="#38bdf8" />
-                    <Text style={styles.featureText}>Triaje Inteligente Bilingüe</Text>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="checkmark-circle" size={20} color="#38bdf8" />
-                    <Text style={styles.featureText}>Videoconsultas Médicas</Text>
-                  </View>
-                  <View style={styles.featureRow}>
-                    <Ionicons name="checkmark-circle" size={20} color="#38bdf8" />
-                    <Text style={styles.featureText}>Historial Clínico Seguro</Text>
-                  </View>
-                </View>
-              )}
+              <Text className="text-[24px] font-bold text-slate-900 tracking-tight text-center">Telemedicina</Text>
+              <Text className="text-[14px] text-slate-500 mt-1 text-center">Inicia sesión para continuar</Text>
             </View>
 
-            {/* MITAD 2: FORMULARIO DE DATOS */}
-            <View style={[styles.formSide, isDesktop && styles.formSideDesktop]}>
-              <View style={styles.formContent}>
-                
-                <Text style={styles.formTitle}>Bienvenido</Text>
-                <Text style={styles.formSubtitle}>Ingresa tus credenciales para acceder</Text>
-
-                {/* Selector de Rol */}
-                <View style={styles.roleTabsWrapper}>
-                  {(['patient', 'doctor', 'admin'] as UserRole[]).map((r) => {
-                    const info = ROLES_CONFIG[r];
-                    const isSelected = currentRole === r;
-                    return (
-                      <TouchableOpacity
-                        key={r}
-                        style={[
-                          styles.roleTab,
-                          isSelected && { backgroundColor: '#ffffff', shadowColor: '#000', shadowOffset: {width:0, height:1}, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }
-                        ]}
-                        onPress={() => {
-                          setCurrentRole(r);
-                          setErrorMsg('');
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons 
-                          name={info.icon} 
-                          size={16} 
-                          color={isSelected ? info.accentColor : '#94a3b8'} 
-                        />
-                        <Text style={[
-                          styles.roleTabText,
-                          isSelected ? { color: info.accentColor, fontWeight: '700' } : { color: '#64748b', fontWeight: '500' }
-                        ]}>
-                          {info.tabLabel}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Mensaje de Error */}
-                {errorMsg ? (
-                  <View style={styles.errorBox}>
-                    <Ionicons name="alert-circle" size={18} color="#ef4444" />
-                    <Text style={styles.errorText}>{errorMsg}</Text>
-                  </View>
-                ) : null}
-
-                {/* Inputs de Correo y Contraseña */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Correo electrónico</Text>
-                  <View style={[
-                    styles.inputContainer,
-                    focusedInput === 'email' && { borderColor: activeRole.accentColor, borderWidth: 1.5, backgroundColor: '#ffffff' }
-                  ]}>
-                    <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="ejemplo@correo.com"
-                      placeholderTextColor="#94a3b8"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      value={email}
-                      onChangeText={setEmail}
-                      onFocus={() => setFocusedInput('email')}
-                      onBlur={() => setFocusedInput(null)}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Contraseña</Text>
-                  <View style={[
-                    styles.inputContainer,
-                    focusedInput === 'password' && { borderColor: activeRole.accentColor, borderWidth: 1.5, backgroundColor: '#ffffff' }
-                  ]}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="••••••••"
-                      placeholderTextColor="#94a3b8"
-                      secureTextEntry={!showPassword}
-                      value={password}
-                      onChangeText={setPassword}
-                      onFocus={() => setFocusedInput('password')}
-                      onBlur={() => setFocusedInput(null)}
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} hitSlop={{top:10, bottom:10, left:10, right:10}}>
-                      <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#94a3b8" />
+            {/* Selector de Rol (Segmented Control estilo iOS) */}
+            <View className="flex-row rounded-[12px] p-1 mb-8 gap-1" style={{ backgroundColor: 'rgba(241, 245, 249, 0.8)' }}>
+              {(['patient', 'doctor', 'admin'] as UserRole[]).map((r) => {
+                const info = ROLES_CONFIG[r];
+                const isSelected = currentRole === r;
+                return (
+                  <View key={r} className={`flex-1 rounded-[10px] ${isSelected ? 'bg-white' : ''}`} style={isSelected ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 } : {}}>
+                    <TouchableOpacity
+                      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}
+                      onPress={() => {
+                        setCurrentRole(r);
+                        setErrorMsg('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text className={`text-[13px] ${isSelected ? 'font-semibold text-slate-900' : 'font-medium text-slate-500'}`}>
+                        {info.tabLabel}
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                );
+              })}
+            </View>
 
-                {/* Botón de Acceso */}
-                <TouchableOpacity
-                  style={[styles.submitBtn, { backgroundColor: activeRole.accentColor }, loading && { opacity: 0.7 }]}
-                  onPress={handleLogin}
-                  disabled={loading}
-                  activeOpacity={0.8}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <Text style={styles.submitBtnText}>{activeRole.btnLabel}</Text>
-                  )}
+            {/* Mensaje de Error */}
+            {errorMsg ? (
+              <View className="flex-row items-center bg-red-50 p-4 rounded-[16px] mb-6 border border-red-100">
+                <Ionicons name="warning" size={18} color="#ef4444" />
+                <Text className="text-red-600 text-[13px] font-medium ml-2 flex-1">{errorMsg}</Text>
+              </View>
+            ) : null}
+
+            {/* Inputs Minimalistas */}
+            <View className="space-y-4 mb-8">
+              <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                <TextInput
+                  className="text-[16px] text-slate-900 h-full"
+                  placeholder="Correo electrónico"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+
+              <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] flex-row items-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
+                <TextInput
+                  className="flex-1 text-[16px] text-slate-900 h-full"
+                  placeholder="Contraseña"
+                  placeholderTextColor="#94a3b8"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 8 }}>
+                  <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#94a3b8" />
                 </TouchableOpacity>
-
-                {/* Enlace de Registro */}
-                {currentRole !== 'admin' && (
-                  <TouchableOpacity 
-                    style={styles.registerLinkContainer}
-                    onPress={() => router.push(`/register?role=${currentRole}`)}
-                  >
-                    <Text style={styles.registerText}>
-                      ¿No tienes una cuenta? <Text style={[styles.registerTextBold, { color: activeRole.accentColor }]}>Regístrate aquí</Text>
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
               </View>
             </View>
 
+            <View className="mt-2 rounded-[16px]" style={[{ backgroundColor: activeRole.accentColor, height: 56, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }, loading ? { opacity: 0.7 } : {}]}>
+              <TouchableOpacity
+                style={{ flex: 1, justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}
+                onPress={handleLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text className="text-white text-[16px] font-semibold tracking-wide">{activeRole.btnLabel}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {currentRole !== 'admin' && (
+              <View className="mt-6 items-center py-2">
+                <TouchableOpacity onPress={() => router.push(`/register?role=${currentRole}`)}>
+                  <Text className="text-[14px] text-slate-500">
+                    ¿No tienes una cuenta? <Text className="font-semibold text-slate-900">Regístrate</Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Modal Dedicado para Solicitud Médica Rechazada */}
       {rejectionModalVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.rejectionBox}>
-            <View style={styles.rejectionIconWrap}>
-              <Ionicons name="close-circle" size={56} color="#ef4444" />
+        <View className="absolute top-0 left-0 right-0 bottom-0 justify-center items-center p-6 z-50" style={{ backgroundColor: 'rgba(15, 23, 42, 0.6)' }}>
+          <View className="w-full max-w-[360px] bg-white rounded-[24px] p-6 items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 }}>
+            <View className="w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4">
+              <Ionicons name="close" size={32} color="#ef4444" />
             </View>
-            <Text style={styles.rejectionTitle}>Solicitud Rechazada</Text>
-            <Text style={styles.rejectionSub}>
+            <Text className="text-[20px] font-bold text-slate-900 mb-2">Solicitud Rechazada</Text>
+            <Text className="text-[14px] text-slate-500 text-center mb-6 leading-5">
               Tu registro médico no fue aprobado por la administración.
             </Text>
-            <View style={styles.rejectionReasonNote}>
-              <Text style={styles.rejectionReasonHead}>MOTIVO:</Text>
-              <Text style={styles.rejectionReasonBody}>{rejectionReasonText}</Text>
+            <View className="w-full bg-slate-50 rounded-[12px] p-4 mb-6 border border-slate-100">
+              <Text className="text-[12px] font-semibold text-slate-400 mb-1">MOTIVO</Text>
+              <Text className="text-[14px] text-slate-700">{rejectionReasonText}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.rejectionBtn}
-              onPress={() => {
-                setRejectionModalVisible(false);
-                setRejectionReasonText('');
-              }}
-            >
-              <Text style={styles.rejectionBtnText}>Cerrar</Text>
-            </TouchableOpacity>
+            <View className="w-full bg-slate-900 rounded-[14px]">
+              <TouchableOpacity
+                style={{ paddingVertical: 16, alignItems: 'center' }}
+                onPress={() => {
+                  setRejectionModalVisible(false);
+                  setRejectionReasonText('');
+                }}
+              >
+                <Text className="text-white text-[15px] font-semibold">Entendido</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f1f5f9', // Fondo gris muy claro para resaltar la tarjeta blanca
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  cardContainer: {
-    width: '100%',
-    maxWidth: 450,
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  cardContainerDesktop: {
-    flexDirection: 'row',
-    maxWidth: 960, // Ancho de la tarjeta partida en dos en escritorio
-    minHeight: 600,
-  },
-  // LADO DE LA MARCA (MITAD 1)
-  brandSide: {
-    backgroundColor: '#0f172a', // Azul oscuro profundo médico
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  brandSideMobile: {
-    paddingVertical: 40,
-  },
-  brandSideDesktop: {
-    flex: 1,
-    padding: 48,
-    alignItems: 'flex-start',
-  },
-  brandIconWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  brandSubtitle: {
-    fontSize: 15,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  brandFeatures: {
-    marginTop: 40,
-    gap: 16,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  featureText: {
-    color: '#e2e8f0',
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  // LADO DEL FORMULARIO (MITAD 2)
-  formSide: {
-    backgroundColor: '#ffffff',
-    padding: 24,
-  },
-  formSideDesktop: {
-    flex: 1.1,
-    padding: 48,
-    justifyContent: 'center',
-  },
-  formContent: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
-  },
-  formTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 4,
-  },
-  formSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 24,
-  },
-  roleTabsWrapper: {
-    flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
-    gap: 2,
-  },
-  roleTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 6,
-  },
-  roleTabText: {
-    fontSize: 13,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 20,
-    gap: 8,
-  },
-  errorText: {
-    color: '#b91c1c',
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
-    lineHeight: 18,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 8,
-    marginLeft: 2,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc', // Gris muy suave
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 14,
-    height: 52,
-    paddingHorizontal: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontSize: 15,
-    color: '#0f172a',
-  },
-  eyeIcon: {
-    padding: 6,
-  },
-  submitBtn: {
-    height: 54,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitBtnText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  registerLinkContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  registerText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  registerTextBold: {
-    fontWeight: '700',
-  },
-  // Modal de Rechazo
-  modalOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    zIndex: 999,
-  },
-  rejectionBox: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 28,
-    alignItems: 'center',
-  },
-  rejectionIconWrap: {
-    marginBottom: 20,
-  },
-  rejectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  rejectionSub: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  rejectionReasonNote: {
-    width: '100%',
-    backgroundColor: '#fef2f2',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  rejectionReasonHead: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#b91c1c',
-    marginBottom: 6,
-    letterSpacing: 0.5,
-  },
-  rejectionReasonBody: {
-    fontSize: 14,
-    color: '#7f1d1d',
-    lineHeight: 20,
-    fontWeight: '500',
-  },
-  rejectionBtn: {
-    width: '100%',
-    backgroundColor: '#0f172a',
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  rejectionBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});

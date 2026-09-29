@@ -63,89 +63,82 @@ export default function PatientMenuScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-slate-50/50">
+      <View className="flex-row px-6 pt-5 pb-6 bg-white/80 border-b border-slate-100 justify-between items-center z-10" style={{ backdropFilter: 'blur(10px)' }}>
         <View>
-          <Text style={styles.headerTitle}>Hola, {patientName}</Text>
-          <Text style={styles.headerSubtitle}>Bienvenido a Telemedicina IA</Text>
+          <Text className="text-[28px] font-extrabold text-slate-900 tracking-tight">Hola, {patientName}</Text>
+          <Text className="text-[14px] text-slate-500 font-medium mt-1">Bienvenido a tu clínica digital</Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => setLogoutModalVisible(true)}>
-          <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-          <Text style={styles.logoutText}>Salir</Text>
+        <TouchableOpacity className="bg-red-50/80 flex-row items-center px-4 py-2.5 rounded-2xl gap-2 border border-red-100" onPress={() => setLogoutModalVisible(true)}>
+          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+          <Text className="text-red-500 font-bold text-[14px]">Salir</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <Text className="text-[20px] font-extrabold text-slate-900 mb-6">¿Qué necesitas hoy?</Text>
         
-        <View style={styles.cardsWrapper}>
+        <View className="flex-row flex-wrap justify-between gap-4">
           <TouchableOpacity 
-            style={[styles.gridCard, { backgroundColor: '#ecfdf5', borderColor: '#d1fae5' }]} 
+            className="w-[47%] bg-emerald-50 rounded-[28px] p-5 items-center border border-emerald-100/50 shadow-sm shadow-emerald-100" 
             activeOpacity={0.8}
             onPress={() => router.push('/(patient)/chatbot' as any)}
           >
-            <View style={[styles.gridIconCircle, { backgroundColor: '#10b981' }]}>
-              <Ionicons name="hardware-chip" size={32} color="#ffffff" />
+            <View className="w-14 h-14 rounded-full bg-emerald-500 justify-center items-center mb-4 shadow-sm shadow-emerald-300">
+              <Ionicons name="hardware-chip" size={26} color="#ffffff" />
             </View>
-            <Text style={styles.gridTitle}>Triaje IA</Text>
-            <Text style={styles.gridDesc}>Evalúa tus síntomas ahora</Text>
+            <Text className="text-[16px] font-extrabold text-slate-800 text-center mb-1">Triaje IA</Text>
+            <Text className="text-[12px] text-slate-500 text-center leading-4 font-medium">Evalúa tus síntomas de inmediato</Text>
           </TouchableOpacity>
 
           {activeTriageStatus && (
             <TouchableOpacity 
-              style={[
-                styles.gridCard, 
-                activeTriageStatus === 'in_progress' 
-                  ? { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' } 
-                  : { backgroundColor: '#eff6ff', borderColor: '#dbeafe' }
-              ]} 
+              className={`w-[47%] rounded-[28px] p-5 items-center border shadow-sm ${activeTriageStatus === 'in_progress' ? 'bg-green-50 border-green-100 shadow-green-100' : 'bg-blue-50 border-blue-100 shadow-blue-100'}`} 
               activeOpacity={0.8}
               onPress={() => router.push('/(patient)/waiting-room' as any)}
             >
-              <View style={[
-                styles.gridIconCircle, 
-                activeTriageStatus === 'in_progress' ? { backgroundColor: '#16a34a' } : { backgroundColor: '#3b82f6' }
-              ]}>
-                <Ionicons name={activeTriageStatus === 'in_progress' ? "videocam" : "time"} size={32} color="#ffffff" />
+              <View className={`w-14 h-14 rounded-full justify-center items-center mb-4 shadow-sm ${activeTriageStatus === 'in_progress' ? 'bg-green-500 shadow-green-300' : 'bg-blue-500 shadow-blue-300'}`}>
+                <Ionicons name={activeTriageStatus === 'in_progress' ? "videocam" : "time"} size={26} color="#ffffff" />
               </View>
-              <Text style={styles.gridTitle}>Sala Espera</Text>
-              <Text style={styles.gridDesc}>
-                {activeTriageStatus === 'in_progress' ? '¡Médico listo!' : 'Únete a tu consulta'}
+              <Text className="text-[16px] font-extrabold text-slate-800 text-center mb-1">Sala de Espera</Text>
+              <Text className="text-[12px] text-slate-500 text-center leading-4 font-medium">
+                {activeTriageStatus === 'in_progress' ? 'El médico te espera' : 'Únete a la consulta'}
               </Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity 
-            style={[styles.gridCard, { backgroundColor: '#f5f3ff', borderColor: '#ede9fe' }]} 
+            className="w-[47%] bg-violet-50 rounded-[28px] p-5 items-center border border-violet-100/50 shadow-sm shadow-violet-100" 
             activeOpacity={0.8}
             onPress={() => router.push('/(patient)/profile' as any)}
           >
-            <View style={[styles.gridIconCircle, { backgroundColor: '#8b5cf6' }]}>
-              <Ionicons name="person" size={32} color="#ffffff" />
+            <View className="w-14 h-14 rounded-full bg-violet-500 justify-center items-center mb-4 shadow-sm shadow-violet-300">
+              <Ionicons name="person" size={26} color="#ffffff" />
             </View>
-            <Text style={styles.gridTitle}>Mi Perfil</Text>
-            <Text style={styles.gridDesc}>Actualiza tus datos</Text>
+            <Text className="text-[16px] font-extrabold text-slate-800 text-center mb-1">Mi Perfil</Text>
+            <Text className="text-[12px] text-slate-500 text-center leading-4 font-medium">Tus datos personales</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.gridCard, { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]} 
+            className="w-[47%] bg-amber-50 rounded-[28px] p-5 items-center border border-amber-100/50 shadow-sm shadow-amber-100" 
             activeOpacity={0.8}
             onPress={() => router.push('/(patient)/history' as any)}
           >
-            <View style={[styles.gridIconCircle, { backgroundColor: '#f59e0b' }]}>
-              <Ionicons name="document-text" size={32} color="#ffffff" />
+            <View className="w-14 h-14 rounded-full bg-amber-500 justify-center items-center mb-4 shadow-sm shadow-amber-300">
+              <Ionicons name="document-text" size={26} color="#ffffff" />
             </View>
-            <Text style={styles.gridTitle}>Historial</Text>
-            <Text style={styles.gridDesc}>Tus recetas médicas</Text>
+            <Text className="text-[16px] font-extrabold text-slate-800 text-center mb-1">Historial</Text>
+            <Text className="text-[12px] text-slate-500 text-center leading-4 font-medium">Consultas y recetas médicas</Text>
           </TouchableOpacity>
         </View>
         
-        
-        <View style={styles.banner}>
-          <Ionicons name="shield-checkmark" size={24} color="#10b981" />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.bannerTitle}>Telemedicina Segura</Text>
-            <Text style={styles.bannerDesc}>Tus datos médicos están protegidos y encriptados en nuestro sistema.</Text>
+        <View className="mt-8 bg-white/80 rounded-[24px] p-5 flex-row items-center border border-slate-100 shadow-sm" style={{ backdropFilter: 'blur(8px)' }}>
+          <View className="w-12 h-12 bg-emerald-50 rounded-full justify-center items-center">
+            <Ionicons name="shield-checkmark" size={24} color="#10b981" />
+          </View>
+          <View className="flex-1 ml-4">
+            <Text className="text-[15px] font-extrabold text-slate-800 mb-1">Telemedicina Segura</Text>
+            <Text className="text-[13px] text-slate-500 leading-5">Tus datos médicos están protegidos y encriptados bajo protocolos internacionales.</Text>
           </View>
         </View>
 
@@ -164,120 +157,3 @@ export default function PatientMenuScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 24,
-    paddingTop: Platform.OS === 'android' ? 10 : 24,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  logoutText: {
-    color: '#ef4444',
-    fontWeight: '700',
-    marginLeft: 4,
-    fontSize: 14,
-  },
-  content: {
-    padding: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1e293b',
-    marginBottom: 20,
-  },
-  cardsWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  gridCard: {
-    width: '47%',
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  gridIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  gridTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  gridDesc: {
-    fontSize: 12,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  banner: {
-    marginTop: 20,
-    backgroundColor: '#f8fafc',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  bannerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 4,
-  },
-  bannerDesc: {
-    fontSize: 13,
-    color: '#64748b',
-    lineHeight: 18,
-  }
-});

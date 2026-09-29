@@ -5,12 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { triageService } from '@/services/triage.service';
 import { supabase } from '@/lib/supabase';
+import CustomModal from '@/components/CustomModal';
 
 export default function DoctorDashboardScreen() {
   const [triages, setTriages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [doctorName, setDoctorName] = useState('Médico');
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const [doctorSpecialty, setDoctorSpecialty] = useState<string | null>(null);
   const [filterBySpecialty, setFilterBySpecialty] = useState(true);
@@ -120,6 +122,18 @@ export default function DoctorDashboardScreen() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setLogoutModalVisible(false);
+      router.replace('/');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      setLogoutModalVisible(false);
+      router.replace('/');
+    }
+  };
+
   const [selectedTriage, setSelectedTriage] = useState<any>(null);
 
   const handleAttend = async (item: any, patientName: string) => {
@@ -183,71 +197,74 @@ export default function DoctorDashboardScreen() {
     const patientName = item.patients?.profiles?.full_name || 'Paciente Desconocido';
     
     return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.patientInfo}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={20} color="#2563eb" />
+      <View className="bg-white rounded-[24px] p-5 mb-5 border border-slate-100" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }}>
+        <View className="flex-row justify-between items-center mb-4">
+          <View className="flex-row items-center">
+            <View className="w-11 h-11 rounded-full bg-blue-50 justify-center items-center mr-3">
+              <Ionicons name="person" size={20} color="#0066CC" />
             </View>
             <View>
-              <Text style={styles.patientName}>{patientName}</Text>
-              <Text style={styles.timeAgo}>{new Date(item.created_at).toLocaleTimeString()}</Text>
+              <Text className="text-base font-bold text-slate-800">{patientName}</Text>
+              <Text className="text-[11px] text-slate-400 font-medium mt-0.5">{new Date(item.created_at).toLocaleTimeString()}</Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-            <View style={[styles.badge, { backgroundColor: getUrgencyColor(item.urgency_level) }]}>
-              <Text style={styles.badgeText}>Prioridad {getUrgencyText(item.urgency_level)}</Text>
+          <View className="flex-col items-end gap-1.5">
+            <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: getUrgencyColor(item.urgency_level) }}>
+              <Text className="text-[10px] text-white font-extrabold uppercase tracking-widest">
+                {getUrgencyText(item.urgency_level)}
+              </Text>
             </View>
             {item.status === 'in_progress' && (
-              <View style={[styles.badge, { backgroundColor: '#3b82f6' }]}>
-                <Text style={styles.badgeText}>En Atención</Text>
+              <View className="px-2.5 py-1 rounded-full bg-blue-500">
+                <Text className="text-[10px] text-white font-extrabold uppercase tracking-widest">En Atención</Text>
               </View>
             )}
             {item._isOtherSpecialty && (
-              <View style={[styles.badge, { backgroundColor: '#ef4444' }]}>
-                <Text style={styles.badgeText}>ESPECIALIDAD DIFERENTE</Text>
+              <View className="px-2.5 py-1 rounded-full bg-red-500">
+                <Text className="text-[10px] text-white font-extrabold uppercase tracking-widest">DERIVADO</Text>
               </View>
             )}
           </View>
         </View>
 
-        <View style={styles.cardBody}>
-          <Text style={styles.symptomsTitle}>Síntomas Reportados (IA):</Text>
-          <Text style={styles.symptomsText} numberOfLines={2}>
-            {item.reported_symptoms?.replace(/\\n/g, ' ')}
+        <View className="bg-slate-50 rounded-2xl p-4 mb-4">
+          <Text className="text-[13px] font-bold text-slate-500 mb-1.5">Síntomas y Análisis IA:</Text>
+          <Text className="text-[14px] text-slate-700 leading-5" numberOfLines={3}>
+            {item.ai_raw_analysis ? item.ai_raw_analysis.replace(/\\n/g, '\n') : item.reported_symptoms?.replace(/\\n/g, ' ')}
           </Text>
           
           {item.recommended_specialty && (
-            <View style={styles.specialtyContainer}>
+            <View className="flex-row items-center mt-3 pt-3 border-t border-slate-200/60">
               <Ionicons name="medkit" size={14} color="#64748b" />
-              <Text style={styles.specialtyText}>Sugerido: {item.recommended_specialty}</Text>
+              <Text className="text-[13px] text-slate-500 font-semibold ml-1.5">Especialidad: <Text className="text-blue-600">{item.recommended_specialty}</Text></Text>
             </View>
           )}
         </View>
 
-        <View style={styles.cardFooter}>
+        <View className="flex-row justify-between items-center gap-3">
           <TouchableOpacity 
-            style={styles.detailsBtn}
+            className="flex-row flex-1 items-center justify-center py-3.5 rounded-xl bg-blue-50"
             onPress={() => setSelectedTriage(item)}
           >
-            <Ionicons name="information-circle-outline" size={18} color="#2563eb" style={{ marginRight: 6 }} />
-            <Text style={styles.detailsBtnText}>Detalles IA</Text>
+            <Ionicons name="sparkles" size={16} color="#0066CC" className="mr-2" />
+            <Text className="text-blue-600 font-bold text-[14px] ml-1.5">Detalles IA</Text>
           </TouchableOpacity>
 
           {(item.status === 'completed' || item.status === 'resolved') ? (
-            <View style={[styles.attendBtn, { backgroundColor: '#94a3b8' }]}>
-              <Ionicons name="checkmark-done" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-              <Text style={styles.attendBtnText}>
+            <View className="flex-row flex-1 items-center justify-center py-3.5 rounded-xl bg-slate-200">
+              <Ionicons name="checkmark-done" size={18} color="#64748b" />
+              <Text className="text-slate-500 font-bold text-[14px] ml-1.5">
                 {item.status === 'completed' ? 'Ya Atendido' : 'Cancelado'}
               </Text>
             </View>
           ) : (
             <TouchableOpacity 
-              style={[styles.attendBtn, item.status === 'in_progress' && { backgroundColor: '#f59e0b' }]}
+              className={`flex-row flex-1 items-center justify-center py-3.5 rounded-xl ${item.status === 'in_progress' ? 'bg-amber-500' : 'bg-[#0066CC]'}`}
+              style={{ shadowColor: item.status === 'in_progress' ? '#f59e0b' : '#3b82f6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 }}
               onPress={() => handleAttend(item, patientName)}
             >
-              <Ionicons name="videocam" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-              <Text style={styles.attendBtnText}>
+              <Ionicons name="videocam" size={18} color="#ffffff" />
+              <Text className="text-white font-bold text-[14px] ml-1.5">
                 {item.status === 'in_progress' ? 'Reconectar' : 'Atender'}
               </Text>
             </TouchableOpacity>
@@ -258,82 +275,81 @@ export default function DoctorDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Sala de Espera (Cola)</Text>
-          <Text style={styles.headerSubtitle}>
-            {doctorSpecialty ? `Especialidad: ${doctorSpecialty}` : 'Pacientes pendientes de atención'}
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <View className="flex-row px-6 pt-5 pb-6 border-b border-slate-100 justify-between items-center z-10" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+        <View className="flex-1">
+          <Text className="text-[28px] font-extrabold text-slate-900 tracking-tight">Pacientes</Text>
+          <Text className="text-[14px] text-slate-500 font-medium mt-1">
+            {doctorSpecialty ? `Especialidad: ${doctorSpecialty}` : 'Cola de espera general'}
           </Text>
         </View>
-        <TouchableOpacity style={styles.reloadBtn} onPress={onRefresh} disabled={refreshing}>
-          <Ionicons name="reload" size={18} color="#ffffff" />
-          <Text style={styles.reloadBtnText}>Recargar</Text>
-        </TouchableOpacity>
+        <View className="flex-row items-center gap-2">
+          <TouchableOpacity className="flex-row items-center px-4 py-3 rounded-2xl" style={{ backgroundColor: 'rgba(241, 245, 249, 0.8)' }} onPress={onRefresh} disabled={refreshing}>
+            <Ionicons name="reload" size={20} color="#0066CC" />
+          </TouchableOpacity>
+          <TouchableOpacity className="flex-row items-center px-4 py-3 rounded-2xl border border-red-100" style={{ backgroundColor: 'rgba(254, 242, 242, 0.8)' }} onPress={() => setLogoutModalVisible(true)}>
+            <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {doctorSpecialty && doctorSpecialty !== 'Medicina General' && (
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 12, gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row px-6 my-4 max-h-12">
           <TouchableOpacity
-            style={[
-              { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1 },
-              filterBySpecialty 
-                ? { backgroundColor: '#2563eb', borderColor: '#2563eb' }
-                : { backgroundColor: '#f1f5f9', borderColor: '#cbd5e1' }
-            ]}
+            className={`px-5 py-2.5 rounded-full border mr-3 justify-center items-center ${filterBySpecialty ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}
+            style={filterBySpecialty ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 } : {}}
             onPress={() => {
               setFilterBySpecialty(true);
               fetchTriages(doctorSpecialty, true);
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: filterBySpecialty ? '#ffffff' : '#475569' }}>
+            <Text className={`text-[13px] font-bold ${filterBySpecialty ? 'text-white' : 'text-slate-600'}`}>
               Solo {doctorSpecialty}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1 },
-              !filterBySpecialty 
-                ? { backgroundColor: '#2563eb', borderColor: '#2563eb' }
-                : { backgroundColor: '#f1f5f9', borderColor: '#cbd5e1' }
-            ]}
+            className={`px-5 py-2.5 rounded-full border mr-6 justify-center items-center ${!filterBySpecialty ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}
+            style={!filterBySpecialty ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 } : {}}
             onPress={() => {
               setFilterBySpecialty(false);
               fetchTriages(doctorSpecialty, false);
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: '600', color: !filterBySpecialty ? '#ffffff' : '#475569' }}>
-              Todos los pacientes ({rawTriages.length})
+            <Text className={`text-[13px] font-bold ${!filterBySpecialty ? 'text-white' : 'text-slate-600'}`}>
+              Todos ({rawTriages.length})
             </Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       )}
 
       {loading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loaderText}>Buscando pacientes...</Text>
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0066CC" />
+          <Text className="mt-4 text-slate-500 font-medium text-[15px]">Actualizando lista...</Text>
         </View>
       ) : triages.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="checkmark-circle-outline" size={64} color="#10b981" />
-          <Text style={styles.emptyTitle}>No hay pacientes en espera</Text>
-          <Text style={styles.emptyText}>
+        <View className="flex-1 justify-center items-center px-8">
+          <View className="w-24 h-24 bg-green-50 rounded-full justify-center items-center mb-6">
+            <Ionicons name="checkmark-done-outline" size={48} color="#10b981" />
+          </View>
+          <Text className="text-[20px] font-extrabold text-slate-900 text-center">Todo al día</Text>
+          <Text className="text-[15px] text-slate-500 mt-2 text-center leading-6">
             {filterBySpecialty && doctorSpecialty && doctorSpecialty !== 'Medicina General' && rawTriages.length > 0
-              ? `No hay pacientes derivados a ${doctorSpecialty} en este momento. Hay ${rawTriages.length} paciente(s) en espera en otras especialidades.`
-              : 'La cola de triaje está vacía actualmente.'}
+              ? `No hay pacientes en ${doctorSpecialty}. Hay ${rawTriages.length} en otras áreas.`
+              : 'La sala de espera virtual está vacía en este momento.'}
           </Text>
           {filterBySpecialty && doctorSpecialty && doctorSpecialty !== 'Medicina General' && rawTriages.length > 0 && (
             <TouchableOpacity 
-              style={[styles.reloadBtn, { marginTop: 16, backgroundColor: '#2563eb', paddingHorizontal: 16, paddingVertical: 10 }]}
+              className="mt-8 bg-slate-900 px-6 py-3.5 rounded-xl flex-row items-center"
+              style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }}
               onPress={() => {
                 setFilterBySpecialty(false);
                 fetchTriages(doctorSpecialty, false);
               }}
             >
-              <Ionicons name="people" size={18} color="#ffffff" style={{ marginRight: 6 }} />
-              <Text style={styles.reloadBtnText}>Ver todos los pacientes ({rawTriages.length})</Text>
+              <Ionicons name="people" size={18} color="#ffffff" />
+              <Text className="text-white font-bold ml-2">Ver todos los pacientes</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -342,324 +358,85 @@ export default function DoctorDashboardScreen() {
           data={triages}
           keyExtractor={(item) => item.id}
           renderItem={renderTriageItem}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563eb" />}
+          contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0066CC" />}
         />
       )}
-      {/* Modal de Detalles del Triaje IA */}
-      <Modal
-        visible={!!selectedTriage}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setSelectedTriage(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="hardware-chip" size={24} color="#2563eb" />
-                <Text style={styles.modalTitle}>Análisis de Triaje (IA)</Text>
+
+      {/* Modal Detalles IA */}
+      <Modal visible={!!selectedTriage} transparent={true} animationType="slide" onRequestClose={() => setSelectedTriage(null)}>
+        <View className="flex-1 justify-end sm:justify-center p-0 sm:p-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.4)' }}>
+          <View className="bg-white rounded-t-[32px] sm:rounded-[32px] p-8 w-full max-h-[90%]" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 5 }}>
+            <View className="w-12 h-1.5 bg-slate-200 rounded-full self-center mb-8 sm:hidden" />
+            
+            <View className="flex-row justify-between items-center border-b border-slate-100 pb-5 mb-6">
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-blue-50 justify-center items-center">
+                  <Ionicons name="sparkles" size={20} color="#0066CC" />
+                </View>
+                <Text className="text-[22px] font-extrabold text-slate-900 tracking-tight">Análisis IA</Text>
               </View>
-              <TouchableOpacity onPress={() => setSelectedTriage(null)}>
-                <Ionicons name="close-circle" size={28} color="#94a3b8" />
+              <TouchableOpacity onPress={() => setSelectedTriage(null)} className="w-8 h-8 bg-slate-100 rounded-full justify-center items-center">
+                <Ionicons name="close" size={20} color="#64748b" />
               </TouchableOpacity>
             </View>
             
             {selectedTriage && (
-              <ScrollView style={styles.modalScroll}>
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Paciente:</Text>
-                  <Text style={styles.modalValue}>{selectedTriage.patients?.profiles?.full_name || 'Desconocido'}</Text>
+              <ScrollView className="mb-6" showsVerticalScrollIndicator={false}>
+                <View className="mb-6">
+                  <Text className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-2">Paciente</Text>
+                  <Text className="text-[18px] text-slate-800 font-bold">{selectedTriage.patients?.profiles?.full_name || 'Desconocido'}</Text>
                 </View>
 
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Prioridad Calculada:</Text>
-                  <View style={[styles.badge, { alignSelf: 'flex-start', backgroundColor: getUrgencyColor(selectedTriage.urgency_level) }]}>
-                    <Text style={styles.badgeText}>{getUrgencyText(selectedTriage.urgency_level)}</Text>
+                <View className="mb-6">
+                  <Text className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-2">Prioridad de Atención</Text>
+                  <View className="self-start px-3 py-1.5 rounded-full" style={{ backgroundColor: getUrgencyColor(selectedTriage.urgency_level) }}>
+                    <Text className="text-white font-extrabold uppercase tracking-widest text-[11px]">{getUrgencyText(selectedTriage.urgency_level)}</Text>
                   </View>
                 </View>
 
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Síntomas Identificados:</Text>
-                  <Text style={styles.modalValueBox}>{selectedTriage.reported_symptoms?.replace(/\\n/g, '\n')}</Text>
+                <View className="mb-6">
+                  <Text className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-2">Entrada Original del Paciente</Text>
+                  <View className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4">
+                    <Text className="text-[15px] text-slate-500 leading-6 italic">{selectedTriage.reported_symptoms?.replace(/\\n/g, '\n')}</Text>
+                  </View>
+                  
+                  <Text className="text-[13px] text-[#0066CC] font-bold uppercase tracking-widest mb-2">Transcripción y Análisis Clínico (IA)</Text>
+                  <View className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                    <Text className="text-[15px] text-slate-800 leading-6 font-medium">
+                      {selectedTriage.ai_raw_analysis ? selectedTriage.ai_raw_analysis.replace(/\\n/g, '\n') : "Análisis no disponible"}
+                    </Text>
+                  </View>
                 </View>
 
                 {selectedTriage.recommended_specialty && (
-                  <View style={styles.modalSection}>
-                    <Text style={styles.modalLabel}>Especialidad Recomendada por la IA:</Text>
-                    <Text style={[styles.modalValue, { color: '#2563eb', fontWeight: 'bold' }]}>{selectedTriage.recommended_specialty}</Text>
+                  <View className="mb-2">
+                    <Text className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-2">Sugerencia Clínica</Text>
+                    <Text className="text-[18px] text-blue-600 font-bold">{selectedTriage.recommended_specialty}</Text>
                   </View>
                 )}
               </ScrollView>
             )}
             
-            <TouchableOpacity style={styles.closeModalBtn} onPress={() => setSelectedTriage(null)}>
-              <Text style={styles.closeModalBtnText}>Cerrar Detalles</Text>
+            <TouchableOpacity className="bg-slate-900 py-4 rounded-2xl items-center" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }} onPress={() => setSelectedTriage(null)}>
+              <Text className="text-white font-bold text-[16px]">Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
+      <CustomModal
+        visible={logoutModalVisible}
+        title="Cerrar Sesión"
+        message="¿Estás seguro de que deseas salir de tu cuenta médica?"
+        type="confirm"
+        onConfirm={handleLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+        confirmText="Salir"
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    padding: 24,
-    paddingTop: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  reloadBtn: {
-    backgroundColor: '#2563eb',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  reloadBtnText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  detailsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#eff6ff',
-    marginRight: 10,
-  },
-  detailsBtnText: {
-    color: '#2563eb',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#ffffff',
-    width: '100%',
-    maxWidth: 500,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 10,
-    maxHeight: '85%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    paddingBottom: 16,
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0f172a',
-  },
-  modalScroll: {
-    marginBottom: 20,
-  },
-  modalSection: {
-    marginBottom: 16,
-  },
-  modalLabel: {
-    fontSize: 14,
-    color: '#64748b',
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  modalValue: {
-    fontSize: 16,
-    color: '#334155',
-    fontWeight: '500',
-  },
-  modalValueBox: {
-    backgroundColor: '#f8fafc',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    fontSize: 15,
-    color: '#334155',
-    lineHeight: 22,
-  },
-  closeModalBtn: {
-    backgroundColor: '#0f172a',
-    padding: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  closeModalBtnText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loaderText: {
-    marginTop: 12,
-    color: '#64748b',
-    fontSize: 15,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginTop: 16,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  listContent: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  patientInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  patientName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1e293b',
-  },
-  timeAgo: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginTop: 2,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  cardBody: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  symptomsTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-    marginBottom: 4,
-  },
-  symptomsText: {
-    fontSize: 14,
-    color: '#334155',
-    lineHeight: 20,
-    fontStyle: 'italic',
-  },
-  specialtyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  specialtyText: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  cardFooter: {
-    borderTopWidth: 0,
-  },
-  attendBtn: {
-    backgroundColor: '#2563eb',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  attendBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  }
-});
+
