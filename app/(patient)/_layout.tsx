@@ -9,7 +9,7 @@ export default function PatientLayout() {
 
   return (
     <Drawer
-      drawerContent={(props) => <CustomDrawer {...props} />}
+      drawerContent={(props: any) => <CustomDrawer {...props} />}
         screenOptions={{
           drawerType: isDesktop ? 'permanent' : 'front',
           drawerStyle: {
@@ -34,7 +34,7 @@ export default function PatientLayout() {
           options={{
             drawerLabel: 'Inicio',
             title: 'Menú de Paciente',
-            drawerIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="home" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -42,7 +42,7 @@ export default function PatientLayout() {
           options={{
             drawerLabel: 'Triaje Inteligente (IA)',
             title: 'Triaje Inteligente',
-            drawerIcon: ({ color, size }) => <Ionicons name="hardware-chip" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="hardware-chip" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -50,7 +50,7 @@ export default function PatientLayout() {
           options={{
             drawerLabel: 'Sala de Espera Virtual',
             title: 'Sala de Espera',
-            drawerIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="time" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -58,7 +58,7 @@ export default function PatientLayout() {
           options={{
             drawerLabel: 'Mi Historial Clínico',
             title: 'Historial Clínico',
-            drawerIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="document-text" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -66,7 +66,7 @@ export default function PatientLayout() {
           options={{
             drawerLabel: 'Mi Perfil',
             title: 'Mi Perfil',
-            drawerIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="person" size={size} color={color} />,
           }}
         />
         {/* Ocultar pantalla de pago del menú lateral */}

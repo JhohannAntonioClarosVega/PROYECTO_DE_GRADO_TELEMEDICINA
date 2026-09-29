@@ -266,7 +266,7 @@ export default function WaitingRoomScreen() {
             <Text style={styles.emptyDesc}>
               No cuentas con alguna sala activa en este momento. Si necesitas atención, por favor inicia un nuevo triaje.
             </Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => router.replace('/(patient)/menu')}>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => router.replace('/(patient)/menu' as any)}>
               <Text style={styles.emptyBtnText}>Volver al Menú Principal</Text>
             </TouchableOpacity>
           </View>
@@ -392,7 +392,7 @@ export default function WaitingRoomScreen() {
                   // Cancelar el triaje marcándolo como resuelto/cancelado para que no quede fantasma
                   await supabase.from('triages').update({ status: 'resolved' }).eq('id', activeTriageId);
                 }
-                router.replace('/(patient)/menu');
+                router.replace('/(patient)/menu' as any);
               }}
             >
               <Text style={styles.cancelBtnText}>Cancelar y salir de la sala</Text>

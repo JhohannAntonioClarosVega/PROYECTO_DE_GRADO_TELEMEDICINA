@@ -483,7 +483,7 @@ export default function VideoCallScreen() {
         onCancel: closeModal,
         onConfirm: () => {
           closeModal();
-          router.replace('/(doctor)/dashboard');
+          router.replace('/(doctor)/dashboard' as any);
         }
       });
     } catch (error: any) {
@@ -506,7 +506,7 @@ export default function VideoCallScreen() {
       // Si el doctor cuelga, le recordamos guardar la ficha
       if (diagnosis && treatment) {
         setIsCallEnded(true);
-        router.replace('/(doctor)/dashboard');
+        router.replace('/(doctor)/dashboard' as any);
       } else {
         setModalConfig({
           visible: true,
@@ -534,14 +534,14 @@ export default function VideoCallScreen() {
               });
             }
             
-            router.replace('/(doctor)/dashboard');
+            router.replace('/(doctor)/dashboard' as any);
           }
         });
         setShowNotes(true);
       }
     } else {
       setIsCallEnded(true);
-      router.replace('/(patient)/menu');
+      router.replace('/(patient)/menu' as any);
     }
   };
 
@@ -879,7 +879,7 @@ export default function VideoCallScreen() {
       {/* Botón flotante para salir directamente en la esquina superior */}
       <TouchableOpacity 
         style={styles.closeCallHeaderBtn} 
-        onPress={() => router.replace(isDoctor ? '/(doctor)/dashboard' : '/(patient)/menu')}
+        onPress={() => router.replace((isDoctor ? '/(doctor)/dashboard' : '/(patient)/menu') as any)}
       >
         <Ionicons name="close" size={24} color="#ffffff" />
       </TouchableOpacity>

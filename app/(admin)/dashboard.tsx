@@ -127,7 +127,7 @@ export default function AdminDashboardScreen() {
 
       if (profile?.role !== 'admin') {
         if (profile?.role === 'doctor') {
-          router.replace('/(doctor)/dashboard');
+          router.replace('/(doctor)/dashboard' as any);
           return;
         }
         setIsAdmin(false);

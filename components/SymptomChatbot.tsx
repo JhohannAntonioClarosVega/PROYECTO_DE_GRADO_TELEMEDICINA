@@ -8,7 +8,7 @@ import CustomModal from '@/components/CustomModal';
 import * as Speech from 'expo-speech';
 import { useAudioRecorder, RecordingPresets } from 'expo-audio';
 import { Camera } from 'expo-camera';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Tipos para los mensajes
 type Message = {
@@ -292,7 +292,7 @@ export default function SymptomChatbot() {
     >
       {/* Cabecera del Chat */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(patient)/menu')}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(patient)/menu' as any)}>
           <Ionicons name="arrow-back" size={24} color="#64748b" />
         </TouchableOpacity>
         <View style={styles.headerIcon}>

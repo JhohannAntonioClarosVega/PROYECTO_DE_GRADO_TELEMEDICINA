@@ -82,7 +82,7 @@ export default function PatientMenuScreen() {
           <TouchableOpacity 
             style={[styles.gridCard, { backgroundColor: '#ecfdf5', borderColor: '#d1fae5' }]} 
             activeOpacity={0.8}
-            onPress={() => router.push('/(patient)/chatbot')}
+            onPress={() => router.push('/(patient)/chatbot' as any)}
           >
             <View style={[styles.gridIconCircle, { backgroundColor: '#10b981' }]}>
               <Ionicons name="hardware-chip" size={32} color="#ffffff" />
@@ -100,7 +100,7 @@ export default function PatientMenuScreen() {
                   : { backgroundColor: '#eff6ff', borderColor: '#dbeafe' }
               ]} 
               activeOpacity={0.8}
-              onPress={() => router.push('/(patient)/waiting-room')}
+              onPress={() => router.push('/(patient)/waiting-room' as any)}
             >
               <View style={[
                 styles.gridIconCircle, 
@@ -118,7 +118,7 @@ export default function PatientMenuScreen() {
           <TouchableOpacity 
             style={[styles.gridCard, { backgroundColor: '#f5f3ff', borderColor: '#ede9fe' }]} 
             activeOpacity={0.8}
-            onPress={() => router.push('/(patient)/profile')}
+            onPress={() => router.push('/(patient)/profile' as any)}
           >
             <View style={[styles.gridIconCircle, { backgroundColor: '#8b5cf6' }]}>
               <Ionicons name="person" size={32} color="#ffffff" />
@@ -130,7 +130,7 @@ export default function PatientMenuScreen() {
           <TouchableOpacity 
             style={[styles.gridCard, { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]} 
             activeOpacity={0.8}
-            onPress={() => router.push('/(patient)/history')}
+            onPress={() => router.push('/(patient)/history' as any)}
           >
             <View style={[styles.gridIconCircle, { backgroundColor: '#f59e0b' }]}>
               <Ionicons name="document-text" size={32} color="#ffffff" />

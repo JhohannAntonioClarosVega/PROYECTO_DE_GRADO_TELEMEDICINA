@@ -130,11 +130,11 @@ export default function SplitTelemedicinaLogin() {
           throw new Error('Cuenta médica pendiente de validación.');
         }
 
-        router.replace('/(doctor)/dashboard');
+        router.replace('/(doctor)/dashboard' as any);
       } else if (profile.role === 'admin') {
-        router.replace('/(admin)/dashboard');
+        router.replace('/(admin)/dashboard' as any);
       } else {
-        router.replace('/(patient)/menu');
+        router.replace('/(patient)/menu' as any);
       }
     } catch (error: any) {
       setErrorMsg(error.message || 'Error al iniciar sesión.');

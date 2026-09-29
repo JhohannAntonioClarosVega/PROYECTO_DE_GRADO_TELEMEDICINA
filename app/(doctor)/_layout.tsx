@@ -34,7 +34,7 @@ export default function DoctorLayout() {
           options={{
             drawerLabel: 'Cola de Pacientes',
             title: 'Pacientes en Espera',
-            drawerIcon: ({ color, size }) => <Ionicons name="people-circle" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="people-circle" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -42,7 +42,7 @@ export default function DoctorLayout() {
           options={{
             drawerLabel: 'Mis Atenciones',
             title: 'Historial de Consultas',
-            drawerIcon: ({ color, size }) => <Ionicons name="folder-open" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="folder-open" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -50,7 +50,7 @@ export default function DoctorLayout() {
           options={{
             drawerLabel: 'Expedientes Clínicos',
             title: 'Expedientes de Pacientes',
-            drawerIcon: ({ color, size }) => <Ionicons name="medical" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="medical" size={size} color={color} />,
           }}
         />
         <Drawer.Screen
@@ -58,7 +58,7 @@ export default function DoctorLayout() {
           options={{
             drawerLabel: 'Mi Perfil Médico',
             title: 'Mi Perfil',
-            drawerIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+            drawerIcon: ({ color, size }: any) => <Ionicons name="person" size={size} color={color} />,
           }}
         />
         <Drawer.Screen

@@ -5,8 +5,8 @@ import { Platform } from 'react-native'
 
 // Polyfill básico para evitar el error de Supabase en SSR (Node.js 20) al renderizar para Web
 if (Platform.OS === 'web' && typeof window === 'undefined') {
-  if (typeof global.WebSocket === 'undefined') {
-    ;(global as any).WebSocket = class WebSocket {
+  if (typeof (globalThis as any).WebSocket === 'undefined') {
+    (globalThis as any).WebSocket = class WebSocket {
       constructor() {}
       send() {}
       close() {}
