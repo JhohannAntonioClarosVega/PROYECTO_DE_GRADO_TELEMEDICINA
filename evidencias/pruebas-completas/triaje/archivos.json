@@ -1,0 +1,38 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [
+    "components/SymptomChatbot.tsx",
+    "app/(doctor)/dashboard.tsx",
+    "utils/triageWorkflow.ts",
+    "__tests__/triageWorkflow.test.ts"
+  ],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "components\\SymptomChatbot.tsx.txt",
+      "sha256": "eaca25c0a97ef5acb6a39d3efaa5c2e3f4f2b9180e2c011750cb0410e87d0501"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    },
+    {
+      "archivo": "utils\\triageWorkflow.ts.txt",
+      "sha256": "ea88526bbdd81f61170525865de1d253d3997b756fa6ce5402c08df972ee293f"
+    },
+    {
+      "archivo": "__tests__\\triageWorkflow.test.ts.txt",
+      "sha256": "eb7696f84985dd56c9f59e5dd47d0e80e17047ad802fa38d66e88db070ca0377"
+    },
+    {
+      "archivo": "app\\(doctor)\\dashboard.tsx.txt",
+      "sha256": "4bae1c13cd9988130416462449ff04c347524122e1b56c09df3ccdbef24a0d4e"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+PASS __tests__/reportStats.test.ts
+  Reportes - cálculos locales existentes
+    √ PU-65 una colección vacía produce contadores e ingreso cero (3 ms)
+    √ PU-66 cuenta niveles reconocidos sin clasificar un nivel desconocido
+    √ PU-67 caracteriza el conteo de espera y atención como completados estimados (1 ms)
+    √ PU-68 un registro completado aporta cincuenta a la estimación
+    √ PU-69 estados no contemplados no aportan ingresos estimados (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        2.046 s
+Ran all test suites within paths "__tests__/reportStats.test.ts".
+Test results written to: evidencias\pruebas-completas\reportes\resultado.json

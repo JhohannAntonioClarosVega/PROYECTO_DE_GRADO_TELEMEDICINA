@@ -1,0 +1,20 @@
+{
+  "inicio": "2026-09-30T20:54:13.236Z",
+  "zona": "America/La_Paz",
+  "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/medicalRecord.test.ts --json --outputFile=evidencias/pruebas-completas/historial-recetas/resultado.json",
+  "archivos": [
+    "__tests__/medicalRecord.test.ts"
+  ],
+  "versiones": {
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "jest": "29.7.0",
+    "jest-expo": "57.0.5",
+    "typescript": "6.0.3",
+    "expo": "57.0.19"
+  },
+  "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+  "cambiosLocales": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? ai-engine/__pycache__/llm_service.cpython-312.pyc\n?? ai-engine/test_unit_llm.py\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+  "fin": "2026-09-30T20:54:16.672Z",
+  "codigoSalida": 0
+}

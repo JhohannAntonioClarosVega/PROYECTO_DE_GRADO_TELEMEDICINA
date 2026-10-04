@@ -1,0 +1,15 @@
+PASS __tests__/reviewScreens.test.tsx
+  Regresión de componentes aislados con navegación y Supabase sustituidos
+    √ H-07 no anuncia éxito ni navega ante respuesta con error (589 ms)
+    √ H-07 no anuncia éxito ni navega ante excepción (12 ms)
+    √ H-07 habilita la continuación solo después de actualizar la simulación (9 ms)
+    √ H-06 muestra ausencia de clasificación y bloquea atención sin un triaje real (1168 ms)
+    √ H-04 ni los eventos ni el aviso del médico habilitan una cita cancelada (37 ms)
+    √ H-04 una cancelación revoca la navegación pendiente de una cita programada (25 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        4.157 s
+Ran all test suites within paths "__tests__/reviewScreens.test.tsx".
+Test results written to: evidencias\revision-hallazgos-20260930\componentes-reintento-2.json

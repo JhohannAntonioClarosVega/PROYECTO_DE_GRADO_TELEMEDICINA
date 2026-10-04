@@ -1,0 +1,11 @@
+export function calculateReportStats(data: { urgency_level?: string; status?: string }[]) {
+  const total = data.length;
+  const critical = data.filter(t => t.urgency_level === 'Critical').length;
+  const medium = data.filter(t => t.urgency_level === 'Medium').length;
+  const low = data.filter(t => t.urgency_level === 'Low').length;
+  // Estimación original de la pantalla; no representa cobros bancarios.
+  const paidCount = data.filter(t => t.status === 'waiting' || t.status === 'completed' || t.status === 'in_progress').length;
+  const completedCount = data.filter(t => t.status === 'completed').length;
+  return { totalTriages: total, criticalTriages: critical, mediumTriages: medium,
+    lowTriages: low, totalRevenue: paidCount * 50, completedTriages: completedCount };
+}

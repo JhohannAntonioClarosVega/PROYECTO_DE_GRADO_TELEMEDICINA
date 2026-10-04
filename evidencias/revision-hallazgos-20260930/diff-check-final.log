@@ -1,0 +1,12 @@
+warning: in the working copy of 'ai-engine/llm_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-engine/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(admin)/reports.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(doctor)/dashboard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(doctor)/medical-record.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(doctor)/profile.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(patient)/payment.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(patient)/profile.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/(patient)/waiting-room.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/register.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/SymptomChatbot.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/TriageEvaluation.tsx', LF will be replaced by CRLF the next time Git touches it

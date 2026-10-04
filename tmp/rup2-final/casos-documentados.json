@@ -1,0 +1,914 @@
+[
+  {
+    "id": "PU-01",
+    "file": "loginValidation.test.ts",
+    "title": "debe rechazar cuando el correo y la contraseña están vacíos",
+    "fullName": "Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión debe rechazar cuando el correo y la contraseña están vacíos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-02",
+    "file": "loginValidation.test.ts",
+    "title": "debe rechazar cuando el correo está completo pero la contraseña está vacía",
+    "fullName": "Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión debe rechazar cuando el correo está completo pero la contraseña está vacía",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-03",
+    "file": "loginValidation.test.ts",
+    "title": "debe rechazar cuando el correo está vacío pero la contraseña está completa",
+    "fullName": "Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión debe rechazar cuando el correo está vacío pero la contraseña está completa",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-04",
+    "file": "loginValidation.test.ts",
+    "title": "debe rechazar y considerar vacío cuando el correo está compuesto solo por espacios",
+    "fullName": "Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión debe rechazar y considerar vacío cuando el correo está compuesto solo por espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-05",
+    "file": "loginValidation.test.ts",
+    "title": "debe superar la validación de campos obligatorios cuando ambos campos están completos",
+    "fullName": "Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión debe superar la validación de campos obligatorios cuando ambos campos están completos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-06",
+    "file": "userValidation.test.ts",
+    "title": "PU-06 rechaza ambos argumentos ausentes",
+    "fullName": "Usuarios - límites de los campos de inicio de sesión PU-06 rechaza ambos argumentos ausentes",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-07",
+    "file": "userValidation.test.ts",
+    "title": "PU-07 rechaza ambos argumentos ausentes",
+    "fullName": "Usuarios - límites de los campos de inicio de sesión PU-07 rechaza ambos argumentos ausentes",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-08",
+    "file": "userValidation.test.ts",
+    "title": "PU-08 acepta correo rodeado de espacios",
+    "fullName": "Usuarios - límites de los campos de inicio de sesión PU-08 acepta correo rodeado de espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-09",
+    "file": "userValidation.test.ts",
+    "title": "PU-09 no considera vacía una contraseña formada por espacios",
+    "fullName": "Usuarios - límites de los campos de inicio de sesión PU-09 no considera vacía una contraseña formada por espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-10",
+    "file": "userValidation.test.ts",
+    "title": "PU-10 rechaza el campo común vacío: email",
+    "fullName": "Usuarios - validación local del registro PU-10 rechaza el campo común vacío: email",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-11",
+    "file": "userValidation.test.ts",
+    "title": "PU-11 rechaza el campo común vacío: password",
+    "fullName": "Usuarios - validación local del registro PU-11 rechaza el campo común vacío: password",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-12",
+    "file": "userValidation.test.ts",
+    "title": "PU-12 rechaza el campo común vacío: fullName",
+    "fullName": "Usuarios - validación local del registro PU-12 rechaza el campo común vacío: fullName",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-13",
+    "file": "userValidation.test.ts",
+    "title": "PU-13 rechaza el campo común vacío: identityCard",
+    "fullName": "Usuarios - validación local del registro PU-13 rechaza el campo común vacío: identityCard",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-14",
+    "file": "userValidation.test.ts",
+    "title": "PU-14 rechaza el campo común vacío: phoneNumber",
+    "fullName": "Usuarios - validación local del registro PU-14 rechaza el campo común vacío: phoneNumber",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-15",
+    "file": "userValidation.test.ts",
+    "title": "PU-15 rechaza el campo común vacío: address",
+    "fullName": "Usuarios - validación local del registro PU-15 rechaza el campo común vacío: address",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-16",
+    "file": "userValidation.test.ts",
+    "title": "PU-16 acepta paciente completo sin título ni especialidad",
+    "fullName": "Usuarios - validación local del registro PU-16 acepta paciente completo sin título ni especialidad",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-17",
+    "file": "userValidation.test.ts",
+    "title": "PU-17 rechaza médico sin especialidad o título",
+    "fullName": "Usuarios - validación local del registro PU-17 rechaza médico sin especialidad o título",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-18",
+    "file": "userValidation.test.ts",
+    "title": "PU-18 rechaza médico sin especialidad o título",
+    "fullName": "Usuarios - validación local del registro PU-18 rechaza médico sin especialidad o título",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-19",
+    "file": "userValidation.test.ts",
+    "title": "PU-19 acepta médico con campos y requisitos completos",
+    "fullName": "Usuarios - validación local del registro PU-19 acepta médico con campos y requisitos completos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-20",
+    "file": "userValidation.test.ts",
+    "title": "PU-20 prioriza campos comunes ante varios requisitos ausentes",
+    "fullName": "Usuarios - validación local del registro PU-20 prioriza campos comunes ante varios requisitos ausentes",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-21",
+    "file": "userValidation.test.ts",
+    "title": "PU-21 rechaza un nombre formado solo por espacios",
+    "fullName": "Usuarios - validación local del registro PU-21 rechaza un nombre formado solo por espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-22",
+    "file": "userValidation.test.ts",
+    "title": "PU-22 rechaza teléfono o dirección vacíos",
+    "fullName": "Usuarios - validación local del perfil de paciente PU-22 rechaza teléfono o dirección vacíos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-23",
+    "file": "userValidation.test.ts",
+    "title": "PU-23 rechaza teléfono o dirección vacíos",
+    "fullName": "Usuarios - validación local del perfil de paciente PU-23 rechaza teléfono o dirección vacíos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-24",
+    "file": "userValidation.test.ts",
+    "title": "PU-24 acepta teléfono y dirección completos",
+    "fullName": "Usuarios - validación local del perfil de paciente PU-24 acepta teléfono y dirección completos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-25",
+    "file": "userValidation.test.ts",
+    "title": "PU-25 rechaza teléfono y dirección de solo espacios",
+    "fullName": "Usuarios - validación local del perfil de paciente PU-25 rechaza teléfono y dirección de solo espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-26",
+    "file": "userValidation.test.ts",
+    "title": "PU-26 rechaza nombre o celular vacío o de solo espacios",
+    "fullName": "Usuarios - validación local del perfil médico PU-26 rechaza nombre o celular vacío o de solo espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-27",
+    "file": "userValidation.test.ts",
+    "title": "PU-27 rechaza nombre o celular vacío o de solo espacios",
+    "fullName": "Usuarios - validación local del perfil médico PU-27 rechaza nombre o celular vacío o de solo espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-28",
+    "file": "userValidation.test.ts",
+    "title": "PU-28 rechaza nombre o celular vacío o de solo espacios",
+    "fullName": "Usuarios - validación local del perfil médico PU-28 rechaza nombre o celular vacío o de solo espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-29",
+    "file": "userValidation.test.ts",
+    "title": "PU-29 rechaza nombre o celular vacío o de solo espacios",
+    "fullName": "Usuarios - validación local del perfil médico PU-29 rechaza nombre o celular vacío o de solo espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-30",
+    "file": "userValidation.test.ts",
+    "title": "PU-30 acepta nombre y celular completos rodeados de espacios",
+    "fullName": "Usuarios - validación local del perfil médico PU-30 acepta nombre y celular completos rodeados de espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-31",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-31 normaliza una entrada de solo espacios como vacía",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-31 normaliza una entrada de solo espacios como vacía",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-32",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-32 conserva el relato en Quechuañol al recortar bordes",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-32 conserva el relato en Quechuañol al recortar bordes",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-33",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-33 arma el reporte con síntomas, tiempo y medicamentos",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-33 arma el reporte con síntomas, tiempo y medicamentos",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-34",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-34 filtra por especialidad ignorando tildes y mayúsculas",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-34 filtra por especialidad ignorando tildes y mayúsculas",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-35",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-35 medicina general conserva la cola completa",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-35 medicina general conserva la cola completa",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-36",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-36 un filtro desactivado conserva la cola completa",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-36 un filtro desactivado conserva la cola completa",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-37",
+    "file": "triageWorkflow.test.ts",
+    "title": "PU-37 caracteriza la inclusión de un triaje sin especialidad",
+    "fullName": "Triaje - reglas locales, sin evaluación clínica PU-37 caracteriza la inclusión de un triaje sin especialidad",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-38",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_38_prioridad_pediatrica",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_38_prioridad_pediatrica",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-39",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_39_no_inventa_clasificacion_sin_configuracion",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_39_no_inventa_clasificacion_sin_configuracion",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-40",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-41",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_41_rechaza_respuesta_incompleta",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_41_rechaza_respuesta_incompleta",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-42",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-43",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_43_transcripcion_simulada",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_43_transcripcion_simulada",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-44",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion",
+    "fullName": "test_unit_llm.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-45",
+    "file": "consultationRules.test.ts",
+    "title": "PU-45 reconoce el cierre con estado completed",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-45 reconoce el cierre con estado completed",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-46",
+    "file": "consultationRules.test.ts",
+    "title": "PU-46 reconoce el cierre con estado resolved",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-46 reconoce el cierre con estado resolved",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-47",
+    "file": "consultationRules.test.ts",
+    "title": "PU-47 un triaje en espera no está cerrado",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-47 un triaje en espera no está cerrado",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-48",
+    "file": "consultationRules.test.ts",
+    "title": "PU-48 un triaje en progreso habilita la llamada sin cita",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-48 un triaje en progreso habilita la llamada sin cita",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-49",
+    "file": "consultationRules.test.ts",
+    "title": "PU-49 una cita programada habilita la llamada",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-49 una cita programada habilita la llamada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-50",
+    "file": "consultationRules.test.ts",
+    "title": "PU-50 sin cita ni atención en progreso no habilita la llamada",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-50 sin cita ni atención en progreso no habilita la llamada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-51",
+    "file": "consultationRules.test.ts",
+    "title": "PU-51 una cita cancelada no habilita la llamada",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera PU-51 una cita cancelada no habilita la llamada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-52",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-52 rechaza un diagnóstico vacío",
+    "fullName": "Historial y recetas - validación y preparación local PU-52 rechaza un diagnóstico vacío",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-53",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-53 rechaza un tratamiento vacío",
+    "fullName": "Historial y recetas - validación y preparación local PU-53 rechaza un tratamiento vacío",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-54",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-54 acepta diagnóstico y tratamiento con contenido",
+    "fullName": "Historial y recetas - validación y preparación local PU-54 acepta diagnóstico y tratamiento con contenido",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-55",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-55 rechaza campos clínicos de solo espacios",
+    "fullName": "Historial y recetas - validación y preparación local PU-55 rechaza campos clínicos de solo espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-56",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-56 prepara el prediagnóstico a partir del reporte recibido",
+    "fullName": "Historial y recetas - validación y preparación local PU-56 prepara el prediagnóstico a partir del reporte recibido",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-57",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-57 no inventa una urgencia para el reporte incompleto",
+    "fullName": "Historial y recetas - validación y preparación local PU-57 no inventa una urgencia para el reporte incompleto",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-58",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-58 no presenta datos de demostración sin triaje",
+    "fullName": "Historial y recetas - validación y preparación local PU-58 no presenta datos de demostración sin triaje",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-59",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-59 prepara el HTML de la receta sin farmacia opcional",
+    "fullName": "Historial y recetas - validación y preparación local PU-59 prepara el HTML de la receta sin farmacia opcional",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-60",
+    "file": "medicalRecord.test.ts",
+    "title": "PU-60 incluye la farmacia en el HTML cuando está seleccionada",
+    "fullName": "Historial y recetas - validación y preparación local PU-60 incluye la farmacia en el HTML cuando está seleccionada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-61",
+    "file": "paymentSimulation.test.ts",
+    "title": "PU-61 no solicita cambios sin identificador de triaje",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido PU-61 no solicita cambios sin identificador de triaje",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-62",
+    "file": "paymentSimulation.test.ts",
+    "title": "PU-62 solicita el estado waiting para el identificador ficticio",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido PU-62 solicita el estado waiting para el identificador ficticio",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-63",
+    "file": "paymentSimulation.test.ts",
+    "title": "PU-63 propaga el error devuelto por Supabase",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido PU-63 propaga el error devuelto por Supabase",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-64",
+    "file": "paymentSimulation.test.ts",
+    "title": "PU-64 propaga una excepción de la actualización",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido PU-64 propaga una excepción de la actualización",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-65",
+    "file": "reportStats.test.ts",
+    "title": "PU-65 una colección vacía produce contadores e ingreso cero",
+    "fullName": "Reportes - cálculos locales existentes PU-65 una colección vacía produce contadores e ingreso cero",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-66",
+    "file": "reportStats.test.ts",
+    "title": "PU-66 cuenta niveles reconocidos sin clasificar un nivel desconocido",
+    "fullName": "Reportes - cálculos locales existentes PU-66 cuenta niveles reconocidos sin clasificar un nivel desconocido",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-67",
+    "file": "reportStats.test.ts",
+    "title": "PU-67 no cuenta espera ni atención en progreso como completadas",
+    "fullName": "Reportes - cálculos locales existentes PU-67 no cuenta espera ni atención en progreso como completadas",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-68",
+    "file": "reportStats.test.ts",
+    "title": "PU-68 un registro completado aporta cincuenta a la estimación",
+    "fullName": "Reportes - cálculos locales existentes PU-68 un registro completado aporta cincuenta a la estimación",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-69",
+    "file": "reportStats.test.ts",
+    "title": "PU-69 estados no contemplados no aportan ingresos estimados",
+    "fullName": "Reportes - cálculos locales existentes PU-69 estados no contemplados no aportan ingresos estimados",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-70",
+    "file": "userValidation.test.ts",
+    "title": "H-01 rechaza espacios en el campo obligatorio email",
+    "fullName": "Usuarios - validación local del registro H-01 rechaza espacios en el campo obligatorio email",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-71",
+    "file": "userValidation.test.ts",
+    "title": "H-01 rechaza espacios en el campo obligatorio identityCard",
+    "fullName": "Usuarios - validación local del registro H-01 rechaza espacios en el campo obligatorio identityCard",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-72",
+    "file": "userValidation.test.ts",
+    "title": "H-01 rechaza espacios en el campo obligatorio phoneNumber",
+    "fullName": "Usuarios - validación local del registro H-01 rechaza espacios en el campo obligatorio phoneNumber",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-73",
+    "file": "userValidation.test.ts",
+    "title": "H-01 rechaza espacios en el campo obligatorio address",
+    "fullName": "Usuarios - validación local del registro H-01 rechaza espacios en el campo obligatorio address",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-74",
+    "file": "userValidation.test.ts",
+    "title": "H-01 conserva los datos completos con espacios exteriores",
+    "fullName": "Usuarios - validación local del registro H-01 conserva los datos completos con espacios exteriores",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-75",
+    "file": "userValidation.test.ts",
+    "title": "H-01 rechaza una especialidad formada solo por espacios",
+    "fullName": "Usuarios - validación local del registro H-01 rechaza una especialidad formada solo por espacios",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-76",
+    "file": "userValidation.test.ts",
+    "title": "H-02 rechaza un campo de solo espacios aunque el otro tenga contenido ( \t )",
+    "fullName": "Usuarios - validación local del perfil de paciente H-02 rechaza un campo de solo espacios aunque el otro tenga contenido ( \t )",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-77",
+    "file": "userValidation.test.ts",
+    "title": "H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (00000000)",
+    "fullName": "Usuarios - validación local del perfil de paciente H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (00000000)",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-78",
+    "file": "userValidation.test.ts",
+    "title": "H-02 conserva teléfono y dirección con espacios exteriores",
+    "fullName": "Usuarios - validación local del perfil de paciente H-02 conserva teléfono y dirección con espacios exteriores",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-79",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 una cita con estado cancelled no habilita la llamada aunque el triaje siga en progreso",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 una cita con estado cancelled no habilita la llamada aunque el triaje siga en progreso",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-80",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 una cita con estado completed no habilita la llamada aunque el triaje siga en progreso",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 una cita con estado completed no habilita la llamada aunque el triaje siga en progreso",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-81",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 una cita con estado unknown no habilita la llamada aunque el triaje siga en progreso",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 una cita con estado unknown no habilita la llamada aunque el triaje siga en progreso",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-82",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 una cita con estado undefined no habilita la llamada aunque el triaje siga en progreso",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 una cita con estado undefined no habilita la llamada aunque el triaje siga en progreso",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-83",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 un triaje cerrado como completed no habilita una cita programada",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 un triaje cerrado como completed no habilita una cita programada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-84",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 un triaje cerrado como resolved no habilita una cita programada",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 un triaje cerrado como resolved no habilita una cita programada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-85",
+    "file": "consultationRules.test.ts",
+    "title": "H-04 una cita sin estado no demuestra que el médico esté listo",
+    "fullName": "Videoconsultas - decisiones locales de la sala de espera H-04 una cita sin estado no demuestra que el médico esté listo",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-86",
+    "file": "medicalRecord.test.ts",
+    "title": "H-05 rechaza un campo clínico en blanco con el otro completo ( \t )",
+    "fullName": "Historial y recetas - validación y preparación local H-05 rechaza un campo clínico en blanco con el otro completo ( \t )",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-87",
+    "file": "medicalRecord.test.ts",
+    "title": "H-05 rechaza un campo clínico en blanco con el otro completo (Diagnóstico ficticio)",
+    "fullName": "Historial y recetas - validación y preparación local H-05 rechaza un campo clínico en blanco con el otro completo (Diagnóstico ficticio)",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-88",
+    "file": "medicalRecord.test.ts",
+    "title": "H-05 acepta contenido clínico con espacios exteriores",
+    "fullName": "Historial y recetas - validación y preparación local H-05 acepta contenido clínico con espacios exteriores",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-89",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 conserva la urgencia Critical cuando procede del reporte",
+    "fullName": "Historial y recetas - validación y preparación local H-06 conserva la urgencia Critical cuando procede del reporte",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-90",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 conserva la urgencia Medium cuando procede del reporte",
+    "fullName": "Historial y recetas - validación y preparación local H-06 conserva la urgencia Medium cuando procede del reporte",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-91",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 conserva la urgencia Low cuando procede del reporte",
+    "fullName": "Historial y recetas - validación y preparación local H-06 conserva la urgencia Low cuando procede del reporte",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-92",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 no clasifica como evaluado un nivel inválido ",
+    "fullName": "Historial y recetas - validación y preparación local H-06 no clasifica como evaluado un nivel inválido ",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-93",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 no clasifica como evaluado un nivel inválido Unknown",
+    "fullName": "Historial y recetas - validación y preparación local H-06 no clasifica como evaluado un nivel inválido Unknown",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-94",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 no clasifica como evaluado un nivel inválido    ",
+    "fullName": "Historial y recetas - validación y preparación local H-06 no clasifica como evaluado un nivel inválido    ",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-95",
+    "file": "medicalRecord.test.ts",
+    "title": "H-06 no clasifica como evaluado un nivel inválido null",
+    "fullName": "Historial y recetas - validación y preparación local H-06 no clasifica como evaluado un nivel inválido null",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-96",
+    "file": "paymentSimulation.test.ts",
+    "title": "H-07 rechaza un identificador vacío o ambiguo ()",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido H-07 rechaza un identificador vacío o ambiguo ()",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-97",
+    "file": "paymentSimulation.test.ts",
+    "title": "H-07 rechaza un identificador vacío o ambiguo (   )",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido H-07 rechaza un identificador vacío o ambiguo (   )",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-98",
+    "file": "paymentSimulation.test.ts",
+    "title": "H-07 rechaza un identificador vacío o ambiguo ([\"uno\", \"dos\"])",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido H-07 rechaza un identificador vacío o ambiguo ([\"uno\", \"dos\"])",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-99",
+    "file": "paymentSimulation.test.ts",
+    "title": "H-07 rechaza un identificador vacío o ambiguo ([])",
+    "fullName": "Pagos - orquestación de la simulación con Supabase sustituido H-07 rechaza un identificador vacío o ambiguo ([])",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-100",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_fallo_red_no_inventa_urgencia",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_fallo_red_no_inventa_urgencia",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-101",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_ausente",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_ausente",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-102",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_desconocida",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_desconocida",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-103",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_idioma_ausente",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_idioma_ausente",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-104",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_recomendacion_ausente",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_recomendacion_ausente",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-105",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_blancos",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_blancos",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-106",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_tipo_incorrecto",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_tipo_incorrecto",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-107",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_ausente",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_ausente",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-108",
+    "file": "test_unit_llm.py",
+    "title": "test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_desconocida",
+    "fullName": "test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_desconocida",
+    "status": "passed",
+    "framework": "unittest"
+  },
+  {
+    "id": "PU-109",
+    "file": "reviewScreens.test.tsx",
+    "title": "H-07 no anuncia éxito ni navega ante respuesta con error",
+    "fullName": "Regresión de componentes aislados con navegación y Supabase sustituidos H-07 no anuncia éxito ni navega ante respuesta con error",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-110",
+    "file": "reviewScreens.test.tsx",
+    "title": "H-07 no anuncia éxito ni navega ante excepción",
+    "fullName": "Regresión de componentes aislados con navegación y Supabase sustituidos H-07 no anuncia éxito ni navega ante excepción",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-111",
+    "file": "reviewScreens.test.tsx",
+    "title": "H-07 habilita la continuación solo después de actualizar la simulación",
+    "fullName": "Regresión de componentes aislados con navegación y Supabase sustituidos H-07 habilita la continuación solo después de actualizar la simulación",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-112",
+    "file": "reviewScreens.test.tsx",
+    "title": "H-06 muestra ausencia de clasificación y bloquea atención sin un triaje real",
+    "fullName": "Regresión de componentes aislados con navegación y Supabase sustituidos H-06 muestra ausencia de clasificación y bloquea atención sin un triaje real",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-113",
+    "file": "reviewScreens.test.tsx",
+    "title": "H-04 ni los eventos ni el aviso del médico habilitan una cita cancelada",
+    "fullName": "Regresión de componentes aislados con navegación y Supabase sustituidos H-04 ni los eventos ni el aviso del médico habilitan una cita cancelada",
+    "status": "passed",
+    "framework": "Jest"
+  },
+  {
+    "id": "PU-114",
+    "file": "reviewScreens.test.tsx",
+    "title": "H-04 una cancelación revoca la navegación pendiente de una cita programada",
+    "fullName": "Regresión de componentes aislados con navegación y Supabase sustituidos H-04 una cancelación revoca la navegación pendiente de una cita programada",
+    "status": "passed",
+    "framework": "Jest"
+  }
+]

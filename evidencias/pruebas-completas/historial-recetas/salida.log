@@ -1,0 +1,18 @@
+PASS __tests__/medicalRecord.test.ts
+  Historial y recetas - validación y preparación local
+    √ PU-52 rechaza un diagnóstico vacío (2 ms)
+    √ PU-53 rechaza un tratamiento vacío
+    √ PU-54 acepta diagnóstico y tratamiento con contenido
+    √ PU-55 caracteriza la aceptación de campos clínicos de solo espacios (1 ms)
+    √ PU-56 prepara el prediagnóstico a partir del reporte recibido (1 ms)
+    √ PU-57 conserva el nivel Medium como valor por defecto del reporte incompleto
+    √ PU-58 caracteriza los datos de demostración al no recibir un triaje (1 ms)
+    √ PU-59 prepara el HTML de la receta sin farmacia opcional (77 ms)
+    √ PU-60 incluye la farmacia en el HTML cuando está seleccionada (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        2.15 s
+Ran all test suites within paths "__tests__/medicalRecord.test.ts".
+Test results written to: evidencias\pruebas-completas\historial-recetas\resultado.json

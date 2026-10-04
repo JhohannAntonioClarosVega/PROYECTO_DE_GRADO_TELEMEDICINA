@@ -1,0 +1,106 @@
+import { validateLoginFields } from '../utils/validation';
+import {
+  RegistrationFields,
+  validateRegistrationFields,
+  validatePatientProfileFields,
+  validateDoctorProfileFields,
+} from '../utils/userValidation';
+
+describe('Usuarios - límites de los campos de inicio de sesión', () => {
+  it.each([
+    ['PU-06', undefined, undefined],
+    ['PU-07', null, null],
+  ])('%s rechaza ambos argumentos ausentes', (_id, email, password) => {
+    expect(validateLoginFields(email, password)).toEqual({
+      isValid: false, error: 'Por favor ingresa tu correo y contraseña.',
+    });
+  });
+
+  it('PU-08 acepta correo rodeado de espacios', () => {
+    expect(validateLoginFields(' paciente@example.test ', 'Ficticia123!')).toEqual({ isValid: true });
+  });
+
+  it('PU-09 no considera vacía una contraseña formada por espacios', () => {
+    expect(validateLoginFields('paciente@example.test', '   ')).toEqual({ isValid: true });
+  });
+});
+
+const patient: RegistrationFields = {
+  email: 'paciente@example.test', password: 'Ficticia123!', fullName: 'Persona de Prueba',
+  identityCard: 'TEST-001', phoneNumber: '00000000', address: 'Dirección ficticia',
+  isDoctor: false, selectedSpecialty: '', document: null,
+};
+const doctor: RegistrationFields = {
+  ...patient, isDoctor: true, selectedSpecialty: 'especialidad-ficticia',
+  document: { name: 'titulo-ficticio.pdf', uri: 'file:///ficticio.pdf' },
+};
+
+describe('Usuarios - validación local del registro', () => {
+  it.each([
+    ['PU-10', 'email'], ['PU-11', 'password'], ['PU-12', 'fullName'],
+    ['PU-13', 'identityCard'], ['PU-14', 'phoneNumber'], ['PU-15', 'address'],
+  ])('%s rechaza el campo común vacío: %s', (_id, field) => {
+    expect(validateRegistrationFields({ ...patient, [field]: '' })).toEqual({
+      isValid: false, error: 'Por favor completa todos los campos comunes.',
+    });
+  });
+
+  it('PU-16 acepta paciente completo sin título ni especialidad', () => {
+    expect(validateRegistrationFields(patient)).toEqual({ isValid: true });
+  });
+
+  it.each([
+    ['PU-17', { selectedSpecialty: '' }],
+    ['PU-18', { document: null }],
+  ])('%s rechaza médico sin especialidad o título', (_id, missing) => {
+    expect(validateRegistrationFields({ ...doctor, ...missing })).toEqual({
+      isValid: false, error: 'Por favor selecciona una especialidad y adjunta tu título.',
+    });
+  });
+
+  it('PU-19 acepta médico con campos y requisitos completos', () => {
+    expect(validateRegistrationFields(doctor)).toEqual({ isValid: true });
+  });
+
+  it('PU-20 prioriza campos comunes ante varios requisitos ausentes', () => {
+    expect(validateRegistrationFields({ ...doctor, email: '', document: null })).toEqual({
+      isValid: false, error: 'Por favor completa todos los campos comunes.',
+    });
+  });
+
+  // Caracterización de una limitación existente, no aprobación de la calidad del dato.
+  it('PU-21 documenta que el registro acepta un nombre de solo espacios', () => {
+    expect(validateRegistrationFields({ ...patient, fullName: '   ' })).toEqual({ isValid: true });
+  });
+});
+
+describe('Usuarios - validación local del perfil de paciente', () => {
+  it.each([
+    ['PU-22', '', 'Dirección ficticia'],
+    ['PU-23', '00000000', ''],
+  ])('%s rechaza teléfono o dirección vacíos', (_id, phone, address) => {
+    expect(validatePatientProfileFields(phone, address)).toEqual({
+      isValid: false, error: 'Por favor completa el número de teléfono y la dirección.',
+    });
+  });
+  it('PU-24 acepta teléfono y dirección completos', () => {
+    expect(validatePatientProfileFields('00000000', 'Dirección ficticia')).toEqual({ isValid: true });
+  });
+  it('PU-25 documenta que el perfil de paciente acepta espacios', () => {
+    expect(validatePatientProfileFields('   ', '   ')).toEqual({ isValid: true });
+  });
+});
+
+describe('Usuarios - validación local del perfil médico', () => {
+  it.each([
+    ['PU-26', '', '00000000'], ['PU-27', 'Médico de Prueba', ''],
+    ['PU-28', '   ', '00000000'], ['PU-29', 'Médico de Prueba', '   '],
+  ])('%s rechaza nombre o celular vacío o de solo espacios', (_id, name, phone) => {
+    expect(validateDoctorProfileFields(name, phone)).toEqual({
+      isValid: false, error: 'El nombre y el celular no pueden estar vacíos',
+    });
+  });
+  it('PU-30 acepta nombre y celular completos rodeados de espacios', () => {
+    expect(validateDoctorProfileFields(' Médico de Prueba ', ' 00000000 ')).toEqual({ isValid: true });
+  });
+});

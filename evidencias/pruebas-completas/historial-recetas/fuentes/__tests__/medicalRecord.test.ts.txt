@@ -1,0 +1,32 @@
+import { hasClinicalRecordFields, generatePrescriptionHtml } from '../utils/medicalRecord';
+import { prepareTriageView } from '../utils/triagePresentation';
+describe('Historial y recetas - validación y preparación local', () => {
+  it('PU-52 rechaza un diagnóstico vacío', () => { expect(hasClinicalRecordFields('', 'Plan ficticio')).toBe(false); });
+  it('PU-53 rechaza un tratamiento vacío', () => { expect(hasClinicalRecordFields('Diagnóstico ficticio', '')).toBe(false); });
+  it('PU-54 acepta diagnóstico y tratamiento con contenido', () => { expect(hasClinicalRecordFields('Diagnóstico ficticio', 'Plan ficticio')).toBe(true); });
+  it('PU-55 caracteriza la aceptación de campos clínicos de solo espacios', () => { expect(hasClinicalRecordFields('   ', '   ')).toBe(true); });
+  it('PU-56 prepara el prediagnóstico a partir del reporte recibido', () => {
+    const result = prepareTriageView({ urgency_level: 'Low', ai_raw_analysis: 'Texto de prueba', patients: { profiles: { full_name: 'Paciente Ficticio' } } });
+    expect(result.patient.full_name).toBe('Paciente Ficticio');
+    expect(result.ai_analysis).toEqual({ urgency_level: 'Low', raw_analysis: 'Texto de prueba', recommendation: 'Sin recomendación.' });
+  });
+  it('PU-57 conserva el nivel Medium como valor por defecto del reporte incompleto', () => {
+    expect(prepareTriageView({}).ai_analysis.urgency_level).toBe('Medium');
+    expect(prepareTriageView({}).patient.full_name).toBe('Desconocido');
+  });
+  it('PU-58 caracteriza los datos de demostración al no recibir un triaje', () => {
+    expect(prepareTriageView().patient.full_name).toBe('Juan Perez');
+    expect(prepareTriageView().ai_analysis.urgency_level).toBe('Critical');
+  });
+  const prescription = { patientName: 'Paciente Ficticio', doctorName: 'Médico Ficticio', diagnosis: 'Diagnóstico ficticio', treatment: 'Plan ficticio', pharmacyName: '' };
+  it('PU-59 prepara el HTML de la receta sin farmacia opcional', () => {
+    const html = generatePrescriptionHtml(prescription);
+    for (const text of ['Paciente Ficticio', 'Médico Ficticio', 'Diagnóstico ficticio', 'Plan ficticio']) expect(html).toContain(text);
+    expect(html).not.toContain('Farmacia Aliada Sugerida');
+  });
+  it('PU-60 incluye la farmacia en el HTML cuando está seleccionada', () => {
+    const html = generatePrescriptionHtml({ ...prescription, pharmacyName: 'Farmacia Ficticia' });
+    expect(html).toContain('Farmacia Aliada Sugerida');
+    expect(html).toContain('Farmacia Ficticia');
+  });
+});

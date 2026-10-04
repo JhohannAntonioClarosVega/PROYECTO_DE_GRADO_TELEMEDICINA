@@ -1,0 +1,40 @@
+{
+  "inicio": "2026-09-30T20:54:09.885643+00:00",
+  "fin": "2026-09-30T20:54:09.902612+00:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "comando": "\"C:\\Users\\inutil\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\" ai-engine/test_unit_llm.py",
+  "cases": [
+    {
+      "id": "__main__.LlmUnitTests.test_PU_38_prioridad_pediatrica",
+      "status": "passed"
+    },
+    {
+      "id": "__main__.LlmUnitTests.test_PU_39_respaldo_sin_configuracion",
+      "status": "passed"
+    },
+    {
+      "id": "__main__.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada",
+      "status": "passed"
+    },
+    {
+      "id": "__main__.LlmUnitTests.test_PU_41_caracterizar_respuesta_incompleta",
+      "status": "passed"
+    },
+    {
+      "id": "__main__.LlmUnitTests.test_PU_42_respaldo_ante_respuesta_no_json",
+      "status": "passed"
+    },
+    {
+      "id": "__main__.LlmUnitTests.test_PU_43_transcripcion_simulada",
+      "status": "passed"
+    },
+    {
+      "id": "__main__.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion",
+      "status": "passed"
+    }
+  ],
+  "total": 7,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0
+}

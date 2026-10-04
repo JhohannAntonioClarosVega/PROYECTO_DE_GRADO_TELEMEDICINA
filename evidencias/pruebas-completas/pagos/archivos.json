@@ -1,0 +1,33 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [
+    "app/(patient)/payment.tsx",
+    "services/paymentSimulation.ts",
+    "__tests__/paymentSimulation.test.ts"
+  ],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    },
+    {
+      "archivo": "services\\paymentSimulation.ts.txt",
+      "sha256": "7b747aad7833488ace05eec85a2d2491adf1941fb84ff3223b231190060c9290"
+    },
+    {
+      "archivo": "__tests__\\paymentSimulation.test.ts.txt",
+      "sha256": "7966cdc77e0c0d4c08b3a3a3358b4fa1e5dfe5591490d0edd1bcd45a8e4c9d1f"
+    },
+    {
+      "archivo": "app\\(patient)\\payment.tsx.txt",
+      "sha256": "7509088f4c4263dbcd98f642d417270606dd479ce0d8087d6022d4d90ffd0dcb"
+    }
+  ]
+}

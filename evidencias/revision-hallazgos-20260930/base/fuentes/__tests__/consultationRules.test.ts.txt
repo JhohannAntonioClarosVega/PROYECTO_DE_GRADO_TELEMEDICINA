@@ -1,0 +1,19 @@
+import { isClosedTriage, isDoctorReadyForCall } from '../utils/consultationRules';
+describe('Videoconsultas - decisiones locales de la sala de espera', () => {
+  it.each([['PU-45', 'completed'], ['PU-46', 'resolved']])('%s reconoce el cierre con estado %s', (_id, status) => {
+    expect(isClosedTriage(status)).toBe(true);
+  });
+  it('PU-47 un triaje en espera no está cerrado', () => { expect(isClosedTriage('waiting')).toBe(false); });
+  it('PU-48 un triaje en progreso habilita la llamada sin cita', () => {
+    expect(isDoctorReadyForCall('in_progress', null)).toBe(true);
+  });
+  it('PU-49 la existencia de una cita habilita la llamada', () => {
+    expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia' })).toBe(true);
+  });
+  it('PU-50 sin cita ni atención en progreso no habilita la llamada', () => {
+    expect(isDoctorReadyForCall('waiting', null)).toBe(false);
+  });
+  it('PU-51 caracteriza que no se comprueba el estado cancelado de una cita', () => {
+    expect(isDoctorReadyForCall('waiting', { status: 'cancelled' })).toBe(true);
+  });
+});

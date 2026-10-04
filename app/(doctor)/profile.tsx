@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
+import { validateDoctorProfileFields } from '@/utils/userValidation';
 
 export default function DoctorProfileScreen() {
   const [loading, setLoading] = useState(true);
@@ -77,9 +78,10 @@ export default function DoctorProfileScreen() {
 
   const saveProfile = async () => {
     if (!userId) return;
-    if (!fullName.trim() || !phoneNumber.trim()) {
-      if (Platform.OS === 'web') window.alert('El nombre y el celular no pueden estar vacíos');
-      else Alert.alert('Error', 'El nombre y el celular no pueden estar vacíos');
+    const validation = validateDoctorProfileFields(fullName, phoneNumber);
+    if (!validation.isValid) {
+      if (Platform.OS === 'web') window.alert(validation.error!);
+      else Alert.alert('Error', validation.error!);
       return;
     }
 

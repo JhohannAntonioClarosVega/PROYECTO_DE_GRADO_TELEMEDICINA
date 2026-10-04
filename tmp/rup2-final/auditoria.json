@@ -1,0 +1,32 @@
+{
+  "original_sha256": "1b5be2384c907b31f8997f35cb27f03aa8cc69c6c7bef1431bf40353f9e0f644",
+  "original_preservado": true,
+  "pruebas": 114,
+  "Jest": 98,
+  "unittest": 16,
+  "fallidas": 0,
+  "omitidas": 0,
+  "tablas_capitulo": 2,
+  "tablas_apendice": 13,
+  "capturas_pendientes": 16,
+  "fuentes_coinciden_con_ejecucion": true,
+  "paginas_revisadas_visualmente": 32,
+  "figuras": [
+    "Figura 3.1. Configuración de Jest utilizada en las pruebas",
+    "Figura 3.2. Casos de validación de usuarios y comprobación de sus respuestas",
+    "Figura 3.3. Ejecución de pruebas de gestión de usuarios",
+    "Figura 3.4. Ejecución de pruebas de preparación y filtro local del triaje con Jest",
+    "Figura 3.5. Ejecución de pruebas de triaje en Python",
+    "Figura 3.6. Ejecución de pruebas de las reglas de la sala de espera",
+    "Figura 3.7. Ejecución de pruebas de historial y recetas",
+    "Figura 3.8. Ejecución de pruebas de pagos simulados",
+    "Figura 3.9. Ejecución de pruebas de reportes",
+    "Figura 3.10. Ejecución de pruebas de componentes aislados",
+    "Figura A.1. Código de pruebas de triaje mediante inteligencia artificial",
+    "Figura A.2. Código de pruebas de triaje en Python",
+    "Figura A.3. Código de pruebas de videoconsultas",
+    "Figura A.4. Código de pruebas de historial y recetas",
+    "Figura A.5. Código de pruebas de pagos",
+    "Figura A.6. Código de pruebas de reportes"
+  ]
+}

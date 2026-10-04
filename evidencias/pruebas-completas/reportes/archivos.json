@@ -1,0 +1,33 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [
+    "app/(admin)/reports.tsx",
+    "utils/reportStats.ts",
+    "__tests__/reportStats.test.ts"
+  ],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    },
+    {
+      "archivo": "utils\\reportStats.ts.txt",
+      "sha256": "31c70692f2b729a6e1ed13d443c8072c703413aecf5a13052a4cd551f03a2325"
+    },
+    {
+      "archivo": "__tests__\\reportStats.test.ts.txt",
+      "sha256": "2d5c67524b1a7da00c2adab85169ce8537eafe08786cbcb6e225ae9acf4a5478"
+    },
+    {
+      "archivo": "app\\(admin)\\reports.tsx.txt",
+      "sha256": "678a7ba41002448ffb2464adccd771f6184ffd91b5de1bfd9f5556d96652840d"
+    }
+  ]
+}

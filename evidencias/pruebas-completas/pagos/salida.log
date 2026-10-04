@@ -1,0 +1,13 @@
+PASS __tests__/paymentSimulation.test.ts
+  Pagos - orquestación de la simulación con Supabase sustituido
+    √ PU-61 no solicita cambios sin identificador de triaje (3 ms)
+    √ PU-62 solicita el estado waiting para el identificador ficticio (2 ms)
+    √ PU-63 caracteriza que el error devuelto por Supabase no se propaga (1 ms)
+    √ PU-64 caracteriza que una excepción se registra pero no se propaga (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        2.12 s
+Ran all test suites within paths "__tests__/paymentSimulation.test.ts".
+Test results written to: evidencias\pruebas-completas\pagos\resultado.json

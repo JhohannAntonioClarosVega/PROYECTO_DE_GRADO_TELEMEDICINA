@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { Picker } from '@react-native-picker/picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { validateRegistrationFields } from '@/utils/userValidation';
 
 export default function RegisterScreen() {
   const { role } = useLocalSearchParams();
@@ -73,13 +74,12 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!email || !password || !fullName || !identityCard || !phoneNumber || !address) {
-      setErrorMsg('Por favor completa todos los campos comunes.');
-      return;
-    }
-
-    if (isDoctor && (!selectedSpecialty || !document)) {
-      setErrorMsg('Por favor selecciona una especialidad y adjunta tu título.');
+    const validation = validateRegistrationFields({
+      email, password, fullName, identityCard, phoneNumber, address,
+      isDoctor, selectedSpecialty, document,
+    });
+    if (!validation.isValid) {
+      setErrorMsg(validation.error!);
       return;
     }
 

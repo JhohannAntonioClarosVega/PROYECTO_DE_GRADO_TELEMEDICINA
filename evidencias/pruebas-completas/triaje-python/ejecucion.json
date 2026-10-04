@@ -1,0 +1,21 @@
+{
+  "inicio": "2026-09-30T20:54:09.885643+00:00",
+  "fin": "2026-09-30T20:54:09.902612+00:00",
+  "comando": "\"C:\\Users\\inutil\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\" ai-engine/test_unit_llm.py",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "zona": "America/La_Paz",
+  "archivos": [
+    "ai-engine/test_unit_llm.py"
+  ],
+  "versiones": {
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "jest": "29.7.0",
+    "jest-expo": "57.0.5",
+    "typescript": "6.0.3",
+    "expo": "57.0.19"
+  },
+  "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+  "cambiosLocales": "Sí; extracción de reglas y nuevos archivos de prueba. Consultar inventario y fuentes.",
+  "codigoSalida": 0
+}

@@ -1,0 +1,38 @@
+import { supabase } from '../lib/supabase';
+import { markSimulatedPaymentWaiting } from '../services/paymentSimulation';
+jest.mock('../lib/supabase', () => ({ supabase: { from: jest.fn() } }));
+describe('Pagos - orquestación de la simulación con Supabase sustituido', () => {
+  const eq = jest.fn();
+  const update = jest.fn(() => ({ eq }));
+  let errorLog: jest.SpyInstance;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (supabase.from as jest.Mock).mockReturnValue({ update });
+    eq.mockResolvedValue({ error: null });
+    errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => errorLog.mockRestore());
+  it('PU-61 no solicita cambios sin identificador de triaje', async () => {
+    await expect(markSimulatedPaymentWaiting(undefined)).rejects.toThrow('Identificador de triaje requerido');
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+  it('PU-62 solicita el estado waiting para el identificador ficticio', async () => {
+    await markSimulatedPaymentWaiting('triaje-ficticio');
+    expect(supabase.from).toHaveBeenCalledWith('triages');
+    expect(update).toHaveBeenCalledWith({ status: 'waiting' });
+    expect(eq).toHaveBeenCalledWith('id', 'triaje-ficticio');
+  });
+  it('PU-63 propaga el error devuelto por Supabase', async () => {
+    eq.mockResolvedValue({ error: { message: 'Fallo ficticio' } });
+    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).rejects.toEqual({ message: 'Fallo ficticio' });
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+  it('PU-64 propaga una excepción de la actualización', async () => {
+    const failure = new Error('Fallo ficticio'); eq.mockRejectedValue(failure);
+    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).rejects.toBe(failure);
+  });
+  it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
+    await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+});

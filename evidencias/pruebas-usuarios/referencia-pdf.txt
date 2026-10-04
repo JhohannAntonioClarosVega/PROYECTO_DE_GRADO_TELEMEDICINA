@@ -1,0 +1,199 @@
+Página física 180
+147 
+ 
+Tabla 4.1. Pruebas Unitarias de todos los Módulos (Caja Negra). 
+Objetivo Probar todos los módulos del sistema web y aplicación móvil. 
+Acción 
+Se realizaron las pruebas unitarias  de f orma independiente a los siguientes 
+módulos del sistema web y de la aplicación móvil: 
+- Módulo de Administración y Usuarios del Sistema 
+- Módulo de Sucursales 
+- Módulo de Proveedores / Laboratorios 
+- Módulo de Stock de Productos 
+- Módulo de Compra de Productos 
+- Módulo de Venta de Productos 
+- Módulo de Facturación 
+- Módulo de Reportes 
+Efecto 
+Los resultados de las pruebas unitarias verificaron el correcto funcionamiento de 
+todos los módulos desarrollados independientemente del sistema  (ver 
+APÉNDICE Nº 3), siendo estos módulos: 
+- Módulo de Administración y Usuarios del Sistema 
+- Módulo de Sucursales 
+- Módulo de Proveedores / Laboratorios 
+- Módulo de Stock de Productos 
+- Módulo de Compra de Productos 
+- Módulo de Venta de Productos 
+- Módulo de Facturación 
+- Módulo de Reportes 
+Fuente: Elaboración Propia (2023)  
+
+Página física 181
+148 
+ 
+4.2.1.2. PRUEBAS DE INTEGRACIÓN 
+ 
+La Tabla 4.2 muestra las pruebas de integración que se realizaron para verificar el correcto 
+funcionamiento del sistema durante la integración de los diferentes módulos. 
+ 
+Tabla 4.2. Pruebas de Integración del Sistema Web y Aplicación Móvil. 
+Objetivo 
+Probar la integración de todos los módulos del sistema web y aplicación 
+móvil. 
+Acción 
+Se realizaron las pruebas de integración entre los siguientes módulos del 
+sistema web y de la aplicación móvil: 
+- Módulo de Administración y Usuarios del Sistema 
+- Módulo de Sucursales 
+- Módulo de Proveedores / Laboratorios 
+- Módulo de Stock de Productos 
+- Módulo de Compra de Productos 
+- Módulo de Venta de Productos 
+- Módulo de Facturación 
+- Módulo de Reportes 
+Efecto 
+Los resultados de las pruebas de integración verificaron el correcto 
+funcionamiento de todos los módulos desarrollados entre sí (ver APÉNDICE Nº 
+4), siendo estos módulos: 
+- Módulo de Administración y Usuarios del Sistema 
+- Módulo de Sucursales 
+- Módulo de Proveedores / Laboratorios 
+- Módulo de Stock de Productos 
+- Módulo de Compra de Productos 
+- Módulo de Venta de Productos 
+- Módulo de Facturación 
+- Módulo de Reportes 
+Fuente: Elaboración Propia (2023)  
+
+Página física 182
+149 
+ 
+4.2.1.3. PRUEBAS DE TRANSICIÓN DE ESTADO 
+ 
+La Tabla 4.3 muestra las pruebas de transición de estado que se realizaron para analizar el 
+comportamiento del sistema web y aplicación móvil con diferentes condiciones de entrada. 
+ 
+Tabla 4.3. Pruebas de Transición de Estado del Sistema Web y Aplicación Móvil. 
+Objetivo 
+Probar la transición de estado de todos los módulos del sistema web y 
+aplicación móvil. 
+Acción 
+Se realizaron las pruebas de transición de estado a los siguientes módulos del 
+sistema web y de la aplicación móvil: 
+- Módulo de Administración y Usuarios del Sistema 
+- Módulo de Sucursales 
+- Módulo de Proveedores / Laboratorios 
+- Módulo de Stock de Productos 
+- Módulo de Compra de Productos 
+- Módulo de Venta de Productos 
+- Módulo de Facturación 
+- Módulo de Reportes 
+Efecto 
+Los resultados de las pruebas de transición de estado verificaron el correcto 
+funcionamiento de todos los  módulos desarrollados (ver APÉNDICE Nº 5), 
+siendo estos módulos: 
+- Módulo de Administración y Usuarios del Sistema 
+- Módulo de Sucursales 
+- Módulo de Proveedores / Laboratorios 
+- Módulo de Stock de Productos 
+- Módulo de Compra de Productos 
+- Módulo de Venta de Productos 
+- Módulo de Facturación 
+- Módulo de Reportes 
+Fuente: Elaboración Propia (2023)  
+
+Página física 183
+150 
+ 
+4.2.1.4. PRUEBAS DE COMPATIBILIDAD 
+ 
+La Tabla 4.4 muestra todos los navegadores que se utilizaron par a probar la compatibilidad del 
+sistema web. 
+ 
+Tabla 4.4. Pruebas de Compatibilidad del Sistema Web. 
+Objetivo Probar el sistema web en diferentes navegadores 
+Acción 
+Se real izaron las pruebas de compatibilidad  del sistema web con los 
+navegadores Opera GX, Google Chrome, Mozilla Firefox y Microsoft Edge. 
+Efecto 
+Los resultados de las pruebas de compatibilidad verificaron el correcto 
+funcionamiento del sistema web en los diferentes navegadores, siendo estos: 
+Opera GX, Google Chrome, Mozilla Firefox y Microsoft Edge (ver APÉNDICE Nº 
+6). 
+Fuente: Elaboración Propia (2023) 
+ 
+La Tabla 4.5 muestra todos los entornos que se utilizaron para probar la compatibilidad de la 
+aplicación móvil. 
+ 
+Tabla 4.5. Pruebas de Compatibilidad de la Aplicación Móvil. 
+Objetivo Probar la aplicación móvil en diferentes entornos móviles 
+Acción 
+Se realizaron las prueb as de compatibilidad de la aplicación móvil con las 
+versiones Android 10 (Nivel API 29), Android 12 (Nivel API 31) y Android 13 
+(Nivel API 32). 
+Efecto 
+Los resultados de las pruebas de compatibilidad verificaron el correcto 
+funcionamiento de la aplicación móvil en las diferentes versiones, siendo estas: 
+Android 10 (Nivel API 29), Android 12 (Nivel API 31) y Android 13 (Nivel API 32) 
+(ver APÉNDICE Nº 7). 
+Fuente: Elaboración Propia (2023)  
+
+Página física 184
+151 
+ 
+4.2.1.5. PRUEBAS DE USABILIDAD 
+ 
+La Tabla 4.6 muestra la prueba de usabilidad que se utilizó para el sistema web y aplicación 
+móvil. 
+ 
+Tabla 4.6. Pruebas de Usabilidad del Sistema Web y Aplicación Móvil. 
+Objetivo Probar la usabilidad del sistema web y aplicación móvil 
+Acción 
+Luego de un uso extensivo del sistema web y de la aplicación móvil, se realizó 
+una encuesta entre todos los empleados de la Farmacia  para determinar su 
+usabilidad. 
+Efecto 
+Los resultad os de las pruebas de usabilidad obtenidos de la encuesta  (ver 
+APÉNDICE Nº 8), tanto para el sistema web como para la aplicación móvil, 
+indican que son satisfactorios. 
+Fuente: Elaboración Propia (2023) 
+  
+
+Página física 185
+152 
+ 
+4.2.2. PRUEBAS DE CAJA BLANCA 
+ 
+Las pruebas de caja blanca  que se realiz aron al proyecto fue ron las pruebas de validación de 
+formularios con expresiones regulares ( RegEx) y de seguridad mediante  el uso de  JSON Web 
+Token (JWT) en las consultas a la API. 
+ 
+4.2.2.1. PRUEBAS DE VALIDACIÓN DE FORMULARIOS CON EXPRESIONES REGULARES 
+(REGEX) 
+ 
+La Tabla 4.7 muestra todos los tipos de campos que se probaron utilizando las p ruebas de 
+validación de formularios con expresiones regulares. 
+ 
+Tabla 4.7. Pruebas de Validación de Formularios con Expresiones Regulares del Sistema Web y 
+Aplicación Móvil. 
+Objetivo Probar todos los formularios del sistema web y aplicación móvil 
+Acción 
+Se realizaron las pruebas de validación de formularios a los siguientes tipos de 
+campos del sistema web y de la aplicación móvil: 
+- Correos Electrónicos 
+- Nombres y Apellidos de Persona 
+- Número Telefónico 
+- Carnet de Identidad 
+- Nombre de Laboratorio 
+- Dirección de Laboratorio 
+- Número 
+- Nombre de Sucursal 
+Efecto 
+Los resultados de las pruebas de validación de formularios verificaron el correcto 
+funcionamiento de todos los tipos de campos desarrollados (ver APÉNDICE Nº 
+9), siendo estos campos: 
+- Correos Electrónicos 
+- Nombres y Apellidos de Persona 
+- Número Telefónico 
+- Carnet de Identidad 
+- Nombre de Laboratorio 

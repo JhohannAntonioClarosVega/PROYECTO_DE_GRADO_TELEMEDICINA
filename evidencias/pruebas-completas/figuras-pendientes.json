@@ -1,0 +1,137 @@
+[
+  {
+    "id": "3.1",
+    "key": "config",
+    "title": "Configuración de Jest utilizada en las pruebas",
+    "description": "La configuración selecciona jest-expo y los patrones de archivos de prueba.",
+    "file": "jest.config.js",
+    "visible": "Archivo completo: preset, testMatch y transformIgnorePatterns.",
+    "demonstrates": "Configuración real del proyecto."
+  },
+  {
+    "id": "3.2",
+    "key": "usuarios",
+    "title": "Casos de validación de usuarios y comprobación de sus respuestas",
+    "description": "Los casos comparan las respuestas locales de los validadores con las expectativas definidas.",
+    "file": "__tests__/userValidation.test.ts",
+    "visible": "Importaciones y bloque PU-21; una segunda toma del bloque PU-25 si no cabe a tamaño legible.",
+    "demonstrates": "Pruebas de caracterización que conservan las expectativas originales."
+  },
+  {
+    "id": "3.3",
+    "key": "usuarios",
+    "title": "Ejecución de pruebas de gestión de usuarios",
+    "description": "La ejecución registrada contiene 30 casos aprobados. Se utilizó Jest sobre los archivos seleccionados.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 30 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "3.4",
+    "key": "triaje",
+    "title": "Ejecución de pruebas de triaje mediante inteligencia artificial",
+    "description": "La ejecución registrada contiene 7 casos aprobados. Se utilizó Jest sobre los archivos seleccionados.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 7 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "3.5",
+    "key": "triaje-python",
+    "title": "Ejecución de pruebas de triaje en Python",
+    "description": "La ejecución registrada contiene 7 casos aprobados. Se utilizó unittest con el proveedor sustituido.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 7 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "3.6",
+    "key": "videoconsultas",
+    "title": "Ejecución de pruebas de videoconsultas",
+    "description": "La ejecución registrada contiene 7 casos aprobados. Se utilizó Jest sobre los archivos seleccionados.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 7 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "3.7",
+    "key": "historial-recetas",
+    "title": "Ejecución de pruebas de historial y recetas",
+    "description": "La ejecución registrada contiene 9 casos aprobados. Se utilizó Jest sobre los archivos seleccionados.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 9 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "3.8",
+    "key": "pagos",
+    "title": "Ejecución de pruebas de pagos",
+    "description": "La ejecución registrada contiene 4 casos aprobados. Se utilizó Jest sobre los archivos seleccionados.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 4 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "3.9",
+    "key": "reportes",
+    "title": "Ejecución de pruebas de reportes",
+    "description": "La ejecución registrada contiene 5 casos aprobados. Se utilizó Jest sobre los archivos seleccionados.",
+    "file": "Terminal PowerShell",
+    "visible": "Comando completo, nombres de los archivos o casos y resumen final; fecha de la ejecución visible.",
+    "demonstrates": "Resultado real de 5 casos; no certifica el módulo completo."
+  },
+  {
+    "id": "A.1",
+    "key": "triaje",
+    "title": "Código de pruebas de triaje mediante inteligencia artificial",
+    "description": "Las entradas ficticias, la llamada a la función y las comprobaciones documentan el alcance de la evaluación.",
+    "file": "__tests__/triageWorkflow.test.ts",
+    "visible": "PU-31 a PU-37, en dos tomas si es necesario.",
+    "demonstrates": "Lógica evaluada y aserciones; datos y servicios externos ficticios."
+  },
+  {
+    "id": "A.2",
+    "key": "triaje-python",
+    "title": "Código de pruebas de triaje en Python",
+    "description": "Las entradas ficticias, la llamada a la función y las comprobaciones documentan el alcance de la evaluación.",
+    "file": "ai-engine/test_unit_llm.py",
+    "visible": "setUp y sustitución de red; PU-40 y PU-41.",
+    "demonstrates": "Lógica evaluada y aserciones; datos y servicios externos ficticios."
+  },
+  {
+    "id": "A.3",
+    "key": "videoconsultas",
+    "title": "Código de pruebas de videoconsultas",
+    "description": "Las entradas ficticias, la llamada a la función y las comprobaciones documentan el alcance de la evaluación.",
+    "file": "__tests__/consultationRules.test.ts",
+    "visible": "PU-45 a PU-51.",
+    "demonstrates": "Lógica evaluada y aserciones; datos y servicios externos ficticios."
+  },
+  {
+    "id": "A.4",
+    "key": "historial-recetas",
+    "title": "Código de pruebas de historial y recetas",
+    "description": "Las entradas ficticias, la llamada a la función y las comprobaciones documentan el alcance de la evaluación.",
+    "file": "__tests__/medicalRecord.test.ts",
+    "visible": "PU-55 a PU-58; PU-59 y PU-60 en otra toma.",
+    "demonstrates": "Lógica evaluada y aserciones; datos y servicios externos ficticios."
+  },
+  {
+    "id": "A.5",
+    "key": "pagos",
+    "title": "Código de pruebas de pagos",
+    "description": "Las entradas ficticias, la llamada a la función y las comprobaciones documentan el alcance de la evaluación.",
+    "file": "__tests__/paymentSimulation.test.ts",
+    "visible": "jest.mock de Supabase, PU-62 a PU-64.",
+    "demonstrates": "Lógica evaluada y aserciones; datos y servicios externos ficticios."
+  },
+  {
+    "id": "A.6",
+    "key": "reportes",
+    "title": "Código de pruebas de reportes",
+    "description": "Las entradas ficticias, la llamada a la función y las comprobaciones documentan el alcance de la evaluación.",
+    "file": "__tests__/reportStats.test.ts",
+    "visible": "PU-65 a PU-69.",
+    "demonstrates": "Lógica evaluada y aserciones; datos y servicios externos ficticios."
+  }
+]

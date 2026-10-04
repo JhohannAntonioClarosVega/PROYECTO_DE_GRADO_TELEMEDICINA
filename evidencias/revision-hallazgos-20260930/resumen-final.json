@@ -1,0 +1,73 @@
+{
+  "fechaUTC": "2026-09-30T22:38:36.808849+00:00",
+  "total": 114,
+  "aprobadas": 114,
+  "fallidas": 0,
+  "omitidas": 0,
+  "jest": {
+    "casos": 98,
+    "suites": 8
+  },
+  "python": {
+    "casos": 16
+  },
+  "regresionAntes": {
+    "total": 108,
+    "aprobadas": 62,
+    "fallidas": 46
+  },
+  "base": {
+    "jestAprobadas": 62,
+    "pythonAprobadas": 7,
+    "erroresImportacionScriptsExternos": 3
+  },
+  "documentosYEvidenciasAnterioresPreservados": 124,
+  "archivosModificadosRespectoInicio": [
+    "__tests__/consultationRules.test.ts",
+    "__tests__/medicalRecord.test.ts",
+    "__tests__/paymentSimulation.test.ts",
+    "__tests__/reportStats.test.ts",
+    "__tests__/userValidation.test.ts",
+    "ai-engine/llm_service.py",
+    "ai-engine/main.py",
+    "ai-engine/test_unit_llm.py",
+    "app/(patient)/payment.tsx",
+    "app/(patient)/waiting-room.tsx",
+    "components/TriageEvaluation.tsx",
+    "services/paymentSimulation.ts",
+    "utils/consultationRules.ts",
+    "utils/medicalRecord.ts",
+    "utils/reportStats.ts",
+    "utils/triagePresentation.ts",
+    "utils/userValidation.ts"
+  ],
+  "archivosCreados": [
+    "__tests__/reviewScreens.test.tsx",
+    "scripts/record-unit-review.py",
+    "scripts/record-python-unit-tests.py"
+  ],
+  "eslint": {
+    "errores": 0,
+    "advertencias": 2
+  },
+  "typescript": 0,
+  "sintaxisPython": "correcta",
+  "hallazgos": {
+    "corregidosEnAlcanceUnitario": [
+      "H-01",
+      "H-02",
+      "H-04",
+      "H-05",
+      "H-06",
+      "H-07",
+      "H-09"
+    ],
+    "parcial": [
+      "H-08"
+    ],
+    "pendienteDefinicion": [
+      "H-03"
+    ]
+  },
+  "disponibilidadMedica": "Pendiente de reproducción y verificación real; no se corrigió."
+}

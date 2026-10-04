@@ -1,0 +1,129 @@
+test_H09_fallo_red_no_inventa_urgencia (test_unit_llm.LlmUnitTests.test_H09_fallo_red_no_inventa_urgencia) ... FAIL
+test_H09_rechaza_especialidad_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_ausente) ... FAIL
+test_H09_rechaza_especialidad_desconocida (test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_desconocida) ... FAIL
+test_H09_rechaza_idioma_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_idioma_ausente) ... FAIL
+test_H09_rechaza_recomendacion_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_recomendacion_ausente) ... FAIL
+test_H09_rechaza_sintomas_blancos (test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_blancos) ... FAIL
+test_H09_rechaza_sintomas_tipo_incorrecto (test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_tipo_incorrecto) ... FAIL
+test_H09_rechaza_urgencia_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_ausente) ... FAIL
+test_H09_rechaza_urgencia_desconocida (test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_desconocida) ... FAIL
+test_PU_38_prioridad_pediatrica (test_unit_llm.LlmUnitTests.test_PU_38_prioridad_pediatrica) ... ok
+test_PU_39_no_inventa_clasificacion_sin_configuracion (test_unit_llm.LlmUnitTests.test_PU_39_no_inventa_clasificacion_sin_configuracion) ... FAIL
+test_PU_40_interpretar_respuesta_simulada (test_unit_llm.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada) ... ok
+test_PU_41_rechaza_respuesta_incompleta (test_unit_llm.LlmUnitTests.test_PU_41_rechaza_respuesta_incompleta) ... FAIL
+test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json (test_unit_llm.LlmUnitTests.test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json) ... FAIL
+test_PU_43_transcripcion_simulada (test_unit_llm.LlmUnitTests.test_PU_43_transcripcion_simulada) ... ok
+test_PU_44_error_controlado_de_transcripcion (test_unit_llm.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion) ... ok
+
+======================================================================
+FAIL: test_H09_fallo_red_no_inventa_urgencia (test_unit_llm.LlmUnitTests.test_H09_fallo_red_no_inventa_urgencia)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 66, in test_H09_fallo_red_no_inventa_urgencia
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_especialidad_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_ausente)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_especialidad_desconocida (test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_desconocida)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_idioma_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_idioma_ausente)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_recomendacion_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_recomendacion_ausente)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_sintomas_blancos (test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_blancos)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_sintomas_tipo_incorrecto (test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_tipo_incorrecto)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_urgencia_ausente (test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_ausente)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_H09_rechaza_urgencia_desconocida (test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_desconocida)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 77, in test
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_PU_39_no_inventa_clasificacion_sin_configuracion (test_unit_llm.LlmUnitTests.test_PU_39_no_inventa_clasificacion_sin_configuracion)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 34, in test_PU_39_no_inventa_clasificacion_sin_configuracion
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_PU_41_rechaza_respuesta_incompleta (test_unit_llm.LlmUnitTests.test_PU_41_rechaza_respuesta_incompleta)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 48, in test_PU_41_rechaza_respuesta_incompleta
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json (test_unit_llm.LlmUnitTests.test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_unit_llm.py", line 53, in test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json
+    with self.assertRaisesRegex(ValueError, 'Requiere validaci�n manual'):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.059s
+
+FAILED (failures=12)

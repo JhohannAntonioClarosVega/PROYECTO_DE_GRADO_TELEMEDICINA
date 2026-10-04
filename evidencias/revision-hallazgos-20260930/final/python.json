@@ -1,0 +1,73 @@
+{
+  "cases": [
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_fallo_red_no_inventa_urgencia",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_ausente",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_especialidad_desconocida",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_idioma_ausente",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_recomendacion_ausente",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_blancos",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_sintomas_tipo_incorrecto",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_ausente",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_H09_rechaza_urgencia_desconocida",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_38_prioridad_pediatrica",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_39_no_inventa_clasificacion_sin_configuracion",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_41_rechaza_respuesta_incompleta",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_43_transcripcion_simulada",
+      "status": "passed"
+    },
+    {
+      "id": "test_unit_llm.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion",
+      "status": "passed"
+    }
+  ],
+  "total": 16,
+  "passed": 16,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0
+}

@@ -1,0 +1,21 @@
+import { calculateReportStats } from '../utils/reportStats';
+describe('Reportes - cálculos locales existentes', () => {
+  it('PU-65 una colección vacía produce contadores e ingreso cero', () => {
+    expect(calculateReportStats([])).toEqual({ totalTriages: 0, criticalTriages: 0, mediumTriages: 0, lowTriages: 0, totalRevenue: 0, completedTriages: 0 });
+  });
+  it('PU-66 cuenta niveles reconocidos sin clasificar un nivel desconocido', () => {
+    expect(calculateReportStats([{ urgency_level: 'Critical' }, { urgency_level: 'Medium' }, { urgency_level: 'Low' }, { urgency_level: 'Unknown' }])).toEqual({ totalTriages: 4, criticalTriages: 1, mediumTriages: 1, lowTriages: 1, totalRevenue: 0, completedTriages: 0 });
+  });
+  it('PU-67 caracteriza el conteo de espera y atención como completados estimados', () => {
+    const stats = calculateReportStats([{ status: 'waiting' }, { status: 'in_progress' }]);
+    expect(stats.completedTriages).toBe(2); expect(stats.totalRevenue).toBe(100);
+  });
+  it('PU-68 un registro completado aporta cincuenta a la estimación', () => {
+    const stats = calculateReportStats([{ status: 'completed' }]);
+    expect(stats.completedTriages).toBe(1); expect(stats.totalRevenue).toBe(50);
+  });
+  it('PU-69 estados no contemplados no aportan ingresos estimados', () => {
+    const stats = calculateReportStats([{ status: 'pending' }, { status: 'resolved' }]);
+    expect(stats.completedTriages).toBe(0); expect(stats.totalRevenue).toBe(0);
+  });
+});

@@ -1,0 +1,16 @@
+PASS __tests__/consultationRules.test.ts
+  Videoconsultas - decisiones locales de la sala de espera
+    √ PU-45 reconoce el cierre con estado completed (3 ms)
+    √ PU-46 reconoce el cierre con estado resolved
+    √ PU-47 un triaje en espera no está cerrado
+    √ PU-48 un triaje en progreso habilita la llamada sin cita
+    √ PU-49 la existencia de una cita habilita la llamada (1 ms)
+    √ PU-50 sin cita ni atención en progreso no habilita la llamada
+    √ PU-51 caracteriza que no se comprueba el estado cancelado de una cita
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        2.059 s
+Ran all test suites within paths "__tests__/consultationRules.test.ts".
+Test results written to: evidencias\pruebas-completas\videoconsultas\resultado.json

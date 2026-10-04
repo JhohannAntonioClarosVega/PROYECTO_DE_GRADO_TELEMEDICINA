@@ -1,0 +1,722 @@
+--- antes/__tests__\consultationRules.test.ts
++++ despues/__tests__\consultationRules.test.ts
+@@ -7,13 +7,22 @@
+   it('PU-48 un triaje en progreso habilita la llamada sin cita', () => {
+     expect(isDoctorReadyForCall('in_progress', null)).toBe(true);
+   });
+-  it('PU-49 la existencia de una cita habilita la llamada', () => {
+-    expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia' })).toBe(true);
++  it('PU-49 una cita programada habilita la llamada', () => {
++    expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia', status: 'scheduled' })).toBe(true);
+   });
+   it('PU-50 sin cita ni atención en progreso no habilita la llamada', () => {
+     expect(isDoctorReadyForCall('waiting', null)).toBe(false);
+   });
+-  it('PU-51 caracteriza que no se comprueba el estado cancelado de una cita', () => {
+-    expect(isDoctorReadyForCall('waiting', { status: 'cancelled' })).toBe(true);
++  it('PU-51 una cita cancelada no habilita la llamada', () => {
++    expect(isDoctorReadyForCall('waiting', { status: 'cancelled' })).toBe(false);
++  });
++  it.each(['cancelled', 'completed', 'unknown', undefined])('H-04 una cita con estado %s no habilita la llamada aunque el triaje siga en progreso', (status) => {
++    expect(isDoctorReadyForCall('in_progress', { status })).toBe(false);
++  });
++  it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
++    expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
++  });
++  it('H-04 una cita sin estado no demuestra que el médico esté listo', () => {
++    expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia' })).toBe(false);
+   });
+ });
+--- antes/__tests__\medicalRecord.test.ts
++++ despues/__tests__\medicalRecord.test.ts
+@@ -4,19 +4,32 @@
+   it('PU-52 rechaza un diagnóstico vacío', () => { expect(hasClinicalRecordFields('', 'Plan ficticio')).toBe(false); });
+   it('PU-53 rechaza un tratamiento vacío', () => { expect(hasClinicalRecordFields('Diagnóstico ficticio', '')).toBe(false); });
+   it('PU-54 acepta diagnóstico y tratamiento con contenido', () => { expect(hasClinicalRecordFields('Diagnóstico ficticio', 'Plan ficticio')).toBe(true); });
+-  it('PU-55 caracteriza la aceptación de campos clínicos de solo espacios', () => { expect(hasClinicalRecordFields('   ', '   ')).toBe(true); });
++  it('PU-55 rechaza campos clínicos de solo espacios', () => { expect(hasClinicalRecordFields('   ', '   ')).toBe(false); });
++  it.each([[' \t ', 'Plan ficticio'], ['Diagnóstico ficticio', '\n ']])('H-05 rechaza un campo clínico en blanco con el otro completo (%s)', (diagnosis, treatment) => {
++    expect(hasClinicalRecordFields(diagnosis, treatment)).toBe(false);
++  });
++  it('H-05 acepta contenido clínico con espacios exteriores', () => {
++    expect(hasClinicalRecordFields(' Diagnóstico ficticio ', ' Plan ficticio ')).toBe(true);
++  });
+   it('PU-56 prepara el prediagnóstico a partir del reporte recibido', () => {
+     const result = prepareTriageView({ urgency_level: 'Low', ai_raw_analysis: 'Texto de prueba', patients: { profiles: { full_name: 'Paciente Ficticio' } } });
+     expect(result.patient.full_name).toBe('Paciente Ficticio');
+     expect(result.ai_analysis).toEqual({ urgency_level: 'Low', raw_analysis: 'Texto de prueba', recommendation: 'Sin recomendación.' });
+   });
+-  it('PU-57 conserva el nivel Medium como valor por defecto del reporte incompleto', () => {
+-    expect(prepareTriageView({}).ai_analysis.urgency_level).toBe('Medium');
++  it('PU-57 no inventa una urgencia para el reporte incompleto', () => {
++    expect(prepareTriageView({}).ai_analysis.urgency_level).toBeNull();
+     expect(prepareTriageView({}).patient.full_name).toBe('Desconocido');
+   });
+-  it('PU-58 caracteriza los datos de demostración al no recibir un triaje', () => {
+-    expect(prepareTriageView().patient.full_name).toBe('Juan Perez');
+-    expect(prepareTriageView().ai_analysis.urgency_level).toBe('Critical');
++  it('PU-58 no presenta datos de demostración sin triaje', () => {
++    expect(prepareTriageView().patient.full_name).toBe('Desconocido');
++    expect(prepareTriageView().ai_analysis.urgency_level).toBeNull();
++    expect(prepareTriageView().symptoms).toBe('Sin síntomas reportados');
++  });
++  it.each(['Critical', 'Medium', 'Low'])('H-06 conserva la urgencia %s cuando procede del reporte', (urgency_level) => {
++    expect(prepareTriageView({ urgency_level }).ai_analysis.urgency_level).toBe(urgency_level);
++  });
++  it.each(['', 'Unknown', '   ', null])('H-06 no clasifica como evaluado un nivel inválido %s', (urgency_level) => {
++    expect(prepareTriageView({ urgency_level }).ai_analysis.urgency_level).toBeNull();
+   });
+   const prescription = { patientName: 'Paciente Ficticio', doctorName: 'Médico Ficticio', diagnosis: 'Diagnóstico ficticio', treatment: 'Plan ficticio', pharmacyName: '' };
+   it('PU-59 prepara el HTML de la receta sin farmacia opcional', () => {
+--- antes/__tests__\paymentSimulation.test.ts
++++ despues/__tests__\paymentSimulation.test.ts
+@@ -1,6 +1,6 @@
+-jest.mock('../lib/supabase', () => ({ supabase: { from: jest.fn() } }));
+ import { supabase } from '../lib/supabase';
+ import { markSimulatedPaymentWaiting } from '../services/paymentSimulation';
++jest.mock('../lib/supabase', () => ({ supabase: { from: jest.fn() } }));
+ describe('Pagos - orquestación de la simulación con Supabase sustituido', () => {
+   const eq = jest.fn();
+   const update = jest.fn(() => ({ eq }));
+@@ -13,7 +13,7 @@
+   });
+   afterEach(() => errorLog.mockRestore());
+   it('PU-61 no solicita cambios sin identificador de triaje', async () => {
+-    await markSimulatedPaymentWaiting(undefined);
++    await expect(markSimulatedPaymentWaiting(undefined)).rejects.toThrow('Identificador de triaje requerido');
+     expect(supabase.from).not.toHaveBeenCalled();
+   });
+   it('PU-62 solicita el estado waiting para el identificador ficticio', async () => {
+@@ -22,14 +22,17 @@
+     expect(update).toHaveBeenCalledWith({ status: 'waiting' });
+     expect(eq).toHaveBeenCalledWith('id', 'triaje-ficticio');
+   });
+-  it('PU-63 caracteriza que el error devuelto por Supabase no se propaga', async () => {
++  it('PU-63 propaga el error devuelto por Supabase', async () => {
+     eq.mockResolvedValue({ error: { message: 'Fallo ficticio' } });
+-    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).resolves.toBeUndefined();
++    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).rejects.toEqual({ message: 'Fallo ficticio' });
+     expect(errorLog).not.toHaveBeenCalled();
+   });
+-  it('PU-64 caracteriza que una excepción se registra pero no se propaga', async () => {
++  it('PU-64 propaga una excepción de la actualización', async () => {
+     const failure = new Error('Fallo ficticio'); eq.mockRejectedValue(failure);
+-    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).resolves.toBeUndefined();
+-    expect(errorLog).toHaveBeenCalledWith('Error updating triage status mock:', failure);
++    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).rejects.toBe(failure);
++  });
++  it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
++    await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
++    expect(supabase.from).not.toHaveBeenCalled();
+   });
+ });
+--- antes/__tests__\reportStats.test.ts
++++ despues/__tests__\reportStats.test.ts
+@@ -6,9 +6,9 @@
+   it('PU-66 cuenta niveles reconocidos sin clasificar un nivel desconocido', () => {
+     expect(calculateReportStats([{ urgency_level: 'Critical' }, { urgency_level: 'Medium' }, { urgency_level: 'Low' }, { urgency_level: 'Unknown' }])).toEqual({ totalTriages: 4, criticalTriages: 1, mediumTriages: 1, lowTriages: 1, totalRevenue: 0, completedTriages: 0 });
+   });
+-  it('PU-67 caracteriza el conteo de espera y atención como completados estimados', () => {
++  it('PU-67 no cuenta espera ni atención en progreso como completadas', () => {
+     const stats = calculateReportStats([{ status: 'waiting' }, { status: 'in_progress' }]);
+-    expect(stats.completedTriages).toBe(2); expect(stats.totalRevenue).toBe(100);
++    expect(stats.completedTriages).toBe(0); expect(stats.totalRevenue).toBe(100);
+   });
+   it('PU-68 un registro completado aporta cincuenta a la estimación', () => {
+     const stats = calculateReportStats([{ status: 'completed' }]);
+--- antes/__tests__\userValidation.test.ts
++++ despues/__tests__\userValidation.test.ts
+@@ -68,9 +68,19 @@
+     });
+   });
+ 
+-  // Caracterización de una limitación existente, no aprobación de la calidad del dato.
+-  it('PU-21 documenta que el registro acepta un nombre de solo espacios', () => {
+-    expect(validateRegistrationFields({ ...patient, fullName: '   ' })).toEqual({ isValid: true });
++  it('PU-21 rechaza un nombre formado solo por espacios', () => {
++    expect(validateRegistrationFields({ ...patient, fullName: '   ' })).toEqual({
++      isValid: false, error: 'Por favor completa todos los campos comunes.',
++    });
++  });
++  it.each(['email', 'identityCard', 'phoneNumber', 'address'])('H-01 rechaza espacios en el campo obligatorio %s', (field) => {
++    expect(validateRegistrationFields({ ...patient, [field]: ' \t\n ' }).isValid).toBe(false);
++  });
++  it('H-01 conserva los datos completos con espacios exteriores', () => {
++    expect(validateRegistrationFields({ ...patient, fullName: ' Persona de Prueba ' }).isValid).toBe(true);
++  });
++  it('H-01 rechaza una especialidad formada solo por espacios', () => {
++    expect(validateRegistrationFields({ ...doctor, selectedSpecialty: '   ' }).isValid).toBe(false);
+   });
+ });
+ 
+@@ -86,8 +96,16 @@
+   it('PU-24 acepta teléfono y dirección completos', () => {
+     expect(validatePatientProfileFields('00000000', 'Dirección ficticia')).toEqual({ isValid: true });
+   });
+-  it('PU-25 documenta que el perfil de paciente acepta espacios', () => {
+-    expect(validatePatientProfileFields('   ', '   ')).toEqual({ isValid: true });
++  it('PU-25 rechaza teléfono y dirección de solo espacios', () => {
++    expect(validatePatientProfileFields('   ', '   ')).toEqual({
++      isValid: false, error: 'Por favor completa el número de teléfono y la dirección.',
++    });
++  });
++  it.each([[' \t ', 'Dirección ficticia'], ['00000000', '\n  ']])('H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (%s)', (phone, address) => {
++    expect(validatePatientProfileFields(phone, address).isValid).toBe(false);
++  });
++  it('H-02 conserva teléfono y dirección con espacios exteriores', () => {
++    expect(validatePatientProfileFields(' 00000000 ', ' Dirección ficticia ').isValid).toBe(true);
+   });
+ });
+ 
+--- antes/ai-engine\llm_service.py
++++ despues/ai-engine\llm_service.py
+@@ -6,6 +6,14 @@
+ from dotenv import load_dotenv
+ 
+ load_dotenv()
++
++class TriageAnalysisError(ValueError):
++    """No hay un análisis utilizable; no se debe guardar una urgencia inventada."""
++
++
++MANUAL_REVIEW_MESSAGE = 'Requiere validación manual: no se obtuvo un análisis de triaje válido.'
++VALID_SPECIALTIES = {'Medicina General', 'Pediatría', 'Traumatología', 'Cardiología',
++                    'Dermatología', 'Otorrinolaringología', 'Neurología', 'Ginecología', 'Gastroenterología'}
+ 
+ def detect_heuristic_specialty(raw_text: str) -> str:
+     t = (raw_text or '').lower()
+@@ -67,17 +75,8 @@
+     """
+     heuristic_specialty = detect_heuristic_specialty(raw_symptoms)
+ 
+-    fallback = {
+-        "detected_language": "Español",
+-        "standardized_symptoms": raw_symptoms,
+-        "urgency_level": "Medium",
+-        "ai_recommendation": f"Requiere evaluación médica con el especialista en {heuristic_specialty}.",
+-        "recommended_specialty": heuristic_specialty
+-    }
+-
+     if not api_key:
+-        print("Error: GEMINI_API_KEY no encontrada.")
+-        return fallback
++        raise TriageAnalysisError(MANUAL_REVIEW_MESSAGE)
+ 
+     # Usamos HTTP directo (REST API) para evitar problemas con la librería obsoleta
+     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
+@@ -106,6 +105,15 @@
+             match = re.search(r'\{[\s\S]*\}', text_response)
+             if match:
+                 result = json.loads(match.group(0))
++                fields = ('detected_language', 'standardized_symptoms', 'urgency_level',
++                          'ai_recommendation', 'recommended_specialty')
++                if not isinstance(result, dict) or any(
++                    not isinstance(result.get(field), str) or not result[field].strip()
++                    for field in fields
++                ):
++                    raise TriageAnalysisError(MANUAL_REVIEW_MESSAGE)
++                if result['urgency_level'] not in {'Critical', 'Medium', 'Low'} or result['recommended_specialty'] not in VALID_SPECIALTIES:
++                    raise TriageAnalysisError(MANUAL_REVIEW_MESSAGE)
+                 # Validar que si hay síntomas pediátricos o claros de especialista no se quede en General
+                 if result.get("recommended_specialty") in [None, "", "Medicina General"]:
+                     if heuristic_specialty != "Medicina General":
+@@ -114,12 +122,9 @@
+             else:
+                 raise ValueError("No se encontró JSON válido en la respuesta de Gemini")
+             
+-    except Exception as e:
+-        error_msg = f"Error procesando con Gemini (API REST): {e}\nRaw response: {text_response if 'text_response' in locals() else 'None'}"
+-        print(error_msg)
+-        with open("error_log.txt", "w", encoding="utf-8") as f:
+-            f.write(error_msg)
+-        return fallback
++    except Exception:
++        # No registrar síntomas ni inventar una prioridad ante fallos del proveedor.
++        raise TriageAnalysisError(MANUAL_REVIEW_MESSAGE) from None
+ 
+ def transcribe_audio_only(audio_base64: str) -> str:
+     api_key = os.getenv("GEMINI_API_KEY")
+--- antes/ai-engine\main.py
++++ despues/ai-engine\main.py
+@@ -6,7 +6,7 @@
+ from typing import Optional
+ # pyrefly: ignore [missing-import]
+ from pydantic import BaseModel
+-from llm_service import analyze_symptoms_with_gemini, transcribe_audio_only
++from llm_service import analyze_symptoms_with_gemini, transcribe_audio_only, TriageAnalysisError
+ 
+ app = FastAPI(title="Motor IA de Triaje - Telemedicina Cochabamba")
+ 
+@@ -44,15 +44,11 @@
+         raise HTTPException(status_code=400, detail="Los síntomas no pueden estar vacíos")
+     
+     # Procesar usando el modelo de lenguaje (Gemini)
+-    analysis_result = analyze_symptoms_with_gemini(request.reported_symptoms, request.audio_base64)
+-    
+-    return AnalyzeResponse(
+-        detected_language=analysis_result.get("detected_language", "Español"),
+-        standardized_symptoms=analysis_result.get("standardized_symptoms", request.reported_symptoms),
+-        urgency_level=analysis_result.get("urgency_level", "Medium"),
+-        ai_recommendation=analysis_result.get("ai_recommendation", "Pendiente de evaluación médica"),
+-        recommended_specialty=analysis_result.get("recommended_specialty", "Medicina General")
+-    )
++    try:
++        analysis_result = analyze_symptoms_with_gemini(request.reported_symptoms, request.audio_base64)
++    except TriageAnalysisError as error:
++        raise HTTPException(status_code=502, detail=str(error)) from None
++    return AnalyzeResponse(**analysis_result)
+ 
+ @app.post("/api/transcribe")
+ def transcribe_audio(request: TranscribeRequest):
+--- antes/ai-engine\test_unit_llm.py
++++ despues/ai-engine\test_unit_llm.py
+@@ -29,12 +29,10 @@
+         self.assertEqual(llm_service.detect_heuristic_specialty('Mi wawa tiene dolor de pecho'), 'Pediatría')
+         self.network.assert_not_called()
+ 
+-    def test_PU_39_respaldo_sin_configuracion(self):
++    def test_PU_39_no_inventa_clasificacion_sin_configuracion(self):
+         with patch.object(llm_service.os, 'getenv', return_value=None):
+-            value = llm_service.analyze_symptoms_with_gemini('uma nanay')
+-        self.assertEqual(value['recommended_specialty'], 'Neurología')
+-        self.assertEqual(value['urgency_level'], 'Medium')
+-        self.assertEqual(value['standardized_symptoms'], 'uma nanay')
++            with self.assertRaisesRegex(ValueError, 'Requiere validación manual'):
++                llm_service.analyze_symptoms_with_gemini('uma nanay')
+         self.network.assert_not_called()
+ 
+     def test_PU_40_interpretar_respuesta_simulada(self):
+@@ -45,17 +43,15 @@
+         self.assertEqual(llm_service.analyze_symptoms_with_gemini('relato ficticio'), expected)
+         self.network.assert_called_once()
+ 
+-    def test_PU_41_caracterizar_respuesta_incompleta(self):
++    def test_PU_41_rechaza_respuesta_incompleta(self):
+         self.response('{"recommended_specialty":"Medicina General"}')
+-        value = llm_service.analyze_symptoms_with_gemini('relato ficticio')
+-        self.assertNotIn('urgency_level', value)
+-        self.assertNotIn('standardized_symptoms', value)
++        with self.assertRaisesRegex(ValueError, 'Requiere validación manual'):
++            llm_service.analyze_symptoms_with_gemini('relato ficticio')
+ 
+-    def test_PU_42_respaldo_ante_respuesta_no_json(self):
++    def test_PU_42_no_inventa_clasificacion_ante_respuesta_no_json(self):
+         self.response('respuesta ficticia no estructurada')
+-        value = llm_service.analyze_symptoms_with_gemini('relato ficticio')
+-        self.assertEqual(value['urgency_level'], 'Medium')
+-        self.assertEqual(value['standardized_symptoms'], 'relato ficticio')
++        with self.assertRaisesRegex(ValueError, 'Requiere validación manual'):
++            llm_service.analyze_symptoms_with_gemini('relato ficticio')
+ 
+     def test_PU_43_transcripcion_simulada(self):
+         self.response('  Texto transcrito ficticio  ')
+@@ -65,32 +61,36 @@
+         self.network.side_effect = RuntimeError('Fallo ficticio de red')
+         self.assertEqual(llm_service.transcribe_audio_only('ZmljdGljaW8='), '[Error: No se pudo transcribir el audio adjunto]')
+ 
++    def test_H09_fallo_red_no_inventa_urgencia(self):
++        self.network.side_effect = RuntimeError('Fallo ficticio de red')
++        with self.assertRaisesRegex(ValueError, 'Requiere validación manual'):
++            llm_service.analyze_symptoms_with_gemini('relato ficticio')
++
++
++def invalid_response_case(field, value):
++    def test(self):
++        response = {'detected_language': 'Español', 'standardized_symptoms': 'Texto ficticio',
++                    'urgency_level': 'Low', 'ai_recommendation': 'Revisión ficticia',
++                    'recommended_specialty': 'Medicina General'}
++        response[field] = value
++        self.response(json.dumps(response))
++        with self.assertRaisesRegex(ValueError, 'Requiere validación manual'):
++            llm_service.analyze_symptoms_with_gemini('relato ficticio')
++    return test
++
++
++for name, field, value in [
++    ('urgencia_ausente', 'urgency_level', None),
++    ('urgencia_desconocida', 'urgency_level', 'Unknown'),
++    ('sintomas_blancos', 'standardized_symptoms', ' \t '),
++    ('sintomas_tipo_incorrecto', 'standardized_symptoms', 5),
++    ('idioma_ausente', 'detected_language', None),
++    ('recomendacion_ausente', 'ai_recommendation', None),
++    ('especialidad_ausente', 'recommended_specialty', None),
++    ('especialidad_desconocida', 'recommended_specialty', 'Especialidad inexistente'),
++]:
++    setattr(LlmUnitTests, 'test_H09_rechaza_' + name, invalid_response_case(field, value))
++
+ 
+ if __name__ == '__main__':
+-    root = Path(__file__).resolve().parents[1]
+-    dest = root / 'evidencias/pruebas-completas/triaje-python'
+-    dest.mkdir(parents=True, exist_ok=True)
+-    entries = []
+-
+-    class Result(unittest.TextTestResult):
+-        def addSuccess(self, test):
+-            super().addSuccess(test)
+-            entries.append({'id': test.id(), 'status': 'passed'})
+-        def addFailure(self, test, err):
+-            super().addFailure(test, err)
+-            entries.append({'id': test.id(), 'status': 'failed', 'detail': self._exc_info_to_string(err, test)})
+-        def addError(self, test, err):
+-            super().addError(test, err)
+-            entries.append({'id': test.id(), 'status': 'error', 'detail': self._exc_info_to_string(err, test)})
+-
+-    start = datetime.now(timezone.utc).isoformat()
+-    stream = io.StringIO()
+-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(LlmUnitTests)
+-    result = unittest.TextTestRunner(stream=stream, verbosity=2, resultclass=Result).run(suite)
+-    output = stream.getvalue()
+-    (dest / 'salida.log').write_text(output, encoding='utf-8')
+-    (dest / 'resultado.json').write_text(json.dumps({'inicio': start, 'fin': datetime.now(timezone.utc).isoformat(),
+-        'python': sys.version, 'comando': '"' + sys.executable + '" ai-engine/test_unit_llm.py',
+-        'cases': entries, 'total': result.testsRun, 'failures': len(result.failures), 'errors': len(result.errors), 'skipped': len(result.skipped)}, indent=2), encoding='utf-8')
+-    print(output)
+-    sys.exit(0 if result.wasSuccessful() else 1)
++    unittest.main(verbosity=2)
+--- antes/app\(patient)\payment.tsx
++++ despues/app\(patient)\payment.tsx
+@@ -1,5 +1,5 @@
+-import React, { useState, useEffect } from 'react';
+-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
++import React, { useState } from 'react';
++import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router, useLocalSearchParams } from 'expo-router';
+@@ -9,20 +9,21 @@
+   const { triageId } = useLocalSearchParams();
+   const [loading, setLoading] = useState(false);
+   const [paymentSuccess, setPaymentSuccess] = useState(false);
++  const [paymentError, setPaymentError] = useState<string | null>(null);
+ 
+   // Precio simulado de la consulta
+   const consultationPrice = '50.00 Bs';
+ 
+   const handleSimulatePayment = async () => {
+     setLoading(true);
++    setPaymentError(null);
+     
+     // Simular el tiempo que toma el Webhook del banco en validar la transacción
+     setTimeout(async () => {
+       
+-      await markSimulatedPaymentWaiting(triageId);
+-
+-      setLoading(false);
+-      setPaymentSuccess(true);
++      try {
++        await markSimulatedPaymentWaiting(triageId);
++        setPaymentSuccess(true);
+       
+       // Redirigir automáticamente a la sala de espera después del éxito
+       setTimeout(() => {
+@@ -31,6 +32,12 @@
+           params: { triageId }
+         });
+       }, 2000);
++      } catch {
++        setPaymentSuccess(false);
++        setPaymentError('No se pudo completar la simulación. Inténtalo nuevamente.');
++      } finally {
++        setLoading(false);
++      }
+       
+     }, 2500);
+   };
+@@ -51,20 +58,20 @@
+             <View style={styles.successIconCircle}>
+               <Ionicons name="checkmark" size={60} color="#ffffff" />
+             </View>
+-            <Text style={styles.successTitle}>¡Pago Exitoso!</Text>
++            <Text style={styles.successTitle}>Simulación completada</Text>
+             <Text style={styles.successDesc}>
+-              Tu transferencia ha sido validada. Te estamos redirigiendo a la sala de espera virtual.
++              Se actualizó el estado de la simulación. Te estamos redirigiendo a la sala de espera virtual.
+             </Text>
+             <ActivityIndicator size="large" color="#10b981" style={{ marginTop: 20 }} />
+           </View>
+         ) : (
+           <>
+             <View style={styles.infoCard}>
+-              <Text style={styles.infoLabel}>Monto a pagar</Text>
++              <Text style={styles.infoLabel}>Monto simulado</Text>
+               <Text style={styles.priceValue}>{consultationPrice}</Text>
+               <View style={styles.divider} />
+               <Text style={styles.infoDesc}>
+-                Escanea el código QR desde la aplicación de tu banco para proceder con la atención médica.
++                Esta demostración permite continuar a la sala de espera sin realizar una transferencia bancaria.
+               </Text>
+             </View>
+ 
+@@ -73,10 +80,11 @@
+                 <Ionicons name="qr-code-outline" size={150} color="#334155" />
+                 <View style={styles.qrScannerLine} />
+               </View>
+-              <Text style={styles.qrHelpText}>Código QR Dinámico Generado</Text>
++              <Text style={styles.qrHelpText}>QR de demostración sin función de cobro</Text>
+             </View>
+ 
+             <View style={styles.actions}>
++              {paymentError && <Text accessibilityRole="alert" style={{ color: '#b91c1c', marginBottom: 12 }}>{paymentError}</Text>}
+               <TouchableOpacity 
+                 style={[styles.payBtn, loading && styles.payBtnDisabled]} 
+                 onPress={handleSimulatePayment}
+--- antes/app\(patient)\waiting-room.tsx
++++ despues/app\(patient)\waiting-room.tsx
+@@ -58,12 +58,14 @@
+       }
+ 
+       if (!triageData) {
++        setIsDoctorReady(false);
+         setNoActiveRoom(true);
+         setLoading(false);
+         return;
+       }
+ 
+       if (isClosedTriage(triageData.status)) {
++        setIsDoctorReady(false);
+         setNoActiveRoom(true);
+         setLoading(false);
+         return;
+@@ -81,6 +83,8 @@
+ 
+       if (apptError) {
+         console.warn('Error fetching appointment:', apptError);
++        setIsDoctorReady(false);
++        return;
+       }
+ 
+       if (apptData?.doctor_id) {
+@@ -94,11 +98,9 @@
+         }
+       }
+ 
+-      // El médico está listo si el triaje pasó a in_progress O si ya existe una cita en appointments
++      // Reevaluar también la cancelación o el cierre de una cita existente.
+       const ready = isDoctorReadyForCall(triageData?.status, apptData);
+-      if (ready) {
+-        setIsDoctorReady(true);
+-      }
++      setIsDoctorReady(ready);
+     } catch (err) {
+       console.warn('Error crítico comprobando estado en sala de espera:', err);
+     } finally {
+@@ -164,24 +166,19 @@
+         table: 'triages',
+         filter: `id=eq.${activeTriageId}`
+       }, payload => {
+-        if (payload.new?.status === 'in_progress') {
+-          setIsDoctorReady(true);
+-          setTriage((prev: any) => ({ ...prev, status: 'in_progress' }));
+-        }
++        checkStatus(activeTriageId);
+       })
+       .on('postgres_changes', {
+-        event: 'INSERT',
++        event: '*',
+         schema: 'public',
+         table: 'appointments'
+       }, payload => {
+-        if (payload.new?.triage_id === activeTriageId) {
+-          setIsDoctorReady(true);
++        if ('triage_id' in payload.new && payload.new.triage_id === activeTriageId) {
+           checkStatus(activeTriageId);
+         }
+       })
+       .on('broadcast', { event: 'doctor_ready' }, payload => {
+-        setIsDoctorReady(true);
+-        setTriage((prev: any) => ({ ...prev, status: 'in_progress' }));
++        checkStatus(activeTriageId);
+       })
+       .subscribe();
+ 
+--- antes/components\TriageEvaluation.tsx
++++ despues/components\TriageEvaluation.tsx
+@@ -1,15 +1,17 @@
+ import React from 'react';
+ import { prepareTriageView } from '@/utils/triagePresentation';
+-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
++import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router } from 'expo-router';
+ 
+ export default function TriageEvaluation({ onBack, triage }: { onBack?: () => void; triage?: any }) {
+-  // Usamos los datos reales si existen, o datos de respaldo si venimos sin parámetros
++  // La ausencia de información no representa una evaluación clínica.
+   const triageData = prepareTriageView(triage);
+ 
+   const isCritical = triageData.ai_analysis.urgency_level === 'Critical';
++  const hasUrgency = triageData.ai_analysis.urgency_level !== null;
++  const canAttend = !!triage?.id && !!triage?.patient_id;
+ 
+   return (
+     <SafeAreaView className="flex-1 bg-slate-50/50">
+@@ -22,16 +24,16 @@
+ 
+       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+         {/* Nivel de Urgencia Principal */}
+-        <View className={`rounded-[28px] p-6 flex-row items-center mb-6 shadow-sm ${isCritical ? 'bg-red-500 shadow-red-200' : 'bg-amber-500 shadow-amber-200'}`}>
++        <View className={`rounded-[28px] p-6 flex-row items-center mb-6 shadow-sm ${!hasUrgency ? 'bg-slate-500' : isCritical ? 'bg-red-500 shadow-red-200' : 'bg-amber-500 shadow-amber-200'}`}>
+           <View className="w-12 h-12 rounded-full bg-white/20 items-center justify-center">
+             <Ionicons name="warning" size={24} color="#ffffff" />
+           </View>
+           <View className="ml-4 flex-1">
+             <Text className="text-white text-[16px] font-extrabold tracking-wide">
+-              {isCritical ? 'NIVEL CRÍTICO (Prioridad 1)' : `NIVEL ${triageData.ai_analysis.urgency_level.toUpperCase()}`}
++              {!hasUrgency ? 'URGENCIA NO DISPONIBLE' : isCritical ? 'NIVEL CRÍTICO (Prioridad 1)' : `NIVEL ${triageData.ai_analysis.urgency_level?.toUpperCase()}`}
+             </Text>
+             <Text className="text-white/80 text-[13px] mt-1 font-medium leading-5">
+-              {isCritical ? 'Riesgo de vida potencial - Atención Inmediata' : 'Requiere evaluación médica pronta'}
++              {!hasUrgency ? 'No se recibió una clasificación de urgencia.' : isCritical ? 'Riesgo de vida potencial - Atención Inmediata' : 'Requiere evaluación médica pronta'}
+             </Text>
+           </View>
+         </View>
+@@ -78,7 +80,7 @@
+           <View className="mb-6">
+             <Text className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-2">Síntomas Reportados</Text>
+             <View className="bg-slate-50 p-4 rounded-2xl">
+-              <Text className="text-[15px] text-slate-700 leading-6 italic">"{triageData.symptoms}"</Text>
++              <Text className="text-[15px] text-slate-700 leading-6 italic">{`“${triageData.symptoms}”`}</Text>
+             </View>
+           </View>
+ 
+@@ -111,13 +113,14 @@
+           <TouchableOpacity 
+             className="flex-1 bg-blue-600 py-4 rounded-[20px] flex-row justify-center items-center shadow-sm shadow-blue-200" 
+             activeOpacity={0.8}
++            disabled={!canAttend}
+             onPress={() => router.push({
+               pathname: '/videocall' as any,
+               params: {
+                 role: 'doctor',
+-                patientId: triage?.patient_id || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
++                patientId: triage.patient_id,
+                 patientName: triageData.patient.full_name,
+-                triageId: triage?.id || `room_eval_${triage?.patient_id || 'general'}`,
++                triageId: triage.id,
+                 doctorName: 'Dr. Marco Antonio'
+               }
+             })}
+--- antes/services\paymentSimulation.ts
++++ despues/services\paymentSimulation.ts
+@@ -1,11 +1,9 @@
+ import { supabase } from '../lib/supabase';
+ // Paso de la simulación existente; no valida transacciones bancarias.
+ export async function markSimulatedPaymentWaiting(triageId: string | string[] | undefined) {
+-  try {
+-    if (triageId) {
+-      await supabase.from('triages').update({ status: 'waiting' }).eq('id', triageId);
+-    }
+-  } catch (err) {
+-    console.error('Error updating triage status mock:', err);
++  if (typeof triageId !== 'string' || !triageId.trim()) {
++    throw new Error('Identificador de triaje requerido');
+   }
++  const { error } = await supabase.from('triages').update({ status: 'waiting' }).eq('id', triageId);
++  if (error) throw error;
+ }
+--- antes/utils\consultationRules.ts
++++ despues/utils\consultationRules.ts
+@@ -1,2 +1,8 @@
+ export const isClosedTriage = (status?: string) => status === 'completed' || status === 'resolved';
+-export const isDoctorReadyForCall = (status: string | undefined, appointment: unknown) => status === 'in_progress' || !!appointment;
++export function isDoctorReadyForCall(status: string | undefined, appointment: { status?: string; id?: string } | null | undefined) {
++  if (isClosedTriage(status)) return false;
++  // El panel médico crea una cita scheduled al iniciar la atención.
++  // Una cita cancelada, finalizada o sin estado no acredita disponibilidad.
++  if (appointment) return appointment.status === 'scheduled';
++  return status === 'in_progress';
++}
+--- antes/utils\medicalRecord.ts
++++ despues/utils\medicalRecord.ts
+@@ -1,4 +1,4 @@
+-export const hasClinicalRecordFields = (diagnosis: string, treatment: string) => !!diagnosis && !!treatment;
++export const hasClinicalRecordFields = (diagnosis: string, treatment: string) => !!diagnosis.trim() && !!treatment.trim();
+ 
+ export function generatePrescriptionHtml({ patientName, doctorName, diagnosis, treatment, pharmacyName }: { patientName: string; doctorName: string; diagnosis: string; treatment: string; pharmacyName: string }) {
+     const currentDate = new Date().toLocaleDateString('es-BO', {
+--- antes/utils\reportStats.ts
++++ despues/utils\reportStats.ts
+@@ -5,6 +5,7 @@
+   const low = data.filter(t => t.urgency_level === 'Low').length;
+   // Estimación original de la pantalla; no representa cobros bancarios.
+   const paidCount = data.filter(t => t.status === 'waiting' || t.status === 'completed' || t.status === 'in_progress').length;
++  const completedCount = data.filter(t => t.status === 'completed').length;
+   return { totalTriages: total, criticalTriages: critical, mediumTriages: medium,
+-    lowTriages: low, totalRevenue: paidCount * 50, completedTriages: paidCount };
++    lowTriages: low, totalRevenue: paidCount * 50, completedTriages: completedCount };
+ }
+--- antes/utils\triagePresentation.ts
++++ despues/utils\triagePresentation.ts
+@@ -1,31 +1,18 @@
+ export function prepareTriageView(triage?: any) {
+-  return triage ? {
++  const urgency = triage?.urgency_level;
++  return {
+     patient: {
+-      full_name: triage.patients?.profiles?.full_name || "Desconocido",
+-      identity_card: triage.patients?.profiles?.identity_card || "No registrado",
+-      blood_type: triage.patients?.blood_type || "No especificado",
+-      allergies: triage.patients?.allergies || "No reportadas",
+-      emergency_contact: triage.patients?.emergency_contact || "No reportado"
++      full_name: triage?.patients?.profiles?.full_name || "Desconocido",
++      identity_card: triage?.patients?.profiles?.identity_card || "No registrado",
++      blood_type: triage?.patients?.blood_type || "No especificado",
++      allergies: triage?.patients?.allergies || "No reportadas",
++      emergency_contact: triage?.patients?.emergency_contact || "No reportado"
+     },
+-    symptoms: triage.reported_symptoms || "Sin síntomas reportados",
++    symptoms: triage?.reported_symptoms || "Sin síntomas reportados",
+     ai_analysis: {
+-      urgency_level: triage.urgency_level || "Medium",
+-      raw_analysis: triage.ai_raw_analysis || "Sin análisis.",
+-      recommendation: triage.ai_recommendation || "Sin recomendación."
+-    }
+-  } : {
+-    patient: {
+-      full_name: "Juan Perez",
+-      identity_card: "12345678",
+-      blood_type: "O+",
+-      allergies: "Penicilina",
+-      emergency_contact: "70012345"
+-    },
+-    symptoms: "Datos de prueba...",
+-    ai_analysis: {
+-      urgency_level: "Critical",
+-      raw_analysis: "Análisis de prueba...",
+-      recommendation: "Recomendación de prueba..."
++      urgency_level: ['Critical', 'Medium', 'Low'].includes(urgency) ? urgency as string : null,
++      raw_analysis: triage?.ai_raw_analysis || "Sin análisis.",
++      recommendation: triage?.ai_recommendation || "Sin recomendación."
+     }
+   };
+ 
+--- antes/utils\userValidation.ts
++++ despues/utils\userValidation.ts
+@@ -12,21 +12,21 @@
+   document: object | null;
+ }
+ 
+-// Reglas existentes de handleRegister, sin modificar el tratamiento de espacios.
++// Los campos personales obligatorios deben contener algo más que espacios.
+ export function validateRegistrationFields(fields: RegistrationFields): ValidationResult {
+   const { email, password, fullName, identityCard, phoneNumber, address,
+     isDoctor, selectedSpecialty, document } = fields;
+-  if (!email || !password || !fullName || !identityCard || !phoneNumber || !address) {
++  if (!email.trim() || !password || !fullName.trim() || !identityCard.trim() || !phoneNumber.trim() || !address.trim()) {
+     return { isValid: false, error: 'Por favor completa todos los campos comunes.' };
+   }
+-  if (isDoctor && (!selectedSpecialty || !document)) {
++  if (isDoctor && (!selectedSpecialty.trim() || !document)) {
+     return { isValid: false, error: 'Por favor selecciona una especialidad y adjunta tu título.' };
+   }
+   return { isValid: true };
+ }
+ 
+ export function validatePatientProfileFields(phoneNumber: string, address: string): ValidationResult {
+-  if (!phoneNumber || !address) {
++  if (!phoneNumber.trim() || !address.trim()) {
+     return { isValid: false, error: 'Por favor completa el número de teléfono y la dirección.' };
+   }
+   return { isValid: true };

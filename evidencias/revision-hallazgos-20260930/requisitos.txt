@@ -1,0 +1,937 @@
+MARCO INTRODUCTORIO
+INTRODUCCIÓN
+En la actualidad, la integración de las tecnologías de la información y la comunicación en el ámbito de la salud es un factor fundamental para mejorar o hacer más eficiente la atención médica en un mundo cada vez más digitalizado. El desarrollo de la telemedicina ha demostrado ser una herramienta eficaz para superar barreras geográficas y temporales, facilitando el acceso a diagnósticos tempranos y descongestionando las infraestructuras hospitalarias físicas a nivel global.
+Sin embargo, en el departamento de Cochabamba, el sistema de salud público enfrenta una saturación crítica y constante en sus áreas de consulta externa y servicios de urgencias. La falta de filtros tecnológicos en el triaje inicial provoca que pacientes con patologías de baja complejidad ocupen los mismos espacios que aquellos con emergencias vitales. A esta situación se suma una fuerte barrera lingüística, ya que gran parte de la población se comunica utilizando una variante del quechua propia del departamento de Cochabamba, lo que dificulta la recolección precisa de los síntomas.
+Si bien el conocimiento actual sobre soluciones de salud digital ha evolucionado con el uso de la Inteligencia Artificial, aún no existe una plataforma integral adaptada a las necesidades específicas y al contexto cultural de la región de los valles. Las herramientas genéricas de prediagnóstico carecen de la capacidad para procesar modismos locales y no ofrecen un ecosistema completo que incluya videoconsultas médicas vinculadas a pasarelas de pago accesibles para la población boliviana.
+Ante esta problemática, el presente trabajo tiene como propósito el desarrollo de un sistema multiplataforma de telemedicina con triaje asistido por modelos de Inteligencia Artificial. Esta plataforma busca mejorar los tiempos de respuesta y reducir la saturación hospitalaria, ofreciendo una solución tecnológica inclusiva que procese la sintomatología en "Quechuañol" y derive al paciente de manera automatizada hacia una atención médica remota oportuna.
+La propuesta se apoyará en arquitecturas modernas para entornos web y móviles junto con bases de datos relacionales seguras en la nube. Asimismo, para lograr una generalización del sistema hacia diversos modelos de gestión sanitaria, se incluye el análisis e integración de métodos de pago electrónico mediante códigos QR. Con ello, se pretende democratizar el acceso a la salud, reducir la sobrecarga del personal médico y contribuir a la transformación digital sostenible del ecosistema sanitario local.
+PLANTEAMIENTO DEL PROBLEMA
+El sistema de salud público en el departamento de Cochabamba enfrenta una saturación crítica y constante en sus áreas de consulta externa y servicios de urgencias. La relación actual entre la cantidad de profesionales médicos disponibles y la alta demanda poblacional resulta insuficiente para brindar una atención sanitaria oportuna. En consecuencia, los pacientes acuden masivamente a los principales centros médicos desde horas de la madrugada, exponiéndose a condiciones climáticas adversas con el único fin de obtener una ficha para su evaluación médica inicial.
+El sistema de salud público en el departamento de Cochabamba enfrenta una saturación crítica y constante en sus áreas de consulta externa y servicios de urgencias. Según los reportes de saturación hospitalaria, la relación actual entre la cantidad de profesionales médicos y la alta demanda poblacional resulta insuficiente (SEDES Cochabamba, 2023). En consecuencia, los pacientes acuden masivamente a los centros médicos desde horas de la madrugada con el único fin de obtener una ficha para su evaluación médica inicial.
+Uno de los principales problemas radica en el proceso manual del triaje médico tradicional. La Organización Panamericana de la Salud (OPS, 2022) advierte que la falta de filtros tecnológicos en los centros de primer nivel genera que pacientes con patologías de baja complejidad ocupen los mismos recursos que aquellos con emergencias vitales, prolongando peligrosamente los tiempos de espera. 
+A esta compleja situación se suma una fuerte barrera lingüística; gran parte de los pacientes de zonas periurbanas se comunican utilizando variaciones dialectales del idioma quechua. De acuerdo con los datos sociodemográficos del Instituto Nacional de Estadística (INE, 2024), la falta de sistemas de admisión inclusivos que procesen lenguas originarias o dialectos locales dificulta la recolección precisa de los síntomas, generando una desconexión comunicativa entre el personal de salud y el usuario, lo que incrementa el riesgo clínico para los pacientes en lista de espera.
+FORMULACIÓN DEL PROBLEMA
+¿De qué manera el proceso de triaje manual y la existencia de barreras lingüísticas inciden en la saturación y los prolongados tiempos de respuesta en la atención médica de los centros de salud del Gobierno Autónomo Municipal de Cochabamba?
+JUSTIFICACIÓN
+JUSTIFICACIÓN TECNICA
+El presente proyecto se justifica técnicamente mediante la implementación de una arquitectura de software multiplataforma escalable y de alta disponibilidad, estructurada sobre entornos web y móviles. La trascendencia tecnológica radica en la integración innovadora de Modelos de Lenguaje Grande (LLM) adaptados mediante técnicas de ingeniería de prompts para el Procesamiento de Lenguaje Natural (PLN) del dialecto local. Esta infraestructura, respaldada por bases de datos relacionales en la nube, garantizará el procesamiento seguro de datos médicos sensibles en tiempo real, ofreciendo tiempos de respuesta mínimos y sentando una base tecnológica sólida que podrá interoperar a futuro con otros sistemas de salud digital a nivel nacional.
+JUSTIFICACIÓN ECONOMICA
+Desde la perspectiva económica, el proyecto genera un impacto altamente positivo y trascendental tanto para el sistema de salud público como para la población. Para los centros de salud del Gobierno Autónomo Municipal, la automatización del prediagnóstico y la derivación médica mediante videoconsultas reducirán significativamente los costos operativos al disminuir la aglomeración física. Asimismo, el sistema representa un ahorro económico directo para los pacientes de zonas alejadas, quienes evitarán gastos de transporte urbano o interprovincial y pérdida de jornadas laborales al poder resolver consultas de baja complejidad desde sus dispositivos móviles.
+Para garantizar la viabilidad y sostenibilidad financiera del proyecto a largo plazo, el sistema implementará un modelo de ingresos basado en el cobro de comisiones por atención médica efectiva. Si bien el triaje asistido por Inteligencia Artificial será de acceso libre, las videoconsultas con los especialistas requerirán un pago digital ágil mediante códigos QR, del cual la plataforma retendrá un porcentaje de comisión por concepto de intermediación y uso de la infraestructura tecnológica.
+Adicionalmente, el modelo de negocio contempla la generación de ingresos mediante alianzas estratégicas comerciales con cadenas de farmacias y laboratorios de la región. Al finalizar cada consulta virtual, el sistema generará una receta digital que incluirá recomendaciones o patrocinios de medicamentos pertenecientes a la red de establecimientos afiliados, permitiendo a la plataforma percibir un porcentaje de ganancia por cada venta o derivación exitosa realizada a través de este canal.
+JUSTIFICACIÓN SOCIAL 
+La trascendencia social de la propuesta radica en la democratización del acceso a la salud y la mitigación de la brecha de desigualdad tecnológica en sectores vulnerables. Al incorporar un modelo bilingüe enfocado en el "Quechuañol", el sistema dignifica la atención médica, permitiendo que la población se comunique en su lengua materna sin sufrir discriminación ni barreras de entendimiento. Este proyecto empodera al ciudadano, brindándole una herramienta inclusiva que protege su bienestar e integridad al evitarle exposiciones innecesarias a contagios en salas de espera saturadas. En consecuencia, la implementación de este sistema contribuirá directamente a mejorar la calidad de vida de los habitantes de la región de los valles, fomentando un entorno de salud pública más humano, ágil e inclusivo.
+OBJETIVOS
+OBJETIVO GENERAL
+Desarrollar un Sistema de Telemedicina con triaje mediante modelos de inteligencia artificial para mejorar tiempos de respuesta en centros de salud del gobierno autónomo municipal de Cochabamba.
+OBJETIVOS ESPECÍFICOS
+Para alcanzar el objetivo general, se han establecido los siguientes objetivos específicos:
+Desarrollar un módulo de gestión de usuarios para la autenticación segura de acceso al sistema.
+Desarrollar un módulo de triaje automatizado, integrado con un Modelo de Lenguaje Grande (LLM) adaptado al dialecto "Quechuañol", para procesar la sintomatología del paciente y clasificar su nivel de urgencia médica.
+Desarrollar un módulo de videoconsultas en tiempo real para facilitar la atención médica a distancia.
+Desarrollar un módulo de historial clínico y recetas digitales para permitir al médico registrar los datos de la consulta.
+Desarrollar un módulo de pagos integrando transacciones ágiles mediante códigos QR, para gestionar el cobro de las videoconsultas.
+Realizar pruebas de usabilidad, integración y rendimiento para garantizar que los distintos módulos del sistema funcionen de manera correcta, estable y accesible en entornos de producción.
+Desarrollar un módulo de reportes estadísticos, haciendo uso de analitica de datos, para la toma de decisiones administrativos y operacionales.
+ALCANCE
+MÓDULO DE GESTIÓN DE USUARIOS	
+Implementación de registro e inicio de sesión con autenticación segura para pacientes y médicos.
+Configurar roles y permisos de acceso específicos para el personal de salud, administradores y pacientes.
+Gestionar perfiles de usuario, incluyendo datos personales, historial básico y especialidades médicas.	
+MÓDULO DE TRIAJE AUTOMATIZADO
+Integrar un modelo de IA capaz de interpretar síntomas médicos relatados en el dialecto "Quechuañol".	
+Clasificar de forma automática el nivel de urgencia del paciente basándose en parámetros médicos de evaluación inicial.
+Derivar de manera inteligente al paciente hacia la especialidad correspondiente según el resultado del prediagnóstico.
+MÓDULO DE VIDEOCONSULTAS
+Implementar una sala de espera virtual que informe al paciente sobre su turno y el tiempo estimado de atención.
+Establecer canales de comunicación en tiempo real mediante videollamadas seguras entre pacientes y profesionales de la salud.
+Gestionar la disponibilidad de los médicos en línea para aceptar o reprogramar las consultas remotas.
+MÓDULO DE HISTORIAL CLÍNICO Y RECETAS DIGITALES
+Visualizar el reporte previo de triaje generado por el modelo de IA, directamente en el panel del especialista médico.
+Registrar observaciones, diagnósticos finales y notas clínicas durante y después de la atención de la videoconsulta.
+Generar recetas médicas en formato digital (PDF) con opciones de recomendación de medicamentos de farmacias aliadas.
+MÓDULO DE PAGOS
+Integrar un método de pago electrónico mediante códigos QR para gestionar los cobros de las atenciones médicas.
+Automatizar la retención de comisiones por el uso de la plataforma tecnológica a favor de los administradores.
+Registrar el historial de transacciones financieras para que médicos y pacientes visualicen sus movimientos económicos.
+PRUEBAS Y CONTROL DE CALIDAD
+Ejecutar pruebas de usabilidad para validar la fluidez de la interfaz y la correcta interacción de los usuarios con la IA en "Quechuañol".
+Realizar pruebas de integración para verificar la correcta sincronización y flujo de datos entre todos los módulos del sistema (triaje, videoconsultas y pagos).
+Implementar pruebas de rendimiento para asegurar la estabilidad, seguridad y velocidad de la plataforma ante múltiples conexiones simultáneas.
+MÓDULO DE REPORTES
+Generar métricas y estadísticas sobre tiempos de atención, cantidad de triajes realizados y niveles de urgencia médica.
+Visualizar información estadística generacional sobre el uso de la plataforma para apoyar la toma de decisiones gerenciales.
+Elaborar reportes financieros detallados sobre ingresos y egresos.
+LIMITES
+A continuación, se definen de manera explícita las fronteras operacionales, tecnológicas y geográficas del presente proyecto de grado. Establecer las limitaciones del estudio permite precisar el espectro de acción real de la investigación y del sistema de telemedicina propuesto, determinando con claridad aquellos escenarios, servicios y entornos normativos o de red que no serán cubiertos por el software en su implementación inicial en los centros de salud del Gobierno Autónomo Municipal de Cochabamba.
+El alcance del sistema se limitará exclusivamente a pacientes y centros de salud dentro del departamento de Cochabamba, sin contemplar otras regiones en su primera versión.
+La plataforma no tendrá interconexión con el Sistema Único de Salud (SUS) ni con bases de datos gubernamentales externas.
+El sistema operará como una herramienta de apoyo al prediagnóstico, por lo que no asumirá responsabilidades legales sobre complicaciones médicas ni sustituirá la evaluación presencial en casos de emergencias vitales severas.
+El correcto funcionamiento de la plataforma y del modelo de Inteligencia Artificial requerirá obligatoriamente de conexión a internet, no contando con un modo de operación fuera de línea (offline).
+La adaptación lingüística del modelo se enfocará únicamente en la comprensión del dialecto "Quechuañol", sin abarcar otras lenguas originarias del territorio boliviano.
+El sistema no realizará facturación electrónica oficial en las transacciones económicas realizadas.
+Los pagos por los servicios de teleconsulta deberán realizarse de manera inmediata al momento de la transacción, no contemplándose la posibilidad de diferir pagos, establecer cuotas, ni generar ningún tipo de financiamiento o crédito asociado al uso de la plataforma.
+METODOLOGÍA DE DESARROLLO DEL SISTEMA
+ENFOQUE DE INVESTIGACIÓN
+El proyecto adopta un enfoque mixto (cualitativo y cuantitativo). Es cuantitativo porque se recolectarán datos estadísticos sobre tiempos de respuesta, tasa de precisión del triaje y métricas de rendimiento del software (tiempos de latencia en la base de datos). Es cualitativo porque se profundizará en la experiencia de usuario, la validación clínica de los médicos especialistas y la percepción de los pacientes respecto a la barrera idiomática, permitiendo una triangulación de resultados que garantiza la validez de la solución propuesta.
+HERRAMIENTAS DE DESARROLLO DE SOFTWARE
+En cuanto a las tecnologías de ingeniería de software, se utilizarán las siguientes:
+Lenguaje de programación: JavaScript.
+Frameworks: React JS para el desarrollo del frontend web administrativo, y React Native junto con Expo para la compilación de la aplicación móvil multiplataforma.
+Base de datos y Backend: Supabase, utilizando una estructura relacional basada en PostgreSQL para el almacenamiento seguro de historiales médicos y autenticación de usuarios.
+Inteligencia Artificial: Modelos de Lenguaje Grande (LLM) adaptados mediante prompts para el procesamiento del triaje médico en "Quechuañol".
+Control de versiones: Git y GitHub.
+Diseño UI/UX y Gestión: Figma para el prototipado visual y Trello para la administración del cronograma de tareas.
+METODOLOGÍA DE LA INVESTIGACIÓN
+El presente estudio adopta un enfoque de investigación mixto, combinando metodologías cualitativas y cuantitativas para lograr un análisis integral del problema de saturación hospitalaria. Este diseño permite abordar tanto la percepción subjetiva de los pacientes y médicos, como obtener datos estadísticos y cuantificables sobre los tiempos de respuesta del sistema de telemedicina propuesto en un entorno real.
+Enfoque Cualitativo: Se aplicará mediante la recopilación de opiniones, sugerencias y recomendaciones proporcionadas por los especialistas de salud y los pacientes. Esto permitirá comprender a profundidad las necesidades de los usuarios, evaluando específicamente cómo perciben la interacción comunicativa con el modelo de Inteligencia Artificial entrenado para procesar el dialecto "Quechuañol". 
+Enfoque Cuantitativo: Se utilizará para medir de forma objetiva el rendimiento técnico del sistema y el nivel de aceptación de la plataforma de telemedicina. Se aplicarán encuestas estructuradas con escalas de valoración y se analizarán métricas exactas, tales como la reducción porcentual en los tiempos de espera del triaje y la cantidad de derivaciones médicas exitosas realizadas.
+TIPO DE INVESTIGACIÓN
+Investigación Aplicada: El presente estudio se clasifica como investigación aplicada porque su finalidad no es la mera generación teórica de conocimiento, sino la utilización práctica de los fundamentos de la ingeniería de sistemas y la inteligencia artificial para intervenir y resolver un problema tangible de la realidad social. Específicamente, se aplicarán conceptos avanzados de modelos de lenguaje grande (LLM), arquitecturas en la nube y desarrollo de software multiplataforma para diseñar e implementar un sistema de telemedicina cien por ciento funcional. De esta manera, el proyecto transita del análisis del problema (la saturación hospitalaria en Cochabamba) hacia la construcción de una herramienta tecnológica concreta y operativa que mitigará directamente la congestión en las áreas de consulta externa mediante la automatización del triaje médico. ´
+Investigación Descriptiva: Se considera una investigación descriptiva debido a que el estudio se centrará en identificar, medir y caracterizar minuciosamente las variables que componen el estado actual del sistema de admisión médica inicial. Antes de implementar la solución tecnológica, el proyecto documenta y describe cómo se desarrolla el flujo de atención tradicional: los tiempos promedio de espera, el nivel de aglomeración en las salas y las características específicas de la población quechuahablante que se enfrenta a barreras lingüísticas. Esta descripción exhaustiva del fenómeno en su entorno natural es estrictamente necesaria, ya que permite perfilar y definir con exactitud los requerimientos técnicos y funcionales del software, asegurando que el prototipo responda fielmente a las necesidades diagnosticadas en los centros de salud del municipio.
+MÉTODOS DE INVESTIGACIÓN
+Métodos Teóricos:
+Método Analítico: Consiste en la separación material o mental del objeto de la investigación en sus partes integrantes para descubrir los elementos que lo conforman. En este proyecto, se aplicará para analizar los componentes del sistema de telemedicina, módulo de pagos, pre-diagnóstico por IA y triaje, de manera separada e individual. 
+Método Sintético: Es la integración material o mental de los elementos esenciales del objeto de investigación para fijar sus cualidades principales. Se aplicará inmediatamente después del análisis para integrar los módulos previamente estudiados en una arquitectura de software unificada, coherente y funcional. 
+Método de Modelación: Es la reproducción natural o artificial de un objeto original para el estudio de sus particularidades. Se utilizará para concebir y modelar la plataforma tecnológica, diagramando cómo los módulos de atención médica, inteligencia artificial y gestión de pagos interactuarán entre sí antes de pasar a la fase de programación. 
+Métodos Empíricos:
+Método de Observación: Consiste en la percepción dirigida a la obtención de información sobre objetos y fenómenos de la realidad, pudiendo aplicarse bajo la modalidad no participante. Se aplicará durante las fases de prueba del prototipo funcional, observando cómo los pacientes y médicos interactúan con la plataforma en dispositivos móviles, con el objetivo de identificar dificultades de usabilidad y verificar la precisión de la IA sin alterar su comportamiento natural. 
+TÉCNICAS DE INVESTIGACIÓN
+Encuestas (Instrumento: Cuestionario): Es una técnica de recolección de datos que utiliza un conjunto de preguntas predefinidas y estandarizadas, aplicadas de manera uniforme a los participantes. Se aplicará en dos momentos: antes del desarrollo para evaluar la disposición de los usuarios hacia la telemedicina, y después de las pruebas (mediante la escala SUS) para medir la usabilidad de la plataforma. 
+Recolección de datos por mediciones (Instrumento: Registros de Base de Datos): Técnica empírica que consiste en la recopilación y evaluación cuantitativa de datos generados automáticamente por sistemas digitales. Se utilizará para extraer directamente desde Supabase los tiempos de respuesta del triaje procesado por la IA y la fluidez de las transacciones QR. 
+Entrevistas (Instrumento: Guía de Entrevista): Técnica cualitativa basada en un diálogo estructurado de carácter profesional para profundizar en las perspectivas y criterios de expertos. Se aplicará mediante reuniones directas con los médicos especialistas del GAMC para validar clínicamente la precisión del triaje en "Quechuañol" generado por la IA. 
+POBLACIÓN Y MUESTRA
+Población: La identificación de la población de estudio estará conformada por el conjunto de pacientes que acuden a los centros de salud públicos de primer y segundo nivel dependientes del Gobierno Autónomo Municipal de Cochabamba, así como por los profesionales médicos especialistas que prestan servicios de consulta externa en dichos establecimientos. Este universo abarca a los usuarios a quienes se va a encuestar y entrevistar que experimentan cotidianamente la saturación del triaje. 
+Muestra: Debido a la magnitud de la población y dado que se trata de la validación de un proyecto tecnológico, se trabajará con un subconjunto representativo de la población. Esta muestra se dividirá en dos grupos: 
+Muestra de 50 pacientes: Grupo al que se le aplicará la técnica de Encuestas, empleando un cuestionario de usabilidad (escala SUS), para medir cuantitativamente su experiencia y facilidad de uso tras interactuar con la plataforma y el modelo de lenguaje. 
+Muestra de 15 médicos especialistas: Grupo al que se le aplicará la técnica de Entrevistas, mediante una guía estructurada, con el propósito de validar desde una perspectiva clínica la precisión del triaje médico procesado por la Inteligencia Artificial. 
+Muestreo: Para definir el procedimiento a través del cual se obtiene la muestra, se aplicará un Muestreo No Probabilístico mediante la técnica de Muestreo intencional. Esta selección deliberada se justifica porque se requiere la participación de usuarios específicos (médicos y pacientes reales) para interactuar con el prototipo funcional, generando así la información necesaria para aplicar la tercera técnica de la investigación: la Recolección de datos por mediciones directamente desde la base de datos. 
+FUENTES DE INVESTIGACIÓN
+Para el desarrollo del presente proyecto, y con el fin de garantizar la validez y confiabilidad de los datos, se recurrirá a las siguientes fuentes de información: 
+Fuentes Primarias: Constituidas por la información más importante de primera mano. Estarán conformadas por los datos obtenidos directamente producto de las entrevistas a los médicos especialistas y las encuestas aplicadas a los pacientes. Asimismo, se recurrirá a libros fundamentales de ingeniería de software, documentos originales y la revisión de leyes o normativas vigentes del sector salud en Bolivia. 
+Fuentes Secundarias: Conformadas por información recopilada y reprocesada. Abarcarán el estudio de investigaciones previas, artículos científicos sobre modelos de lenguaje (LLM) y telemedicina, resúmenes médicos de procesos de triaje clínico y compilaciones de documentación técnica oficial para el desarrollo en React Native y Supabase. 
+Fuentes Terciarias: Compuestas por la información de referencia extraída de revistas tecnológicas especializadas, periódicos y boletines informativos institucionales relacionados con la actualización de la salud digital y la implementación de Inteligencia Artificial en centros de salud.
+CAPÍTULO I 
+MARCO TEÓRICO
+CAPÍTULO I MARCO TEÓRICO
+INTRODUCCIÓN
+El presente capítulo tiene como propósito fundamental establecer las bases teóricas, conceptuales y técnicas que sustentan el desarrollo del sistema de telemedicina propuesto para el departamento de Cochabamba. Esta sección servirá para establecer el contexto académico, justificar la investigación desde una perspectiva científica y orientar la formulación de los requerimientos funcionales del software. De igual manera, busca dar sentido a los resultados técnicos obtenidos, garantizando que la investigación y elaboración del sistema asistido por inteligencia artificial se realice de manera informada y bien fundamentada dentro del campo de la ingeniería de sistemas y la salud digital.
+MARCO TEÓRICO
+MARCO CONCEPTUAL
+TELEMEDICINA
+La telemedicina es la prestación de servicios de atención médica, donde la distancia es un factor crítico, por parte de profesionales de la salud que utilizan tecnologías de la información para el intercambio de información válida para el diagnóstico y tratamiento de enfermedades .
+Su implementación permitirá conectar a los pacientes en Cochabamba con médicos en tiempo real de forma segura, descentralizando la atención inicial.
+TRIAJE MÉDICO
+El triaje es un proceso de clasificación clínico que permite priorizar la asistencia médica de los pacientes basándose en su nivel de gravedad y los recursos disponibles .
+La automatización de este pre-diagnóstico permitirá filtrar a los pacientes con patologías de baja complejidad antes de que lleguen físicamente al hospital, optimizando los flujos de trabajo iniciales y reduciendo los tiempos de espera prolongados.
+MODELOS DE LENGUAJE GRANDE (LLM)
+Los modelos de lenguaje grande son algoritmos de inteligencia artificial que pueden reconocer, predecir y generar texto en base al conocimiento extraído de conjuntos de datos masivos .
+En esta investigación, se emplearán para analizar de manera conversacional los síntomas descritos por el paciente, estructurando la información para determinar el nivel de urgencia médica de forma inmediata y automatizada.
+PROCESAMIENTO DE LENGUAJE NATURAL (PLN)
+El procesamiento de lenguaje natural es la rama de la inteligencia artificial que dota a las computadoras de la capacidad de entender el texto y las palabras habladas de la misma manera que los seres humanos.
+Resulta fundamental para que el sistema reconozca y procese adecuadamente las variaciones dialectales y modismos propios del "Quechuañol" utilizados por la población de los valles cochabambinos.
+SISTEMA MULTIPLATAFORMA
+Multiplataforma se refiere a la capacidad de un software para operar sin problemas en diferentes sistemas operativos o dispositivos, permitiendo a los usuarios acceder a la misma aplicación sin problemas de compatibilidad . 
+Esta característica garantiza que tanto médicos desde entornos web como pacientes desde teléfonos móviles interactúen en el mismo ecosistema digital de manera fluida y sincronizada.
+HISTORIAL CLÍNICO ELECTRÓNICO (HCE)
+Un registro médico electrónico es una versión digital, segura y en tiempo real de la historia clínica de un paciente, que contiene diagnósticos, medicamentos y notas de progreso . 
+Este componente permitirá a los especialistas registrar los diagnósticos de las videoconsultas, visualizar el resumen del triaje generado por la IA y emitir recetas digitales en formato PDF de forma segura.
+PAGOS ELECTRÓNICOS MEDIANTE QR
+Un código QR para pagos cifra información bancaria, permitiendo transferencias electrónicas instantáneas simplemente escaneando la imagen desde un dispositivo móvil . La adopción de este método se integra para facilitar el cobro automatizado en modelos de gestión privada. Al no requerir tarjetas de crédito físicas, fomenta la inclusión financiera de los pacientes y asegura la sostenibilidad económica de la plataforma tecnológica.
+MARCO TÉCNICO
+JAVASCRIPT Y NPM
+JavaScript es el lenguaje estándar para el desarrollo web y móvil moderno, permitiendo crear interfaces dinámicas e interactivas. Se complementa con NPM, el gestor de paquetes que permite instalar y gestionar todas las dependencias y librerías necesarias para el proyecto . 
+Estas herramientas constituyen la base lógica sobre la cual se construirán el frontend y la integración con servicios externos de inteligencia artificial.
+REACT, REACT NATIVE Y EXPO
+React permite crear interfaces web mediante componentes reutilizables, mientras que React Native facilita el desarrollo de aplicaciones móviles nativas compartiendo la misma base lógica. 
+Se utilizará el marco de trabajo Expo para acelerar el ciclo de desarrollo, permitiendo compilar la aplicación móvil y acceder a funciones nativas del dispositivo como la cámara y la ubicación para las videoconsultas de forma eficiente.
+SUPABASE
+Supabase es una plataforma backend que proporciona bases de datos relacionales basadas en PostgreSQL, ofreciendo seguridad, autenticación basada en roles y almacenamiento de archivos en la nube . 
+A diferencia de las bases NoSQL, este servicio garantiza una alta integridad referencial de los datos médicos, lo cual es estrictamente necesario para la gestión confiable de historiales clínicos y registros de atenciones sanitarias.
+GIT Y GITHUB
+Git es un sistema de control de versiones que registra los cambios en el código fuente, mientras que GitHub es la plataforma en la nube que permite administrar los repositorios de forma colaborativa . 
+El uso de estas herramientas asegura la trazabilidad del desarrollo, facilita la revisión constante del código entre los desarrolladores y garantiza el respaldo seguro de todo el software del sistema de telemedicina.
+TRELLO Y FIGMA
+Trello permite la gestión visual de tareas mediante tableros organizados, y Figma facilita la creación de prototipos interactivos de alta fidelidad para interfaces web y móviles . 
+Estas soluciones optimizarán la fase de planificación del sistema, asegurando que el diseño de pantallas esté centrado en el usuario y que el equipo de desarrollo cumpla rigurosamente con los plazos establecidos en el cronograma.
+METODOLOGÍAS DE DESARROLLO ÁGIL
+SCRUM
+Scrum es un marco de gestión de proyectos ágil que prioriza el desarrollo iterativo y la entrega continua de valor a través de ciclos de trabajo denominados sprints . 
+Su implementación en este proyecto facilitará el desarrollo por módulos funcionales, permitiendo realizar ajustes rápidos en la lógica de la inteligencia artificial o en los flujos de videoconsultas según los resultados de las pruebas periódicas.
+KANBAN
+Kanban es un método visual de gestión de flujos de trabajo que permite monitorear el progreso de las tareas desde que están pendientes hasta su finalización .
+Se utilizará para administrar las tareas diarias de codificación de forma transparente, permitiendo al equipo de desarrollo identificar y resolver rápidamente bloqueos técnicos que impidan el avance de la integración multiplataforma del sistema.
+PRUEBAS EN EL DESARROLLO DE SOFTWARE
+PRUEBAS UNITARIAS
+Las pruebas unitarias consisten en evaluar de forma aislada la unidad de código más pequeña para garantizar su calidad y correcto funcionamiento lógico .
+Se aplicarán para validar algoritmos críticos antes de ensamblar el sistema completo, asegurando que funciones como la clasificación del triaje por niveles de urgencia o el cálculo de comisiones operen sin errores matemáticos o lógicos.
+PRUEBAS DE USABILIDAD
+Las pruebas de usabilidad implican observar a usuarios reales interactuando con el software para medir la claridad de la interfaz y la facilidad de navegación .
+En este proyecto, son vitales para garantizar que pacientes de diversas edades y procedencias puedan interactuar cómodamente con la inteligencia artificial en "Quechuañol" y acceder a las videoconsultas sin enfrentar barreras tecnológicas complejas.
+PRUEBAS DE RENDIMIENTO
+Las pruebas de rendimiento someten al sistema a cargas de trabajo simuladas para determinar su estabilidad y escalabilidad bajo condiciones de alto tráfico . Resultan indispensables para certificar que la infraestructura en la nube pueda soportar simultáneamente múltiples sesiones de videollamadas en alta definición y cientos de solicitudes de triaje médico sin experimentar latencia o caídas críticas del servicio.
+CAPÍTULO II
+INGENIERÍA DEL PROYECTO
+INGENIERÍA DEL PROYECTO
+DETERMINACIÓN DE REQUERIMIENTOS
+Para determinar los requerimientos del sistema de telemedicina con triaje automatizado, es fundamental realizar previamente un análisis del Estado del Arte. En la actualidad, existen sistemas de telemedicina genéricos que permiten agendar citas y realizar videoconsultas; sin embargo, la mayoría carece de un módulo de Inteligencia Artificial capaz de procesar el lenguaje natural (especialmente adaptado a variantes regionales como el "Quechuañol") para clasificar la urgencia médica antes de la consulta.
+El análisis de las soluciones actuales demuestra que la congestión en los centros de salud de primer nivel en Cochabamba se debe a la falta de un filtro inicial eficiente. Por lo tanto, se determina que el sistema propuesto requiere de un motor de triaje basado en un Modelo de Lenguaje Grande (LLM) que interprete los síntomas y asigne un nivel de urgencia de manera autónoma.
+RECOLECCIÓN Y ANÁLISIS DE REQUERIMIENTOS
+Para la fase de análisis y desarrollo del presente proyecto, se adoptará la metodología RUP (Proceso Unificado de Rational), la cual se complementará con el Lenguaje Unificado de Modelado (UML) en las fases posteriores de diseño. El uso de RUP asegura un enfoque iterativo e incremental, permitiendo estructurar de manera sistemática los requerimientos en su fase de "Inicio" y "Elaboración". 
+Origen de los campos de información:
+Para garantizar la validez clínica y técnica de los datos recolectados por el sistema, los campos se extrajeron de las siguientes fuentes documentales:
+Datos de triaje y urgencia: Los campos de síntomas, signos de alarma y clasificación de niveles de urgencia provienen de los estándares del Manual de Triaje Hospitalario del Ministerio de Salud y Deportes.
+Datos de usuarios e historiales: Los atributos correspondientes al registro de pacientes, médicos y generación de recetas se obtuvieron del análisis de los formularios físicos utilizados actualmente en los centros de salud del Gobierno Autónomo Municipal de Cochabamba.
+ESPECIFICACIÓN DE REQUERIMIENTOS
+En esta sección se detallan los requerimientos funcionales y no funcionales que rigen el comportamiento de la plataforma, estructurados para asegurar su trazabilidad. 
+Requerimientos Funcionales
+La tabla 2.3 detalla todos los requerimientos funcionales que fueron creados para la gestión de usuarios.
+Tabla 2.3. Los requerimientos Funcionales de Gestión de Usuarios.
+La tabla 2.4 detalla todos los requerimientos funcionales que fueron creados para la gestión del triaje automatizado.
+Tabla 2.4. Los requerimientos Funcionales de la Gestión del Triaje Automatizado.
+La tabla 2.5 detalla todos los requerimientos funcionales que fueron creados para la gestión de videoconsultas.
+Tabla 2.5. Los requerimientos Funcionales de la Gestion de las Videoconsultas.
+La tabla 2.6 detalla todos los requerimientos funcionales que fueron creados para la gestión del historial clínico.
+Tabla 2.6. Los Requerimientos Funcionales de las Gestión del Historial Clínico.
+La tabla 2.7 detalla todos los requerimientos funcionales que fueron creados para la gestión de cobros mediante QR en el sistema.
+Tabla 2.7. Los requerimientos Funcionales de la Gestión de cobros en el sistema.
+La tabla 2.8 detalla todos los requerimientos funcionales que fueron creados para la gestión de reportes estadisticos.
+
+Tabla 2.8. Los requerimientos Funcionales de la Gestión de Reportes estadísticos. 
+ REQUERIMIENTOS NO FUNCIONALES
+La tabla 2.9 detalla el requerimiento no funcional que fue creado para la seguridad del sistema.
+Tabla 2.9. Los Requerimientos No Funcionales de la seguridad del Sistema
+La tabla 2.10 detalla el requerimiento no funcional que fue creado para el rendimiento bajo concurrencia.
+Tabla 2.10. Los Requerimientos No Funcionales de Rendimiento bajo Concurrencia.
+La tabla 2.11 detalla el requerimiento no funcional que fue creado para la usabilidad e inclusion digital.
+Tabla 2.11. Los Requerimientos No Funcionales de Usabilidad e Inclusión digital. 
+La tabla 2.12 detalla el requerimiento no funcional que fue creado para la disponilidad operativa.
+Tabla 2.12. Los Requerimientos No Funcionales de Disponibilidad Operativa. 
+La tabla 2.13 detalla el requerimiento no funcional que fue creado para la integracion de apis en el sistema.
+Tabla 2.13. Los Requerimientos No Funcionales de Integración de APIS en el sistema.
+ELABORACIÓN
+El presente acápite describe la fase de diseño técnico, especificación de componentes y modelado arquitectónico del sistema multiplataforma propuesto. A través de este desarrollo, se transforman los requerimientos funcionales en especificaciones de ingeniería de software, detallando la interacción de los actores, la infraestructura tecnológica en la nube, el diseño de la interfaz de usuario y los diagramas estructurales y de comportamiento bajo el estándar UML.
+SISTEMA PROPUESTO
+El sistema propuesto consiste en una plataforma tecnológica de telemedicina integrada por un componente de Inteligencia Artificial enfocado en la optimización del flujo de admisión y triaje médico inicial en los centros de salud del municipio de Cochabamba. La solución se concibe como un ecosistema distribuido compuesto por:
+Aplicación Móvil (Pacientes): Desarrollada para permitir a los usuarios registrarse, introducir sus síntomas en lenguaje natural (soportando expresiones coloquiales y variaciones lingüísticas locales o "Quechuañol"), recibir una pre-clasificación de urgencia automatizada, realizar pagos mediante códigos QR dinámicos y acceder de manera inmediata a salas de videoconsulta médica segura.
+Panel Web Administrativo (Médicos y Administradores): Una interfaz de escritorio optimizada para que el personal de salud visualice en tiempo real la lista de pacientes clasificados según la prioridad clínica del triaje, acceda de forma segura a las salas de videollamada, registre los diagnósticos y recetas en el historial clínico digital, y permita la supervisión técnica y de roles del sistema.
+Núcleo de Inteligencia Artificial (Procesamiento de Lenguaje Natural): Un submódulo de backend acoplado a modelos de lenguaje a gran escala (LLM) que actúa como un filtro inteligente, traduciendo las descripciones del usuario en categorías de urgencia normalizadas, mitigando directamente la saturación de los servicios de consulta externa presencial.
+ACTORES
+Para el modelado del sistema, se han identificado y definido formalmente los siguientes actores, que representan las entidades externas e internas que interactúan de forma directa con la plataforma:
+Paciente: Actor externo principal. Es el usuario que interactúa con la aplicación móvil para describir sintomatologías, realizar transacciones electrónicas de pago, consultar su historial y recibir asistencia médica a través de canales de videollamada.
+Médico Especialista: Actor externo profesional. Es el personal de salud que interactúa con el panel web para gestionar su agenda de teleconsultas, revisar las evaluaciones previas generadas por la Inteligencia Artificial, realizar la atención interactiva síncrona y actualizar el historial clínico digital del paciente.
+Modelo de Inteligencia Artificial (Sistema): Actor de sistema (o subsistema automatizado). Actúa de forma interna procesando los flujos de texto en lenguaje natural provistos por el paciente para ejecutar la clasificación algorítmica del triaje médico.
+Administrador del Sistema: Actor interno técnico. Es el personal encargado del mantenimiento operativo de la plataforma, la gestión de privilegios y roles, la auditoría de transacciones de pago y el monitoreo de la consistencia de los servicios en la nube.
+BASE ARQUITECTÓNICA
+La base arquitectónica implementada se fundamenta en un patrón de arquitectura cliente-servidor desacoplado, utilizando el paradigma de Backend as a Service (BaaS) en la nube para garantizar alta disponibilidad, seguridad y escalabilidad horizontal frente a picos de demanda.
+La infraestructura se organiza de la siguiente manera:
+Capa de Presentación (Frontend): Compuesta por la aplicación móvil híbrida compilada con React Native y Expo para dispositivos móviles, y el panel web de gestión construido sobre React JS para navegadores de escritorio. Ambas interfaces se comunican con los servicios mediante peticiones HTTPS seguras.
+Capa de Servicios y Persistencia (Backend/BaaS): Centralizada en Supabase, la cual proporciona de forma nativa la gestión de autenticación segura de usuarios (Auth), las funciones de backend asíncronas para la lógica de negocio y una base de datos relacional robusta basada en PostgreSQL. Toda la información sensible, como los expedientes clínicos, se almacena bajo estrictos protocolos de cifrado de datos en reposo y en tránsito.
+Capa de Integración de Inteligencia Artificial: Consiste en la conexión directa mediante API seguras hacia los servicios de modelos de lenguaje a gran escala (LLM), donde se procesan los flujos de texto médico mediante prompts estructurados que devuelven estructuras de datos estandarizadas (JSON) hacia el backend para su posterior almacenamiento.
+Figura 2.1. Diagrama de la base arquitectónica del sistema de telemedicina.
+Fuente: Elaboración propia, 2026.
+2.2.4 DISEÑO MOCKUP
+El diseño de interfaces (UI/UX) se ha estructurado utilizando la herramienta de prototipado Figma, implementando un enfoque de diseño centrado en el usuario y accesibilidad digital.
+Para la Aplicación Móvil: Se prioriza un flujo de navegación simplificado y limpio con un esquema de fuentes legibles y contraste alto, considerando que un porcentaje de la población objetivo puede poseer competencias digitales básicas. El flujo de triaje se diseña mediante un asistente interactivo paso a paso.
+Para el Panel Web Médico: Se emplea un diseño de tablero de control (dashboard) industrial, estructurado en cuadrículas y tablas dinámicas que permiten una visualización rápida del estado clínico de la sala de espera virtual, priorizando la paleta de colores normada para la clasificación de urgencias médicas.
+UML
+Para la especificación formal del comportamiento y estructura del software, se utiliza el Lenguaje de Modelado Unificado (UML), el cual proporciona una representación abstracta pero rigurosa de las interacciones lógicas del sistema.
+Diagramas de casos de uso
+La Figura 3.1 detalla el caso de uso del módulo de gestión de usuarios mediante un diagrama, donde el administrador, el médico y el paciente pueden registrarse en la plataforma, iniciar sesión de forma segura y, en el caso del administrador, asignar los roles y especialidades correspondientes al personal médico.
+Figura 3.1. Diagrama de Casos de Uso del Módulo de Gestión de Usuarios.
+
+Fuente: Elaboración propia, 2026.
+Tabla 3.15. Especificación de Casos de Uso: Registrar Usuario.
+Fuente: Elaboración Propia (2026)
+Tabla 3.16. Especificación de Casos de Uso: Iniciar Sesión (Autenticación Segura).
+Fuente: Elaboración Propia (2026)
+Tabla 3.17. Especificación de Casos de Uso: Asignar Roles y Especialidades.
+Fuente: Elaboración Propia (2026)
+La Figura 3.2 detalla el caso de uso del módulo de triaje automatizado mediante un diagrama, donde el paciente interactúa con la plataforma ingresando sus síntomas en dialecto "Quechuañol". Posteriormente, el Modelo de Lenguaje Grande (LLM) procesa la información, clasifica el nivel de urgencia y deriva al paciente a la especialidad correspondiente de manera automatizada.
+Figura 3.2. Diagrama de Casos de Uso del Módulo de Triaje Automatizado (IA).
+Fuente: Elaboración propia, 2026.
+Tabla 3.18. Especificación de Casos de Uso: Capturar Sintomatología (Quechuañol).
+Fuente: Elaboración Propia (2026)
+Tabla 3.19. Especificación de Casos de Uso: Procesar y Traducir IA.
+Fuente: Elaboración Propia (2026)
+Tabla 3.20. Especificación de Casos de Uso: Clasificar Urgencia y Derivar.
+Fuente: Elaboración Propia (2026)
+La Figura 3.3 detalla el caso de uso del módulo de videoconsultas mediante un diagrama, donde el paciente espera su turno visualizando la sala de espera virtual, mientras el médico gestiona su disponibilidad en la plataforma. Finalmente, ambos actores se conectan a través de una transmisión de video en tiempo real.
+Figura 3.3. Diagrama de Casos de Uso del Módulo de Videoconsultas.
+Fuente: Elaboración Propia (2026)
+Tabla 3.21. Especificación de Casos de Uso: Visualizar Sala de Espera.
+Fuente: Elaboración Propia (2026)
+Tabla 3.22. Especificación de Casos de Uso: Control de Disponibilidad Médica.
+Fuente: Elaboración Propia (2026)
+Tabla 3.23. Especificación de Casos de Uso: Transmisión de Videoconsulta.
+Fuente: Elaboración Propia (2026)
+La Figura 3.4 detalla el caso de uso del módulo de historial clínico y recetas mediante un diagrama, donde el médico especialista, tras interactuar con la plataforma durante la videoconsulta, visualiza el análisis previo de la IA, registra los datos definitivos de la consulta y emite la receta digital correspondiente.
+Figura 3.4. Diagrama de Casos de Uso del Módulo de Historial Clínico.
+Fuente: Elaboración Propia (2026)
+Tabla 3.24. Especificación de Casos de Uso: Visualizar Pre-diagnóstico IA.
+Fuente: Elaboración Propia (2026)
+Tabla 3.25. Especificación de Casos de Uso: Registrar Historial Clínico.
+Fuente: Elaboración Propia (2026)
+Tabla 3.26. Especificación de Casos de Uso: Autogenerar Receta PDF.
+Fuente: Elaboración Propia (2026)
+La Figura 3.5 detalla el caso de uso de los módulos de pagos y reportes mediante un diagrama, donde se ilustra la interacción del paciente y la pasarela bancaria para validar la transacción económica mediante código QR. Paralelamente, el administrador tiene la facultad de analizar estadísticamente esta información.
+Figura 3.5. Diagrama de Casos de Uso del Módulo de Pagos y Reportes.
+Fuente: Elaboración Propia (2026)
+
+Tabla 3.27. Especificación de Casos de Uso: Generar Código QR de Pago.
+Fuente: Elaboración Propia (2026)
+Tabla 3.28. Especificación de Casos de Uso: Verificar Transacción.
+Fuente: Elaboración Propia (2026)
+Tabla 3.29. Especificación de Casos de Uso: Generar Reportes Estadísticos.
+Fuente: Elaboración Propia (2026)
+Diagramas de secuencias
+La Figura 2.6 presenta el diagrama de secuencia correspondiente al registro de usuario en la plataforma, representado mediante un diagrama. En él se describe cómo el Usuario envía sus datos personales a través de la Vista, los cuales son procesados por el Controlador y la API de Supabase Auth. Se incluye la lógica condicional que verifica la disponibilidad del correo en la Base de Datos, gestionando de forma segura la creación de la cuenta o la devolución del mensaje de error correspondiente.
+Fuente: Elaboración propia, 2026.
+La Figura 2.7 presenta el diagrama de secuencia correspondiente al inicio de sesión de los usuarios en la plataforma, representado mediante un diagrama. En él se describe cómo el Usuario envía sus credenciales a través de la Vista, las cuales son validadas por el Controlador y la API de Supabase Auth contra los registros almacenados en la Base de Datos. Se incluye la lógica condicional que determina el acceso concedido según el rol o la devolución de un mensaje de error ante credenciales incorrectas.
+Fuente: Elaboración propia, 2026.
+La Figura 2.8 presenta el diagrama de secuencia correspondiente a la asignación de roles y especialidades del personal médico, representado mediante un diagrama. En él se describe cómo el Administrador selecciona un usuario desde el Panel Web y envía la asignación al Controlador, el cual actualiza los permisos y la especialidad correspondiente en la Base de Datos. Se incluye la lógica condicional que gestiona la confirmación exitosa de la actualización o el mensaje de error ante fallas de conexión.
+Fuente: Elaboración propia, 2026.
+La Figura 2.9 presenta el diagrama de secuencia correspondiente a la captura de sintomatología del paciente, representado mediante un diagrama. En él se describe cómo el Paciente ingresa sus síntomas en texto o audio a través de la Vista, los cuales son enviados al Controlador para su verificación. Se incluye la lógica condicional que determina si el contenido es legible y procesable, o si se debe solicitar al paciente el reingreso de la información.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.10 presenta el diagrama de secuencia correspondiente al procesamiento y traducción de la sintomatología mediante inteligencia artificial, representado mediante un diagrama. En él se describe cómo el Controlador envía el texto crudo del paciente al Motor IA (LLM) para su traducción a terminología médica estandarizada. Se incluye la lógica condicional que gestiona la devolución de datos estructurados cuando los términos son reconocidos, o la clasificación del caso como "Triaje manual" cuando no lo son.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.11 presenta el diagrama de secuencia correspondiente a la clasificación de urgencia y derivación del paciente, representado mediante un diagrama. En él se describe cómo el Controlador evalúa los síntomas estandarizados y consulta la disponibilidad de especialistas en la Base de Datos. Se incluye la lógica condicional que asigna el nivel de urgencia e ingresa al paciente en la cola correspondiente, o lo deriva a Medicina General cuando no hay especialistas disponibles.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.12 presenta el diagrama de secuencia correspondiente a la visualización de la sala de espera virtual, representado mediante un diagrama. En él se describe cómo el Paciente solicita su posición y tiempo estimado de atención a través de la Vista, los cuales son calculados por el Controlador a partir del estado de la cola y del médico registrados en la Base de Datos. Se incluye la lógica condicional que actualiza el temporizador cuando el médico está conectado, o lo pausa y notifica ante su desconexión.
+Fuente: Elaboración propia, 2026.
+La Figura 2.13 presenta el diagrama de secuencia correspondiente al control de disponibilidad del médico especialista, representado mediante un diagrama. En él se describe cómo el Médico actualiza su estado desde el Panel Médico Web, el cual es enviado al Controlador para su persistencia en la Base de Datos. Se incluye la lógica condicional que confirma la actualización en tiempo real, o mantiene el último estado guardado ante un error de red.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.14 presenta el diagrama de secuencia correspondiente a la transmisión de la videoconsulta médica, representado mediante un diagrama. En él se describe cómo el Paciente y el Médico Especialista aceptan la videollamada a través del Controlador (WebRTC), estableciendo un canal bidireccional de audio y video. Se incluye la lógica condicional que confirma el inicio estable de la conexión, o muestra un aviso ante una red inestable.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.15 presenta el diagrama de secuencia correspondiente a la visualización del pre-diagnóstico generado por la IA, representado mediante un diagrama. En él se describe cómo el Médico Especialista solicita, desde el Panel de Videoconsulta Web, el reporte de triaje asociado a la consulta activa, el cual es consultado por el Controlador en la Base de Datos. Se incluye la lógica condicional que muestra el reporte en el panel lateral cuando los datos están disponibles, o un panel en blanco con opción de recarga ante fallas de la base de datos.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.16 presenta el diagrama de secuencia correspondiente al registro del historial clínico del paciente, representado mediante un diagrama. En él se describe cómo el Médico Especialista redacta el diagnóstico y las notas clínicas a través de la Vista Web, los cuales son enviados al Controlador para su validación y almacenamiento en la Base de Datos. Se incluye la lógica condicional que guarda y anexa la información al historial cuando los campos obligatorios están completos, o impide el envío del formulario cuando faltan datos.
+
+Fuente: Elaboración propia, 2026.
+La Figura 2.17 presenta el diagrama de secuencia correspondiente a la generación automática de la receta médica, representado mediante un diagrama. En él se describe cómo el Controlador envía la lista de medicamentos e indicaciones al Generador PDF, el cual produce el documento digital para su almacenamiento en la Base de Datos/Storage. Se incluye la lógica condicional que habilita la descarga del archivo cuando el renderizado es exitoso, o permite reintentar la generación ante un error temporal.
+Fuente: Elaboración propia, 2026.
+La Figura 2.18 presenta el diagrama de secuencia correspondiente a la generación del código QR de pago, representado mediante un diagrama. En él se describe cómo el Paciente confirma el pago de la consulta a través de la Vista Móvil, solicitando al Controlador la generación del código mediante la Pasarela Bancaria. Se incluye la lógica condicional que muestra el QR en pantalla cuando la API bancaria responde correctamente, o un mensaje de servicio inactivo ante una falla.
+Fuente: Elaboración propia, 2026.
+La Figura 2.19 presenta el diagrama de secuencia correspondiente a la verificación de la transacción de pago, representado mediante un diagrama. En él se describe cómo la Pasarela Bancaria notifica al Controlador, mediante un webhook, el resultado del procesamiento del pago. Se incluye la lógica condicional que actualiza el estado a "Pagado" y habilita el acceso a la sala de espera cuando los fondos fueron transferidos, o registra el rechazo y notifica al paciente ante fondos insuficientes.
+Fuente: Elaboración propia, 2026.
+La Figura 2.20 presenta el diagrama de secuencia correspondiente a la generación de reportes estadísticos, representado mediante un diagrama. En él se describe cómo el Administrador solicita un reporte con determinados filtros a través del Panel Web, los cuales son enviados al Controlador para consultar los datos agregados en la Base de Datos. Se incluye la lógica condicional que genera el reporte y las gráficas cuando existen datos disponibles, o muestra un mensaje indicando la ausencia de información para el periodo seleccionado.
+
+Fuente: Elaboración propia, 2026.
+Diagrama de clases
+La Figura 3.14 detalla el diagrama de clases del sistema completo, consistiendo de clases, atributos, operaciones y relaciones, además de sus niveles de acceso, los cuales se unen para formar la estructura del sistema.
+Figura 3.14. Diagrama de clases: Detalla el diagrama de clases del sistema completo.
+Fuente: Elaboración propia, 2026.
+3.3.3. DIAGRAMA DE COMPONENTES
+Figura 3.12. Diagrama de componentes del sistema.
+ Fuente: Elaboración propia, 2026.
+3.3.4. DIAGRAMA DE DESPLIEGUE
+Figura 3.13. Diagrama de despliegue del sistema.
+Fuente: Elaboración propia, 2026.
+3.3.5. DIAGRAMA DE PAQUETES
+Figura 3.14. Diagrama de paquetes del sistema.
+Fuente: Elaboración propia, 2026.
+CAPÍTULO III
+PRUEBAS DE CALIDAD
+INTRODUCCIÓN
+En este capítulo se presentan las pruebas realizadas al Sistema de Telemedicina con Triaje mediante Inteligencia Artificial, orientadas a comprobar la validación de campos del inicio de sesión, la integración entre los módulos y las transiciones de estado durante el proceso de atención.
+Se realizaron pruebas unitarias con Jest y jest-expo, además de comprobaciones manuales con cuentas y datos de prueba. Estas actividades permitieron evaluar los escenarios definidos e identificar un fallo en el cambio de disponibilidad del médico, cuya corrección y nueva verificación se encuentran pendientes.
+PRUEBAS DE SOFTWARE
+Las pruebas de software permiten comparar el comportamiento obtenido con el resultado esperado para identificar errores y comprobar el cumplimiento de los requerimientos en los escenarios evaluados.
+En el proyecto se ejecutaron cinco pruebas unitarias sobre la función de validación de campos obligatorios del inicio de sesión. Se comprobó el rechazo de entradas incompletas y de un correo compuesto únicamente por espacios, así como la aceptación de ambos campos completos para continuar con la autenticación.
+También se realizaron comprobaciones manuales de integración sobre el acceso mediante Supabase, las funciones correspondientes a cada rol y el flujo entre triaje, pagos de prueba, sala de espera, videoconsultas, historial clínico y recetas digitales. Las pruebas de transición de estado permitieron revisar los cambios producidos por las acciones de los usuarios.
+Los resultados corresponden a los escenarios ejecutados y no constituyen una garantía de ausencia de errores en todo el sistema. Asimismo, la comprobación del procesamiento y transferencia del reporte de triaje no representa una validación clínica de la clasificación generada por la inteligencia artificial.
+TÉCNICAS DE PRUEBAS
+Para evaluar el sistema se combinaron comprobaciones automatizadas y manuales, utilizando las siguientes técnicas:
+Partición de equivalencia. Las entradas del formulario de inicio de sesión se organizaron en grupos válidos e inválidos respecto a la presencia de los campos obligatorios. Se consideraron campos vacíos, correo compuesto únicamente por espacios y ambos campos completos. Estos escenarios se automatizaron mediante Jest y jest-expo, evaluando la función de validación de forma aislada, sin conexión a Supabase ni solicitudes de red.
+Pruebas de caja negra. Se verificó manualmente el comportamiento visible de la aplicación a partir de las acciones realizadas por pacientes, médicos y administradores. Se comprobó el acceso y el intercambio de información entre los módulos evaluados, comparando las respuestas del sistema con el funcionamiento esperado.
+Pruebas de transición de estado. Se observó el estado de las funciones antes y después de ejecutar acciones como iniciar o cerrar sesión, confirmar un pago, comenzar o finalizar una atención y guardar información clínica. También se comprobó que generar un QR no confirmara por sí solo el pago. Esta técnica permitió identificar que el botón de disponibilidad del médico no producía el cambio de estado esperado.
+TIPOS DE PRUEBA
+Las pruebas de software son fundamentales para garantizar que el sistema de telemedicina multiplataforma sea estable, seguro y cumpla con los requerimientos funcionales y no funcionales. A continuación, se detallan los tipos de pruebas aplicados al proyecto:
+PRUEBAS UNITARIAS
+Se realizaron pruebas unitarias de la función validateLoginFields, encargada de validar los campos obligatorios del inicio de sesión. Se utilizaron Jest y la configuración jest-expo, ejecutando las comprobaciones de forma aislada, sin conexión a Supabase ni solicitudes de red.
+La función evaluada se encuentra en el archivo utils/validation.ts y se utiliza en el proceso de inicio de sesión de la aplicación.
+Tabla. Caso de prueba de validación de campos obligatorios
+Fuente: Elaboración propia, 2026.
+La ejecución mediante el comando npm test reportó una suite aprobada y cinco pruebas aprobadas de cinco ejecutadas. Estos resultados comprueban el comportamiento de la validación en los escenarios definidos; no verifican la autenticidad de las credenciales en Supabase ni el funcionamiento completo del inicio de sesión.
+PRUEBAS DE INTEGRACIÓN
+Se realizó una prueba de integración del inicio de sesión para comprobar la comunicación entre la aplicación y el servicio de autenticación de Supabase. Se verificó que una cuenta registrada pudiera acceder al sistema mediante credenciales válidas.
+Tabla N. ª 3.1. Caso de prueba de integración del inicio de sesión con Supabase
+Fuente: Elaboración propia, 2026.
+El resultado confirma la integración del formulario con el servicio de autenticación para el escenario evaluado. Las restricciones por rol y el rechazo de credenciales incorrectas se comprobarán mediante casos específicos de seguridad.
+ PRUEBAS DE INTEGRACIÓN
+Las pruebas de integración se realizaron para comprobar la comunicación entre los módulos del sistema de telemedicina y verificar que la información se transfiera correctamente durante el proceso de atención. Se evaluaron el inicio de sesión, el acceso según el rol, el triaje automatizado, los pagos, la sala de espera, las videoconsultas, el historial clínico y las recetas digitales.
+Se utilizaron cuentas de prueba con roles de paciente, médico y administrador, junto con información ficticia. La verificación se realizó mediante un recorrido funcional de la aplicación, desde el ingreso del paciente hasta la consulta de su atención y receta.
+Tabla N.º 3.1. Caso de prueba de integración de módulos y acceso según roles
+Fuente: Elaboración propia, 2026.
+Los resultados obtenidos permitieron comprobar la continuidad del flujo de atención y el intercambio de información entre los módulos evaluados. Esta prueba verifica la integración funcional; la protección frente a accesos no autorizados se evaluará en las pruebas de seguridad. Asimismo, la correcta transferencia del reporte de triaje no constituye una validación clínica de la clasificación generada por la inteligencia artificial.
+PRUEBAS DE TRANSICIÓN DE ESTADO
+Se realizaron pruebas de transición de estado para comprobar el comportamiento del sistema de telemedicina ante diferentes acciones de los usuarios. Se verificaron los cambios relacionados con la sesión del usuario, la disponibilidad del médico, el procesamiento del triaje, la confirmación de pagos, la atención mediante videoconsulta y el registro de información clínica.
+Las pruebas se ejecutaron manualmente con cuentas y datos de prueba, comparando el estado anterior a cada acción con el estado obtenido después de realizarla.
+Tabla. Pruebas de transición de estado del sistema de telemedicina
+Fuente: Elaboración propia, 2026.
+Los resultados mostraron un comportamiento satisfactorio en las transiciones evaluadas, con excepción del cambio de disponibilidad del médico. Por tanto, la prueba presenta una incidencia pendiente y no se considera completamente aprobada. Después de corregir la función, se deberá verificar nuevamente que el botón actualice el estado y que el cambio se refleje en las vistas correspondientes.
+TABLA 1
+ID: RF 1 | Actores: Paciente, Administrador
+Nombre | Registro de Usuario.
+Descripción | El sistema debe permitir a los pacientes y personal médico registrar sus datos personales para crear una cuenta en la plataforma.
+Medio | Interfaz Móvil y Web.
+Entrada | Datos personales (Nombre, correo, contraseña, CI).
+Salida | Éxito: Cuenta creada, almacenada en la base de datos y permite el inicio de sesión.
+
+
+
+
+ | Fallo: Señalar al usuario que el correo ya está en uso o el formato es incorrecto.
+TABLA 2
+ID: RF 2 | Actores: Paciente, Médico Especialista, Administrador
+Nombre | Autenticación Segura.
+Descripción | Cuando un usuario desea ingresar a su panel correspondiente, debe autenticarse ingresando sus credenciales de acceso.
+Medio | Interfaz de Login (Web y Móvil).
+Entrada | Correo Electrónico y Contraseña.
+Salida | Éxito: Acceso concedido al panel correspondiente según el rol.
+
+
+
+
+ | Fallo: Señalar al usuario que las credenciales son incorrectas o no existe la cuenta.
+TABLA 3
+ID: RF 3 | Actores: Administrador
+Nombre | Asignación de Roles y Especialidades.
+Descripción | El administrador define los permisos de acceso del personal de salud y les asigna la especialidad médica correspondiente.
+Medio | Panel de Administración Web.
+Entrada | Selección de usuario y asignación de rol (Médico) y especialidad.
+Salida | Éxito: Permisos actualizados y guardados en la base de datos.
+
+
+
+
+ | Fallo: Señalar que no se pudo asignar el rol debido a un error de conexión.
+TABLA 4
+ID: RF 4 | Actores: Paciente, Motor IA (LLM)
+Nombre | Captura de Sintomatología ("Quechuañol").
+Descripción | El sistema permitirá al paciente ingresar sus síntomas mediante texto o voz, aceptando variaciones del dialecto local.
+Medio | Interfaz Móvil y Web.
+Entrada | Texto o audio descriptivo de los síntomas.
+Salida | Éxito: Cadena de texto o audio enviada al motor de procesamiento.
+
+
+
+
+ | Fallo: Señalar al paciente que el audio o texto es ilegible y pedir que lo reingrese.
+TABLA 5
+ID: RF 5 | Actores: Motor IA (LLM)
+Nombre | Procesamiento y Traducción de IA.
+Descripción | El motor procesará el dialecto ingresado por el paciente y lo traducirá a terminología médica clínica estandarizada.
+Medio | Backend de Procesamiento (FastAPI / Python).
+Entrada | Texto crudo con variaciones dialectales del paciente.
+Salida | Éxito: Datos estructurados con términos médicos clínicos.
+
+
+
+
+ | Fallo: Si el LLM no reconoce los términos, clasifica el caso para "Triaje manual".
+TABLA 6
+ID: RF 6 | Actores: Motor IA (LLM), Sistema
+Nombre | Clasificación y Derivación a Especialidad.
+Descripción | El sistema evaluará los síntomas procesados, asignará un nivel de prioridad y derivará al paciente a la sala de espera correcta.
+Medio | Lógica de Negocio / Sistema de Colas (Backend).
+Entrada | Síntomas médicos estandarizados.
+Salida | Éxito: Nivel de urgencia asignado y paciente ingresado en la cola virtual correspondiente.
+
+
+
+
+ | Fallo: Si no hay especialistas disponibles, el sistema deriva a "Medicina General".
+TABLA 7
+ID: RF 7 | Actores: Paciente
+Nombre | Visualizar Sala de Espera Virtual.
+Descripción | El paciente visualizará una interfaz con su posición en la cola y el cálculo dinámico del tiempo estimado de atención.
+Medio | Interfaz Móvil y Web.
+Entrada | Posición en la cola de atención.
+Salida | Éxito: Temporizador de espera actualizado en la pantalla del paciente.
+
+
+
+
+ | Fallo: El tiempo se pausa y notifica si el médico se desconecta.
+TABLA 8
+ID: RF 8 | Actores: Médico Especialista
+Nombre | Control de Disponibilidad Médica.
+Descripción | El médico gestiona su estado en la plataforma para indicar si está listo para recibir la próxima videoconsulta o está ocupado.
+Medio | Panel Médico Web.
+Entrada | Clic en el interruptor de estado (En línea / Ocupado).
+Salida | Éxito: Estado actualizado en tiempo real para el enrutamiento de pacientes.
+
+
+
+
+ | Fallo: Mantiene el último estado guardado en caso de error de red.
+TABLA 9
+ID: RF 9 | Actores: Médico Especialista, Paciente
+Nombre | Transmisión de Videoconsulta.
+Descripción | Establecimiento de un canal bidireccional de audio y video en tiempo real para la atención a distancia.
+Medio | Interfaz de Videollamada (WebRTC).
+Entrada | Aceptación de la llamada por ambas partes.
+Salida | Éxito: Conexión estable de video iniciada en ambas pantallas.
+
+
+
+Fallo: Muestra aviso de conexión inestable si la red de un usuario falla.
+ | 
+TABLA 10
+ID: RF 10 | Actores: Médico Especialista
+Nombre | Visualizar Pre-diagnóstico IA.
+Descripción | El médico observa el reporte estructurado de síntomas y nivel de urgencia que el motor de IA generó durante el triaje.
+Medio | Panel de Videoconsulta Web.
+Entrada | ID de la consulta iniciada.
+Salida | Éxito: Reporte de síntomas estandarizados visible en un panel lateral.
+
+
+
+
+ | Fallo: Muestra panel en blanco con botón de recargar si la base de datos no responde.
+TABLA 11
+ID: RF 11 | Actores: Médico Especialista
+Nombre | Registrar Historial Clínico.
+Descripción | Una vez finalizada la consulta, el médico redacta y almacena el diagnóstico definitivo y observaciones en el expediente del paciente.
+Medio | Base de Datos (PostgreSQL).
+Entrada | Notas clínicas y diagnóstico en texto.
+Salida | Éxito: Datos guardados y anexados al historial permanente del paciente.
+
+
+
+Fallo: El formulario no se envía si faltan campos obligatorios.
+ | 
+TABLA 12
+ID: RF 12 | Actores: Médico Especialista, Sistema
+Nombre | Autogenerar Receta PDF.
+Descripción | El sistema compila la prescripción de medicamentos indicada por el médico y genera un documento digital descargable.
+Medio | Motor de Reportes (Backend).
+Entrada | Lista de medicamentos e indicaciones ingresadas por el médico.
+Salida | Éxito: Archivo PDF generado y habilitado para descarga en el perfil del paciente.
+
+
+
+
+ | Fallo: Ocurre un error de renderizado temporal y permite reintentar la generación.
+TABLA 13
+ID: RF 13 | Actores: Paciente, Pasarela Bancaria
+Nombre | Generar Código QR de Pago.
+Descripción | El sistema crea un código QR único con el monto exacto para que el paciente abone el costo de la atención.
+Medio | Integración API Pasarela de Pagos.
+Entrada | Monto de la consulta médica.
+Salida | Éxito: Imagen del código QR visualizada en la pantalla del paciente.
+
+
+
+
+ | Fallo: Muestra "Servicio de cobro inactivo temporalmente" si falla la API del banco.
+TABLA 14
+ID: RF 14 | Actores: Sistema, Pasarela Bancaria
+Nombre | Verificar Transacción.
+Descripción | El sistema valida automáticamente si los fondos fueron transferidos exitosamente para liberar el acceso a la sala de espera.
+Medio | Webhooks de la Pasarela Bancaria.
+Entrada | Notificación de pago procesado desde el banco.
+Salida | Éxito: Estado cambiado a "Pagado" y acceso a sala de espera habilitado.
+
+
+
+
+ | Fallo: Pago rechazado por fondos insuficientes y notificación de error al paciente.
+TABLA 15
+ID: RF 15 | Actores: Administrador
+Nombre | Generar Reportes Estadísticos y Financieros.
+Descripción | El sistema compila y gráfica los datos operativos del centro de salud, mostrando tiempos de atención y recaudaciones de pagos QR.
+Medio | Dashboard Analítico Web.
+Entrada | Rango de fechas seleccionado por el administrador.
+Salida | Éxito: Gráficos visuales y tablas analíticas exportables en pantalla.
+
+
+
+
+ | Fallo: Solicita acortar el rango si la búsqueda temporal excede el límite de datos.
+TABLA 16
+ID: RNF 1 | Actores: Todos los usuarios
+Nombre | Seguridad y Encriptación (Privacidad).
+Descripción | Todos los historiales médicos, contraseñas y canales de videollamada deben estar encriptados para garantizar la confidencialidad clínica.
+Medio | Protocolos de Seguridad (TLS / WebRTC seguro).
+Entrada | Datos en texto plano y flujo de red de video.
+Salida | Éxito: Paquetes de red completamente indescifrables por terceros.
+
+
+
+
+ | Fallo: Bloqueo inmediato de acceso si se detecta una conexión insegura.
+TABLA 17
+ID: RNF 2 | Actores: Sistema
+Nombre | Rendimiento bajo Concurrencia.
+Descripción | El servidor debe ser capaz de procesar múltiples triajes de IA y mantener videollamadas simultáneas sin que la latencia supere los parámetros.
+Medio | Infraestructura en la Nube.
+Entrada | Carga masiva de usuarios y videollamadas concurrentes.
+Salida | Éxito: Sistema y transmisiones de video estables sin congelamientos.
+
+
+
+
+ | Fallo: Si la carga supera el límite, los nuevos pacientes entran a una cola de espera temporal.
+TABLA 18
+ID: RNF 3 | Actores: Paciente
+Nombre | Usabilidad e Inclusión Digital.
+Descripción | La interfaz debe ser altamente intuitiva, con contrastes claros y botones accesibles, diseñada para pacientes con baja alfabetización digital.
+Medio | Interfaz Gráfica (UI/UX).
+Entrada | Interacciones táctiles o clics de los usuarios en la plataforma.
+Salida | Éxito: Navegación fluida y comprensión total del flujo del triaje por parte del paciente.
+
+
+
+
+ | Fallo: Métricas de error de UX registradas si hay altas tasas de abandono.
+TABLA 19
+ID: RNF 4 | Actores: Sistema
+Nombre | Disponibilidad Operativa (Uptime).
+Descripción | El motor de inteligencia artificial y las bases de datos deben garantizar una disponibilidad del 99.9% para la admisión constante de pacientes 24/7.
+Medio | Servidores de Producción.
+Entrada | Peticiones de acceso continuo a cualquier hora del día.
+Salida | Éxito: Servicio médico digital siempre en línea y respondiendo.
+
+
+
+
+ | Fallo: Activación automática de un servidor de respaldo en caso de caída crítica.
+TABLA 20
+ID: RNF 5 | Actores: Sistema, Pasarela Bancaria, Motor IA
+Nombre | Interoperabilidad e Integración de APIs.
+Descripción | El sistema debe integrarse de forma robusta y sin pérdida de datos tanto con el motor LLM externo como con la API bancaria de cobros QR.
+Medio | Endpoints y Webhooks (Backend).
+Entrada | Flujo constante de peticiones JSON entre los diferentes servicios.
+Salida | Éxito: Sincronización perfecta entre los sistemas externos y la base de datos local.
+
+
+
+
+ | Fallo: Si una API externa cae, el sistema captura el error de forma segura sin colapsar.
+TABLA 21
+Caso de Uso: Registrar Usuario | Caso de Uso: Registrar Usuario
+Caso de Uso | Gestión de Usuarios.
+Resumen | Cuando un paciente o personal médico nuevo desea acceder al sistema, debe registrar sus datos personales para crear una cuenta en la plataforma.
+Actor(es) Principal(es) | Paciente, Médico y Administrador.
+Condiciones Previas | El usuario no debe existir previamente en la base de datos del sistema.
+Condiciones Posteriores | El sistema crea la cuenta, la almacena en la base de datos y permite el inicio de sesión.
+Flujo Básico | 1. (Usuario): El usuario ingresa a la página de registro.
+
+
+2. (Usuario): El usuario completa el formulario con sus datos personales, correo y contraseña.
+
+
+3. (Sistema): El sistema verifica la validez de los datos ingresados.
+
+
+4. (Sistema): El sistema registra al usuario y muestra un mensaje de éxito.
+Flujos Alternativos | 3a. El sistema muestra el mensaje "El correo electrónico ya está en uso".
+
+
+3b. El sistema muestra el mensaje "Los datos ingresados tienen un formato incorrecto".
+TABLA 22
+Caso de Uso: Iniciar Sesión (Autenticación Segura) | Caso de Uso: Iniciar Sesión (Autenticación Segura)
+Caso de Uso | Gestión de Usuarios.
+Resumen | Cuando un usuario desea ingresar a su panel correspondiente, debe autenticarse ingresando sus credenciales de acceso.
+Actor(es) Principal(es) | Paciente, Médico y Administrador.
+Condiciones Previas | El usuario debe estar registrado previamente en el sistema.
+Condiciones Posteriores | El sistema permite entrar al usuario, redirigiéndolo a su página de destino según su rol.
+Flujo Básico | 1. (Usuario): El usuario ingresa a la página de inicio de sesión.
+
+
+2. (Usuario): El usuario ingresa su correo electrónico y su contraseña.
+
+
+3. (Sistema): El sistema verifica las credenciales en la base de datos.
+
+
+4. (Sistema): El sistema redirige al usuario a la página de inicio correspondiente.
+Flujos Alternativos | 3a. El sistema muestra el mensaje "Contraseña incorrecta".
+
+
+3b. El sistema muestra el mensaje "El usuario no está registrado en el sistema".
+TABLA 23
+Caso de Uso: Asignar Roles y Especialidades | Caso de Uso: Asignar Roles y Especialidades
+Caso de Uso | Gestión de Usuarios.
+Resumen | El administrador define los permisos de acceso del personal de salud y les asigna la especialidad médica correspondiente.
+Actor(es) Principal(es) | Administrador.
+Condiciones Previas | El administrador debe haber iniciado sesión y el personal de salud debe estar registrado.
+Condiciones Posteriores | Los permisos y la especialidad del usuario son actualizados en la base de datos.
+Flujo Básico | 1. (Administrador): Ingresa a la sección de gestión de personal.
+
+
+2. (Administrador): Selecciona un usuario y escoge el rol y su especialidad médica.
+
+
+3. (Administrador): Presiona el botón "Guardar Cambios".
+
+
+4. (Sistema): El sistema actualiza el registro del usuario exitosamente.
+Flujos Alternativos | 4a. El sistema muestra el mensaje "Error al actualizar, intente nuevamente".
+TABLA 24
+Caso de Uso: Capturar Sintomatología (Quechuañol) | Caso de Uso: Capturar Sintomatología (Quechuañol)
+Caso de Uso | Triaje Automatizado (IA).
+Resumen | El paciente describe sus dolencias en la plataforma utilizando lenguaje natural, incluyendo dialectos locales ("Quechuañol").
+Actor(es) Principal(es) | Paciente.
+Condiciones Previas | El paciente debe haber iniciado sesión y seleccionado la opción de triaje.
+Condiciones Posteriores | El sistema captura el texto/audio y lo prepara para el análisis de la Inteligencia Artificial.
+Flujo Básico | 1. (Paciente): Ingresa a la interfaz de triaje de la aplicación.
+
+
+2. (Paciente): Describe sus síntomas mediante el teclado o voz.
+
+
+3. (Paciente): Presiona el botón "Enviar Síntomas".
+
+
+4. (Sistema): El sistema recibe la información y la transfiere al motor LLM.
+Flujos Alternativos | 4a. El sistema alerta que el texto está vacío y solicita que ingrese sus síntomas.
+
+
+4b. El sistema indica que el audio es inaudible.
+TABLA 25
+Caso de Uso: Procesar y Traducir IA | Caso de Uso: Procesar y Traducir IA
+Caso de Uso | Triaje Automatizado (IA).
+Resumen | El motor de IA procesa la entrada del paciente, traduce los términos coloquiales y genera un pre-diagnóstico estandarizado.
+Actor(es) Principal(es) | Motor IA (LLM).
+Condiciones Previas | El sistema debe haber capturado los síntomas enviados por el paciente exitosamente.
+Condiciones Posteriores | Se genera un registro temporal de pre-diagnóstico con terminología médica.
+Flujo Básico | 1. (Motor IA): Recibe la cadena de texto del paciente.
+
+
+2. (Motor IA): Ejecuta el procesamiento de lenguaje natural extrayendo palabras clave.
+
+
+3. (Motor IA): Traduce el "Quechuañol" a sintomatología clínica.
+
+
+4. (Sistema): Guarda los resultados estructurados en la base de datos temporal.
+Flujos Alternativos | 3a. El Motor IA no logra comprender el contexto y clasifica el caso como "Requiere validación manual".
+TABLA 26
+Caso de Uso: Clasificar Urgencia y Derivar | Caso de Uso: Clasificar Urgencia y Derivar
+Caso de Uso | Triaje Automatizado (IA).
+Resumen | El sistema evalúa el pre-diagnóstico, calcula el nivel de urgencia y envía al paciente a la sala de espera de la especialidad correcta.
+Actor(es) Principal(es) | Motor IA (LLM), Sistema.
+Condiciones Previas | El proceso de estandarización clínica de síntomas debe haber concluido.
+Condiciones Posteriores | El paciente es asignado a la cola de la sala de espera virtual correspondiente.
+Flujo Básico | 1. (Motor IA): Analiza la gravedad de los síntomas médicos estandarizados.
+
+
+2. (Motor IA): Asigna una etiqueta de urgencia (Leve, Moderado, Severo).
+
+
+3. (Sistema): Identifica la especialidad médica para la dolencia.
+
+
+4. (Sistema): Redirige al paciente automáticamente a la sala de espera.
+Flujos Alternativos | 3a. Si no hay especialistas disponibles en esa área, el sistema deriva al paciente a "Medicina General".
+TABLA 27
+Caso de Uso: Visualizar Sala de Espera | Caso de Uso: Visualizar Sala de Espera
+Caso de Uso | Videoconsultas.
+Resumen | El paciente observa su posición actual en la fila de atención y el tiempo estimado calculado dinámicamente.
+Actor(es) Principal(es) | Paciente.
+Condiciones Previas | El paciente debe haber sido derivado exitosamente por el triaje IA.
+Condiciones Posteriores | El paciente se mantiene en pantalla hasta que el médico inicie la videollamada.
+Flujo Básico | 1. (Paciente): Es redirigido a la interfaz de la sala de espera virtual.
+
+
+2. (Sistema): El sistema calcula el tiempo promedio de atención.
+
+
+3. (Sistema): Muestra en pantalla el temporizador en cuenta regresiva y la posición en la cola.
+Flujos Alternativos | 3a. El sistema actualiza el estado a "Demorado" si el médico entra en estado ocupado.
+TABLA 28
+Caso de Uso: Control de Disponibilidad Médica | Caso de Uso: Control de Disponibilidad Médica
+Caso de Uso | Videoconsultas.
+Resumen | El médico gestiona su estado en la plataforma para indicar si está listo para recibir la próxima videoconsulta.
+Actor(es) Principal(es) | Médico.
+Condiciones Previas | El médico debe haber iniciado sesión en su panel.
+Condiciones Posteriores | El estado del médico se actualiza para el enrutamiento de pacientes en espera.
+Flujo Básico | 1. (Médico): Ingresa a su panel de control.
+
+
+2. (Médico): Presiona el interruptor de estado cambiándolo a "En línea".
+
+
+3. (Sistema): El sistema registra la disponibilidad y alerta sobre pacientes en cola.
+Flujos Alternativos | 3a. Si el servidor pierde conexión, el sistema mantiene el último estado conocido.
+TABLA 29
+Caso de Uso: Transmisión de Videoconsulta | Caso de Uso: Transmisión de Videoconsulta
+Caso de Uso | Videoconsultas.
+Resumen | Se establece una conexión bidireccional de video y audio en tiempo real entre el médico y el paciente.
+Actor(es) Principal(es) | Médico, Paciente.
+Condiciones Previas | El paciente debe ser el primero en la cola y el médico debe presionar "Atender".
+Condiciones Posteriores | La videollamada finaliza y se habilita la creación del historial clínico.
+Flujo Básico | 1. (Médico): Presiona el botón "Atender siguiente paciente".
+
+
+2. (Sistema): Inicia el protocolo de conexión WebRTC.
+
+
+3. (Paciente/Médico): Autorizan el uso de cámara y micrófono.
+
+
+4. (Sistema): Renderiza la videollamada en ambas pantallas.
+Flujos Alternativos | 3a. Uno de los usuarios deniega los permisos de cámara; el sistema muestra error.
+
+
+4a. El sistema muestra alerta de "Baja calidad de red" si la señal es débil.
+TABLA 30
+Caso de Uso: Visualizar Pre-diagnóstico IA | Caso de Uso: Visualizar Pre-diagnóstico IA
+Caso de Uso | Historial Clínico y Recetas.
+Resumen | El médico observa el reporte estructurado de síntomas y nivel de urgencia que el motor de IA generó durante el triaje.
+Actor(es) Principal(es) | Médico.
+Condiciones Previas | La videoconsulta con el paciente debe haber iniciado.
+Condiciones Posteriores | El médico utiliza la información como base para su diagnóstico.
+Flujo Básico | 1. (Médico): Inicia la videollamada con el paciente.
+
+
+2. (Sistema): Carga automáticamente un panel lateral en la pantalla del médico.
+
+
+3. (Sistema): Muestra los síntomas traducidos y el nivel de urgencia de la IA.
+Flujos Alternativos | 2a. Si falla la consulta a la base de datos, el panel muestra un botón de "Recargar".
+TABLA 31
+Caso de Uso: Registrar Historial Clínico | Caso de Uso: Registrar Historial Clínico
+Caso de Uso | Historial Clínico y Recetas.
+Resumen | Una vez finalizada la consulta, el médico redacta y almacena el diagnóstico definitivo en el expediente del paciente.
+Actor(es) Principal(es) | Médico.
+Condiciones Previas | La videoconsulta debe haber concluido formalmente.
+Condiciones Posteriores | Los datos médicos quedan archivados de manera permanente en el servidor.
+Flujo Básico | 1. (Médico): Accede al formulario clínico del sistema.
+
+
+2. (Médico): Ingresa las observaciones, diagnóstico y tratamiento.
+
+
+3. (Médico): Presiona el botón "Guardar Historial".
+
+
+4. (Sistema): El sistema actualiza la base de datos del paciente.
+Flujos Alternativos | 4a. El sistema rechaza el guardado si el médico dejó en blanco campos obligatorios.
+TABLA 32
+Caso de Uso: Autogenerar Receta PDF | Caso de Uso: Autogenerar Receta PDF
+Caso de Uso | Historial Clínico y Recetas.
+Resumen | El sistema compila la prescripción de medicamentos indicada por el médico y genera un documento digital.
+Actor(es) Principal(es) | Médico, Sistema.
+Condiciones Previas | El historial clínico y el tratamiento deben haber sido guardados exitosamente.
+Condiciones Posteriores | El paciente recibe acceso al archivo PDF desde su perfil.
+Flujo Básico | 1. (Sistema): Extrae los datos de medicación del formulario recién guardado.
+
+
+2. (Sistema): Renderiza la plantilla de la receta incluyendo firma digital del médico.
+
+
+3. (Sistema): Exporta el documento en formato PDF.
+
+
+4. (Sistema): Habilita la descarga en el panel del paciente.
+Flujos Alternativos | 3a. Ocurre un error de renderizado; el sistema ofrece la opción "Reintentar generación".
+TABLA 33
+Caso de Uso: Generar Código QR de Pago | Caso de Uso: Generar Código QR de Pago
+Caso de Uso | Pagos Integrados.
+Resumen | El sistema crea un código QR único con el monto exacto para que el paciente abone el costo de la atención médica.
+Actor(es) Principal(es) | Paciente, Pasarela Bancaria.
+Condiciones Previas | El paciente debe haber completado el ingreso de sus síntomas en el triaje.
+Condiciones Posteriores | Se muestra el código QR en la pantalla del paciente para su escaneo.
+Flujo Básico | 1. (Sistema): Calcula el costo de la atención y envía solicitud a la API del banco.
+
+
+2. (Pasarela Bancaria): Procesa la solicitud y retorna un código QR dinámico.
+
+
+3. (Sistema): Renderiza la imagen del QR en la interfaz.
+
+
+4. (Paciente): Escanea el código utilizando su aplicación bancaria.
+Flujos Alternativos | 2a. La API del banco no responde. El sistema muestra: "El servicio de cobro está inactivo temporalmente".
+TABLA 34
+Caso de Uso: Verificar Transacción | Caso de Uso: Verificar Transacción
+Caso de Uso | Pagos Integrados.
+Resumen | El sistema valida automáticamente si los fondos fueron transferidos para liberar el acceso a la sala de espera.
+Actor(es) Principal(es) | Sistema, Pasarela Bancaria.
+Condiciones Previas | El código QR debe haber sido generado y escaneado por el paciente.
+Condiciones Posteriores | El estado de la consulta cambia a "Pagado" y el flujo continúa.
+Flujo Básico | 1. (Pasarela Bancaria): El banco envía un Webhook al sistema confirmando el pago.
+
+
+2. (Sistema): Verifica el monto y la identidad de la transacción.
+
+
+3. (Sistema): Cambia el estado en la base de datos a "Completado".
+
+
+4. (Sistema): Notifica al paciente y lo redirige a la sala de espera.
+Flujos Alternativos | 1a. El pago es rechazado por fondos insuficientes; se notifica al paciente el error.
+TABLA 35
+Caso de Uso: Generar Reportes Estadísticos | Caso de Uso: Generar Reportes Estadísticos
+Caso de Uso | Reportes y Analítica.
+Resumen | El sistema compila y gráfica los datos operativos del centro de salud, mostrando tiempos de atención y finanzas.
+Actor(es) Principal(es) | Administrador.
+Condiciones Previas | El administrador debe haber iniciado sesión en la plataforma.
+Condiciones Posteriores | Se despliegan gráficos analíticos con opción de exportación.
+Flujo Básico | 1. (Administrador): Accede a la pestaña de "Dashboard y Reportes".
+
+
+2. (Administrador): Selecciona un filtro de fechas y presiona "Generar Análisis".
+
+
+3. (Sistema): Ejecuta las consultas en la base de datos.
+
+
+4. (Sistema): Muestra los resultados en tablas y gráficos visuales exportables a PDF.
+Flujos Alternativos | 3a. Si la consulta de fechas excede el límite de datos, solicita acortar el rango temporal.
+TABLA 36
+Campo | Descripción
+Caso de prueba | Validación de campos obligatorios del inicio de sesión.
+Objetivo | Comprobar que la función rechace entradas incompletas y permita continuar cuando ambos campos estén completos.
+Herramientas | Jest y jest-expo.
+Datos de prueba | Correo y contraseña vacíos; correo completo y contraseña vacía; correo vacío y contraseña completa; correo compuesto únicamente por espacios; ambos campos completos.
+Procedimiento | Ejecutar la función con cada combinación de datos y comparar sus respuestas con los resultados esperados mediante las comprobaciones de Jest.
+Resultados obtenidos | Los cuatro casos con datos incompletos devolvieron isValid: false. El caso con ambos campos completos devolvió isValid: true. Se aprobaron los cinco casos ejecutados, sin pruebas fallidas.
+TABLA 37
+Campo | Descripción
+Caso de prueba | Inicio de sesión mediante Supabase Auth.
+Objetivo | Comprobar que el formulario de inicio de sesión se comunique correctamente con Supabase y permita el acceso de un usuario registrado.
+Datos de prueba | Correo electrónico y contraseña válidos de una cuenta de prueba registrada en Supabase.
+Procedimiento | 1. Abrir la aplicación sin una sesión activa.
+2. Introducir las credenciales de la cuenta de prueba.
+3. Pulsar el botón de inicio de sesión.
+4. Comprobar que la aplicación permita ingresar al sistema.
+Resultados obtenidos | La aplicación procesó las credenciales mediante Supabase y permitió el acceso de la cuenta de prueba al sistema.
+Estado | Aprobado para el escenario de acceso con credenciales válidas.
+TABLA 38
+Campo | Descripción
+Caso de prueba | Integración de los módulos del sistema de telemedicina y acceso según el rol del usuario.
+Objetivo | Comprobar la comunicación entre los módulos y verificar que los datos del paciente y de la consulta se mantengan asociados correctamente durante el proceso de atención.
+Datos de prueba | Cuentas de paciente, médico y administrador; credenciales válidas registradas en Supabase; síntomas ficticios; pago de prueba; datos de una atención médica y una receta de prueba.
+Procedimiento | 1. Iniciar sesión con cada rol y comprobar la disponibilidad de sus funciones correspondientes.
+2. Registrar síntomas desde la cuenta del paciente y verificar la generación del reporte de triaje.
+3. Abrir la consulta desde la cuenta médica y comprobar que el reporte corresponda al paciente evaluado.
+4. Confirmar un pago de prueba y verificar la actualización de la consulta y el acceso a la sala de espera.
+5. Establecer una videoconsulta entre el paciente y el médico desde sesiones independientes.
+6. Finalizar la videoconsulta y guardar una atención ficticia en el historial clínico.
+7. Generar una receta digital y comprobar su disponibilidad desde la cuenta del paciente.
+Resultados obtenidos | La autenticación mediante Supabase permitió el ingreso de las cuentas de prueba. Cada rol accedió a sus funciones correspondientes. Los síntomas registrados generaron un reporte de triaje que pudo visualizarse desde la cuenta médica y se mantuvo asociado al paciente correcto. La confirmación del pago de prueba actualizó el estado de la consulta y permitió continuar a la sala de espera. La videoconsulta se estableció entre ambas sesiones. La atención se guardó en el historial clínico y la receta digital quedó disponible para el paciente correspondiente.
+Estado | Aprobado para los escenarios de integración ejecutados.
+TABLA 39
+Campo | Descripción
+Objetivo | Comprobar que las funciones evaluadas cambien de estado según las acciones realizadas y que mantengan su estado cuando no se cumplan las condiciones necesarias para avanzar.
+Acción | Se realizaron las siguientes comprobaciones:
+1. Iniciar y cerrar sesión, verificando el acceso posterior a las funciones protegidas.
+2. Pulsar el botón de disponibilidad del médico para intentar cambiar su estado.
+3. Ingresar síntomas y enviarlos, observando el paso del procesamiento a la presentación del resultado de triaje.
+4. Generar un QR de prueba, comprobar que el pago continuara pendiente y confirmar posteriormente la transacción de prueba.
+5. Iniciar una atención desde la sala de espera y finalizar la videoconsulta.
+6. Guardar una atención clínica, volver a consultarla y generar una receta digital para el paciente.
+Efecto | El inicio y cierre de sesión presentaron los cambios esperados. El triaje avanzó desde el ingreso de síntomas hasta la presentación de su resultado. La generación del QR mantuvo el pago pendiente y la confirmación de la transacción permitió actualizarlo. La consulta pasó de la espera a la atención y posteriormente a su finalización. La información clínica guardada pudo recuperarse y la receta quedó disponible para el paciente.
+
+Se identificó un fallo en la disponibilidad del médico: al pulsar el botón correspondiente, el estado permaneció sin cambios. Esta transición requiere corrección y una nueva ejecución de la prueba.

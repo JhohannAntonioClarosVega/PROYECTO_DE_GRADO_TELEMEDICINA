@@ -1,0 +1,322 @@
+{
+  "fecha": "2026-09-30",
+  "casos": 69,
+  "jest": 62,
+  "suitesJest": 7,
+  "python": 7,
+  "fallidosFinales": 0,
+  "omitidosFinales": 0,
+  "erroresPreparacionInicialPython": 7,
+  "modulos": {
+    "usuarios": {
+      "name": "Gestión de usuarios",
+      "tests": [
+        "__tests__/loginValidation.test.ts",
+        "__tests__/userValidation.test.ts"
+      ],
+      "sources": [
+        "utils/validation.ts",
+        "utils/userValidation.ts"
+      ],
+      "modified": [],
+      "count": 30,
+      "limits": "Se evaluaron cuatro validadores locales. Autenticación, alta de cuentas, asignación de roles y persistencia de perfiles requieren integración con Supabase."
+    },
+    "triaje": {
+      "name": "Triaje mediante inteligencia artificial",
+      "tests": [
+        "__tests__/triageWorkflow.test.ts"
+      ],
+      "sources": [
+        "utils/triageWorkflow.ts"
+      ],
+      "modified": [
+        "components/SymptomChatbot.tsx",
+        "app/(doctor)/dashboard.tsx"
+      ],
+      "count": 7,
+      "limits": "Se comprobaron preparación de texto y filtro de especialidades. No se evaluaron micrófono, interfaz, traducción real ni exactitud clínica."
+    },
+    "triaje-python": {
+      "name": "Triaje mediante inteligencia artificial",
+      "tests": [
+        "ai-engine/test_unit_llm.py"
+      ],
+      "sources": [
+        "ai-engine/llm_service.py"
+      ],
+      "modified": [],
+      "count": 7,
+      "limits": "Se sustituyeron dotenv, red, variables de configuración y escritura de errores. Se probó el servicio Python sin arrancar FastAPI ni consultar al proveedor. La validez clínica y lingüística requiere evaluación especializada."
+    },
+    "videoconsultas": {
+      "name": "Videoconsultas",
+      "tests": [
+        "__tests__/consultationRules.test.ts"
+      ],
+      "sources": [
+        "utils/consultationRules.ts"
+      ],
+      "modified": [
+        "app/(patient)/waiting-room.tsx"
+      ],
+      "count": 7,
+      "limits": "Se evaluaron decisiones locales de la sala de espera. No se probó conexión, audio, video ni actualización real de disponibilidad. El fallo manual informado permanece pendiente de reproducción y corrección."
+    },
+    "historial-recetas": {
+      "name": "Historial y recetas",
+      "tests": [
+        "__tests__/medicalRecord.test.ts"
+      ],
+      "sources": [
+        "utils/medicalRecord.ts",
+        "utils/triagePresentation.ts"
+      ],
+      "modified": [
+        "app/(doctor)/medical-record.tsx",
+        "components/TriageEvaluation.tsx"
+      ],
+      "count": 9,
+      "limits": "Se comprobaron campos obligatorios, preparación del prediagnóstico y fragmentos del HTML de la receta. No se probó guardar el historial, generar el archivo PDF, compartirlo ni verificar su contenido clínico."
+    },
+    "pagos": {
+      "name": "Pagos",
+      "tests": [
+        "__tests__/paymentSimulation.test.ts"
+      ],
+      "sources": [
+        "services/paymentSimulation.ts"
+      ],
+      "modified": [
+        "app/(patient)/payment.tsx"
+      ],
+      "count": 4,
+      "limits": "Solo se probó la función de simulación con Supabase sustituido. La generación de un QR bancario y la verificación de transacciones reales no están implementadas."
+    },
+    "reportes": {
+      "name": "Reportes",
+      "tests": [
+        "__tests__/reportStats.test.ts"
+      ],
+      "sources": [
+        "utils/reportStats.ts"
+      ],
+      "modified": [
+        "app/(admin)/reports.tsx"
+      ],
+      "count": 5,
+      "limits": "Existe la pantalla y su cálculo estadístico. Se evaluaron contadores y estimaciones, no la consulta a Supabase. No se implementaron los filtros por fecha y exportación previstos por el caso de uso."
+    }
+  },
+  "hallazgos": [
+    [
+      "H-01",
+      [
+        21
+      ],
+      "El registro acepta un nombre formado solo por espacios. La validación local no lo considera vacío."
+    ],
+    [
+      "H-02",
+      [
+        25
+      ],
+      "El perfil del paciente acepta teléfono y dirección formados solo por espacios."
+    ],
+    [
+      "H-03",
+      [
+        37
+      ],
+      "El filtro de especialidad conserva un triaje sin especialidad, incluso al seleccionar Pediatría. No confirma una derivación adecuada."
+    ],
+    [
+      "H-04",
+      [
+        51
+      ],
+      "La decisión local de habilitar la llamada acepta un objeto de cita cancelada porque no comprueba su estado. No se reprodujo una conexión real."
+    ],
+    [
+      "H-05",
+      [
+        55
+      ],
+      "La validación local del historial acepta diagnóstico y tratamiento compuestos solo por espacios."
+    ],
+    [
+      "H-06",
+      [
+        57,
+        58
+      ],
+      "La preparación del prediagnóstico utiliza urgencia Medium ante un objeto vacío; si no hay triaje, devuelve datos de demostración y urgencia Critical. Estos valores no representan una evaluación clínica."
+    ],
+    [
+      "H-07",
+      [
+        63,
+        64
+      ],
+      "La simulación de pago no propaga los errores: ignora los errores devueltos y solo registra las excepciones. La pantalla conserva su posterior indicación de éxito; este último recorrido no se ejecutó en interfaz."
+    ],
+    [
+      "H-08",
+      [
+        67
+      ],
+      "El contador denominado completedTriages incluye estados waiting e in_progress. Los ingresos se estiman multiplicando ciertos registros por 50; no provienen de cobros bancarios."
+    ],
+    [
+      "H-09",
+      [
+        41
+      ],
+      "El servicio de análisis devuelve una respuesta incompleta sin exigir urgency_level ni standardized_symptoms. La prueba se limita al servicio y no evalúa los valores de respaldo del endpoint FastAPI."
+    ]
+  ],
+  "ejecuciones": {
+    "usuarios": {
+      "inicio": "2026-09-30T20:45:56.645Z",
+      "zona": "America/La_Paz",
+      "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/loginValidation.test.ts __tests__/userValidation.test.ts --json --outputFile=evidencias/pruebas-completas/usuarios/resultado.json",
+      "archivos": [
+        "__tests__/loginValidation.test.ts",
+        "__tests__/userValidation.test.ts"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": " M app/(doctor)/profile.tsx\n M app/(patient)/profile.tsx\n M app/index.tsx\n M app/register.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? tmp/\n?? utils/\n",
+      "fin": "2026-09-30T20:46:14.323Z",
+      "codigoSalida": 0
+    },
+    "triaje": {
+      "inicio": "2026-09-30T20:52:21.338Z",
+      "zona": "America/La_Paz",
+      "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/triageWorkflow.test.ts --json --outputFile=evidencias/pruebas-completas/triaje/resultado.json",
+      "archivos": [
+        "__tests__/triageWorkflow.test.ts"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+      "fin": "2026-09-30T20:52:29.779Z",
+      "codigoSalida": 0
+    },
+    "triaje-python": {
+      "inicio": "2026-09-30T20:54:09.885643+00:00",
+      "fin": "2026-09-30T20:54:09.902612+00:00",
+      "comando": "\"C:\\Users\\inutil\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\" ai-engine/test_unit_llm.py",
+      "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+      "zona": "America/La_Paz",
+      "archivos": [
+        "ai-engine/test_unit_llm.py"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": "Sí; extracción de reglas y nuevos archivos de prueba. Consultar inventario y fuentes.",
+      "codigoSalida": 0
+    },
+    "videoconsultas": {
+      "inicio": "2026-09-30T20:53:36.478Z",
+      "zona": "America/La_Paz",
+      "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/consultationRules.test.ts --json --outputFile=evidencias/pruebas-completas/videoconsultas/resultado.json",
+      "archivos": [
+        "__tests__/consultationRules.test.ts"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? ai-engine/__pycache__/llm_service.cpython-312.pyc\n?? ai-engine/test_unit_llm.py\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+      "fin": "2026-09-30T20:53:39.842Z",
+      "codigoSalida": 0
+    },
+    "historial-recetas": {
+      "inicio": "2026-09-30T20:54:13.236Z",
+      "zona": "America/La_Paz",
+      "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/medicalRecord.test.ts --json --outputFile=evidencias/pruebas-completas/historial-recetas/resultado.json",
+      "archivos": [
+        "__tests__/medicalRecord.test.ts"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? ai-engine/__pycache__/llm_service.cpython-312.pyc\n?? ai-engine/test_unit_llm.py\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+      "fin": "2026-09-30T20:54:16.672Z",
+      "codigoSalida": 0
+    },
+    "pagos": {
+      "inicio": "2026-09-30T20:54:35.007Z",
+      "zona": "America/La_Paz",
+      "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/paymentSimulation.test.ts --json --outputFile=evidencias/pruebas-completas/pagos/resultado.json",
+      "archivos": [
+        "__tests__/paymentSimulation.test.ts"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? ai-engine/__pycache__/llm_service.cpython-312.pyc\n?? ai-engine/test_unit_llm.py\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+      "fin": "2026-09-30T20:54:38.396Z",
+      "codigoSalida": 0
+    },
+    "reportes": {
+      "inicio": "2026-09-30T20:54:41.649Z",
+      "zona": "America/La_Paz",
+      "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/reportStats.test.ts --json --outputFile=evidencias/pruebas-completas/reportes/resultado.json",
+      "archivos": [
+        "__tests__/reportStats.test.ts"
+      ],
+      "versiones": {
+        "node": "v24.15.0",
+        "npm": "11.12.1",
+        "jest": "29.7.0",
+        "jest-expo": "57.0.5",
+        "typescript": "6.0.3",
+        "expo": "57.0.19"
+      },
+      "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+      "cambiosLocales": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? ai-engine/__pycache__/llm_service.cpython-312.pyc\n?? ai-engine/test_unit_llm.py\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+      "fin": "2026-09-30T20:54:44.965Z",
+      "codigoSalida": 0
+    }
+  }
+}

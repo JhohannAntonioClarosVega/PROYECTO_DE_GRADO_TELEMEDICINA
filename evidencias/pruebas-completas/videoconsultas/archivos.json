@@ -1,0 +1,33 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [
+    "app/(patient)/waiting-room.tsx",
+    "utils/consultationRules.ts",
+    "__tests__/consultationRules.test.ts"
+  ],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    },
+    {
+      "archivo": "utils\\consultationRules.ts.txt",
+      "sha256": "4d261f1d5fed79f696795bb74bf7f38f2571856bd058f77a03876fbf4c437ff5"
+    },
+    {
+      "archivo": "__tests__\\consultationRules.test.ts.txt",
+      "sha256": "d6ca7cc59c93cbf24c676dc4d0d95b1f6476cda460d9583e89337e70d13d59d4"
+    },
+    {
+      "archivo": "app\\(patient)\\waiting-room.tsx.txt",
+      "sha256": "b428014f2e0393e91cd5726250d5d20765481d98a58829f01218e2e112de9c32"
+    }
+  ]
+}

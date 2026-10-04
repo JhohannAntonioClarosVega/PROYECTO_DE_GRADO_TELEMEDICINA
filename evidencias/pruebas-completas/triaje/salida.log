@@ -1,0 +1,16 @@
+PASS __tests__/triageWorkflow.test.ts (6.503 s)
+  Triaje - reglas locales, sin evaluación clínica
+    √ PU-31 normaliza una entrada de solo espacios como vacía (3 ms)
+    √ PU-32 conserva el relato en Quechuañol al recortar bordes (1 ms)
+    √ PU-33 arma el reporte con síntomas, tiempo y medicamentos
+    √ PU-34 filtra por especialidad ignorando tildes y mayúsculas (2 ms)
+    √ PU-35 medicina general conserva la cola completa
+    √ PU-36 un filtro desactivado conserva la cola completa
+    √ PU-37 caracteriza la inclusión de un triaje sin especialidad
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        7.1 s
+Ran all test suites within paths "__tests__/triageWorkflow.test.ts".
+Test results written to: evidencias\pruebas-completas\triaje\resultado.json

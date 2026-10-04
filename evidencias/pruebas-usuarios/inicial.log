@@ -1,0 +1,18 @@
+
+> mi-proyecto@1.0.0 test
+> jest --runInBand --watch=false --verbose --runTestsByPath __tests__/loginValidation.test.ts --json --outputFile=evidencias/pruebas-usuarios/inicial.json
+
+PASS __tests__/loginValidation.test.ts
+  Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión
+    √ debe rechazar cuando el correo y la contraseña están vacíos (3 ms)
+    √ debe rechazar cuando el correo está completo pero la contraseña está vacía
+    √ debe rechazar cuando el correo está vacío pero la contraseña está completa (1 ms)
+    √ debe rechazar y considerar vacío cuando el correo está compuesto solo por espacios
+    √ debe superar la validación de campos obligatorios cuando ambos campos están completos
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        8.093 s
+Ran all test suites within paths "__tests__/loginValidation.test.ts".
+Test results written to: evidencias\pruebas-usuarios\inicial.json

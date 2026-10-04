@@ -1,0 +1,2 @@
+export const isClosedTriage = (status?: string) => status === 'completed' || status === 'resolved';
+export const isDoctorReadyForCall = (status: string | undefined, appointment: unknown) => status === 'in_progress' || !!appointment;

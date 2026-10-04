@@ -1,0 +1,45 @@
+  console.warn
+    An error occurred while requiring the 'ExpoModulesCoreJSLogger' module: Cannot read properties of undefined (reading 'get')
+
+      at warn (node_modules/expo-modules-core/src/requireNativeModule.ts:46:13)
+      at Object.<anonymous> (node_modules/expo-modules-core/src/sweet/setUpJsLogger.fx.ts:14:53)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:2:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo/src/winter/fetch/ExpoFetchModule.ts:1:1)
+      at Object.require (node_modules/expo/src/winter/fetch/fetch.ts:1:1)
+      at Object.require (node_modules/expo/src/winter/fetch/index.ts:1:1)
+      at require (node_modules/expo/src/winter/runtime.native.ts:52:26)
+      at getValue (node_modules/expo/src/winter/installGlobal.ts:102:21)
+      at Object.get [as fetch] (node_modules/expo/src/winter/installGlobal.ts:44:16)
+          at Array.forEach (<anonymous>)
+
+FAIL __tests__/reviewScreens.test.tsx
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'getColorScheme')
+
+      at Object.getColorScheme (node_modules/react-native-css-interop/src/runtime/native/appearance-observables.ts:17:14)
+      at Object.require (node_modules/react-native-css-interop/src/runtime/native/api.ts:17:1)
+      at Object.require (node_modules/react-native-css-interop/src/runtime/api.native.ts:1:1)
+      at Object.require (node_modules/react-native-css-interop/src/runtime/wrap-jsx.ts:2:1)
+      at Object.require (node_modules/react-native-css-interop/src/index.ts:3:1)
+      at Object.<anonymous> (node_modules/@react-native/jest-preset/jest/mockNativeComponent.js:11:54)
+      at Object.requireActual (node_modules/@react-native/jest-preset/jest/mocks/NativeComponentRegistry.js:13:34)
+      at requireActual (node_modules/@react-native/jest-preset/jest/mock.js:32:44)
+      at Object.require (node_modules/expo-modules-core/src/NativeViewManagerAdapter.native.tsx:9:1)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:16:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo/src/winter/fetch/ExpoFetchModule.ts:1:1)
+      at Object.require (node_modules/expo/src/winter/fetch/fetch.ts:1:1)
+      at Object.require (node_modules/expo/src/winter/fetch/index.ts:1:1)
+      at require (node_modules/expo/src/winter/runtime.native.ts:52:26)
+      at getValue (node_modules/expo/src/winter/installGlobal.ts:102:21)
+      at Object.get [as fetch] (node_modules/expo/src/winter/installGlobal.ts:44:16)
+          at Array.forEach (<anonymous>)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.98 s, estimated 8 s
+Ran all test suites within paths "__tests__/reviewScreens.test.tsx".
+Test results written to: evidencias\revision-hallazgos-20260930\componentes-reintento.json

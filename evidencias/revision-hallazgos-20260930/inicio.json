@@ -1,0 +1,6 @@
+{
+  "inicioUTC": "2026-09-30T22:21:01.622893+00:00",
+  "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+  "estadoInicial": " M app/(admin)/reports.tsx\n M app/(doctor)/dashboard.tsx\n M app/(doctor)/medical-record.tsx\n M app/(doctor)/profile.tsx\n M app/(patient)/payment.tsx\n M app/(patient)/profile.tsx\n M app/(patient)/waiting-room.tsx\n M app/index.tsx\n M app/register.tsx\n M components/SymptomChatbot.tsx\n M components/TriageEvaluation.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? ai-engine/__pycache__/llm_service.cpython-312.pyc\n?? ai-engine/test_unit_llm.py\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? services/paymentSimulation.ts\n?? tmp/\n?? utils/\n",
+  "documentosAcademicos": "Sin modificar"
+}

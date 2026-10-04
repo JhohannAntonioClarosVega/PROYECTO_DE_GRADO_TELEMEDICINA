@@ -1,0 +1,27 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [
+    "ai-engine/test_unit_llm.py"
+  ],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "ai-engine\\llm_service.py.txt",
+      "sha256": "af32ab3686a2976c5978e96339e5d53ac1840c147b9f7ba7608821aa66e7cb33"
+    },
+    {
+      "archivo": "ai-engine\\test_unit_llm.py.txt",
+      "sha256": "7a352229484f6d9f28e1e1a4bc11266cffaf93696bcae50789e773a649e5d51d"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    }
+  ]
+}

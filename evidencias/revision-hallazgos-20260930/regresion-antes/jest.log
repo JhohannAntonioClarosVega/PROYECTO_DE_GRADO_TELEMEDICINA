@@ -1,0 +1,746 @@
+PASS __tests__/triageWorkflow.test.ts
+  Triaje - reglas locales, sin evaluación clínica
+    √ PU-31 normaliza una entrada de solo espacios como vacía (2 ms)
+    √ PU-32 conserva el relato en Quechuañol al recortar bordes
+    √ PU-33 arma el reporte con síntomas, tiempo y medicamentos (1 ms)
+    √ PU-34 filtra por especialidad ignorando tildes y mayúsculas (1 ms)
+    √ PU-35 medicina general conserva la cola completa
+    √ PU-36 un filtro desactivado conserva la cola completa (1 ms)
+    √ PU-37 caracteriza la inclusión de un triaje sin especialidad
+
+FAIL __tests__/medicalRecord.test.ts
+  Historial y recetas - validación y preparación local
+    √ PU-52 rechaza un diagnóstico vacío
+    √ PU-53 rechaza un tratamiento vacío
+    √ PU-54 acepta diagnóstico y tratamiento con contenido
+    × PU-55 rechaza campos clínicos de solo espacios (2 ms)
+    × H-05 rechaza un campo clínico en blanco con el otro completo ( 	 )
+    × H-05 rechaza un campo clínico en blanco con el otro completo (Diagnóstico ficticio)
+    √ H-05 acepta contenido clínico con espacios exteriores
+    √ PU-56 prepara el prediagnóstico a partir del reporte recibido
+    × PU-57 no inventa una urgencia para el reporte incompleto (1 ms)
+    × PU-58 no presenta datos de demostración sin triaje (2 ms)
+    √ H-06 conserva la urgencia Critical cuando procede del reporte
+    √ H-06 conserva la urgencia Medium cuando procede del reporte
+    √ H-06 conserva la urgencia Low cuando procede del reporte
+    × H-06 no clasifica como evaluado un nivel inválido 
+    × H-06 no clasifica como evaluado un nivel inválido Unknown
+    × H-06 no clasifica como evaluado un nivel inválido    
+    × H-06 no clasifica como evaluado un nivel inválido null (1 ms)
+    √ PU-59 prepara el HTML de la receta sin farmacia opcional (22 ms)
+    √ PU-60 incluye la farmacia en el HTML cuando está seleccionada (1 ms)
+
+  ● Historial y recetas - validación y preparación local › PU-55 rechaza campos clínicos de solo espacios
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+       5 |   it('PU-53 rechaza un tratamiento vacío', () => { expect(hasClinicalRecordFields('Diagnóstico ficticio', '')).toBe(false); });
+       6 |   it('PU-54 acepta diagnóstico y tratamiento con contenido', () => { expect(hasClinicalRecordFields('Diagnóstico ficticio', 'Plan ficticio')).toBe(true); });
+    >  7 |   it('PU-55 rechaza campos clínicos de solo espacios', () => { expect(hasClinicalRecordFields('   ', '   ')).toBe(false); });
+         |                                                                                                              ^
+       8 |   it.each([[' \t ', 'Plan ficticio'], ['Diagnóstico ficticio', '\n ']])('H-05 rechaza un campo clínico en blanco con el otro completo (%s)', (diagnosis, treatment) => {
+       9 |     expect(hasClinicalRecordFields(diagnosis, treatment)).toBe(false);
+      10 |   });
+
+      at Object.toBe (__tests__/medicalRecord.test.ts:7:110)
+
+  ● Historial y recetas - validación y preparación local › H-05 rechaza un campo clínico en blanco con el otro completo ( 	 )
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+       7 |   it('PU-55 rechaza campos clínicos de solo espacios', () => { expect(hasClinicalRecordFields('   ', '   ')).toBe(false); });
+       8 |   it.each([[' \t ', 'Plan ficticio'], ['Diagnóstico ficticio', '\n ']])('H-05 rechaza un campo clínico en blanco con el otro completo (%s)', (diagnosis, treatment) => {
+    >  9 |     expect(hasClinicalRecordFields(diagnosis, treatment)).toBe(false);
+         |                                                           ^
+      10 |   });
+      11 |   it('H-05 acepta contenido clínico con espacios exteriores', () => {
+      12 |     expect(hasClinicalRecordFields(' Diagnóstico ficticio ', ' Plan ficticio ')).toBe(true);
+
+      at toBe (__tests__/medicalRecord.test.ts:9:59)
+
+  ● Historial y recetas - validación y preparación local › H-05 rechaza un campo clínico en blanco con el otro completo (Diagnóstico ficticio)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+       7 |   it('PU-55 rechaza campos clínicos de solo espacios', () => { expect(hasClinicalRecordFields('   ', '   ')).toBe(false); });
+       8 |   it.each([[' \t ', 'Plan ficticio'], ['Diagnóstico ficticio', '\n ']])('H-05 rechaza un campo clínico en blanco con el otro completo (%s)', (diagnosis, treatment) => {
+    >  9 |     expect(hasClinicalRecordFields(diagnosis, treatment)).toBe(false);
+         |                                                           ^
+      10 |   });
+      11 |   it('H-05 acepta contenido clínico con espacios exteriores', () => {
+      12 |     expect(hasClinicalRecordFields(' Diagnóstico ficticio ', ' Plan ficticio ')).toBe(true);
+
+      at toBe (__tests__/medicalRecord.test.ts:9:59)
+
+  ● Historial y recetas - validación y preparación local › PU-57 no inventa una urgencia para el reporte incompleto
+
+    expect(received).toBeNull()
+
+    Received: "Medium"
+
+      18 |   });
+      19 |   it('PU-57 no inventa una urgencia para el reporte incompleto', () => {
+    > 20 |     expect(prepareTriageView({}).ai_analysis.urgency_level).toBeNull();
+         |                                                             ^
+      21 |     expect(prepareTriageView({}).patient.full_name).toBe('Desconocido');
+      22 |   });
+      23 |   it('PU-58 no presenta datos de demostración sin triaje', () => {
+
+      at Object.toBeNull (__tests__/medicalRecord.test.ts:20:61)
+
+  ● Historial y recetas - validación y preparación local › PU-58 no presenta datos de demostración sin triaje
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Desconocido"
+    Received: "Juan Perez"
+
+      22 |   });
+      23 |   it('PU-58 no presenta datos de demostración sin triaje', () => {
+    > 24 |     expect(prepareTriageView().patient.full_name).toBe('Desconocido');
+         |                                                   ^
+      25 |     expect(prepareTriageView().ai_analysis.urgency_level).toBeNull();
+      26 |     expect(prepareTriageView().symptoms).toBe('Sin síntomas reportados');
+      27 |   });
+
+      at Object.toBe (__tests__/medicalRecord.test.ts:24:51)
+
+  ● Historial y recetas - validación y preparación local › H-06 no clasifica como evaluado un nivel inválido 
+
+    expect(received).toBeNull()
+
+    Received: "Medium"
+
+      30 |   });
+      31 |   it.each(['', 'Unknown', '   ', null])('H-06 no clasifica como evaluado un nivel inválido %s', (urgency_level) => {
+    > 32 |     expect(prepareTriageView({ urgency_level }).ai_analysis.urgency_level).toBeNull();
+         |                                                                            ^
+      33 |   });
+      34 |   const prescription = { patientName: 'Paciente Ficticio', doctorName: 'Médico Ficticio', diagnosis: 'Diagnóstico ficticio', treatment: 'Plan ficticio', pharmacyName: '' };
+      35 |   it('PU-59 prepara el HTML de la receta sin farmacia opcional', () => {
+
+      at toBeNull (__tests__/medicalRecord.test.ts:32:76)
+
+  ● Historial y recetas - validación y preparación local › H-06 no clasifica como evaluado un nivel inválido Unknown
+
+    expect(received).toBeNull()
+
+    Received: "Unknown"
+
+      30 |   });
+      31 |   it.each(['', 'Unknown', '   ', null])('H-06 no clasifica como evaluado un nivel inválido %s', (urgency_level) => {
+    > 32 |     expect(prepareTriageView({ urgency_level }).ai_analysis.urgency_level).toBeNull();
+         |                                                                            ^
+      33 |   });
+      34 |   const prescription = { patientName: 'Paciente Ficticio', doctorName: 'Médico Ficticio', diagnosis: 'Diagnóstico ficticio', treatment: 'Plan ficticio', pharmacyName: '' };
+      35 |   it('PU-59 prepara el HTML de la receta sin farmacia opcional', () => {
+
+      at toBeNull (__tests__/medicalRecord.test.ts:32:76)
+
+  ● Historial y recetas - validación y preparación local › H-06 no clasifica como evaluado un nivel inválido    
+
+    expect(received).toBeNull()
+
+    Received: "   "
+
+      30 |   });
+      31 |   it.each(['', 'Unknown', '   ', null])('H-06 no clasifica como evaluado un nivel inválido %s', (urgency_level) => {
+    > 32 |     expect(prepareTriageView({ urgency_level }).ai_analysis.urgency_level).toBeNull();
+         |                                                                            ^
+      33 |   });
+      34 |   const prescription = { patientName: 'Paciente Ficticio', doctorName: 'Médico Ficticio', diagnosis: 'Diagnóstico ficticio', treatment: 'Plan ficticio', pharmacyName: '' };
+      35 |   it('PU-59 prepara el HTML de la receta sin farmacia opcional', () => {
+
+      at toBeNull (__tests__/medicalRecord.test.ts:32:76)
+
+  ● Historial y recetas - validación y preparación local › H-06 no clasifica como evaluado un nivel inválido null
+
+    expect(received).toBeNull()
+
+    Received: "Medium"
+
+      30 |   });
+      31 |   it.each(['', 'Unknown', '   ', null])('H-06 no clasifica como evaluado un nivel inválido %s', (urgency_level) => {
+    > 32 |     expect(prepareTriageView({ urgency_level }).ai_analysis.urgency_level).toBeNull();
+         |                                                                            ^
+      33 |   });
+      34 |   const prescription = { patientName: 'Paciente Ficticio', doctorName: 'Médico Ficticio', diagnosis: 'Diagnóstico ficticio', treatment: 'Plan ficticio', pharmacyName: '' };
+      35 |   it('PU-59 prepara el HTML de la receta sin farmacia opcional', () => {
+
+      at toBeNull (__tests__/medicalRecord.test.ts:32:76)
+
+FAIL __tests__/userValidation.test.ts
+  Usuarios - límites de los campos de inicio de sesión
+    √ PU-06 rechaza ambos argumentos ausentes (1 ms)
+    √ PU-07 rechaza ambos argumentos ausentes
+    √ PU-08 acepta correo rodeado de espacios
+    √ PU-09 no considera vacía una contraseña formada por espacios
+  Usuarios - validación local del registro
+    √ PU-10 rechaza el campo común vacío: email
+    √ PU-11 rechaza el campo común vacío: password
+    √ PU-12 rechaza el campo común vacío: fullName
+    √ PU-13 rechaza el campo común vacío: identityCard
+    √ PU-14 rechaza el campo común vacío: phoneNumber (1 ms)
+    √ PU-15 rechaza el campo común vacío: address
+    √ PU-16 acepta paciente completo sin título ni especialidad
+    √ PU-17 rechaza médico sin especialidad o título
+    √ PU-18 rechaza médico sin especialidad o título
+    √ PU-19 acepta médico con campos y requisitos completos
+    √ PU-20 prioriza campos comunes ante varios requisitos ausentes
+    × PU-21 rechaza un nombre formado solo por espacios (3 ms)
+    × H-01 rechaza espacios en el campo obligatorio email
+    × H-01 rechaza espacios en el campo obligatorio identityCard
+    × H-01 rechaza espacios en el campo obligatorio phoneNumber
+    × H-01 rechaza espacios en el campo obligatorio address
+    √ H-01 conserva los datos completos con espacios exteriores
+    × H-01 rechaza una especialidad formada solo por espacios
+  Usuarios - validación local del perfil de paciente
+    √ PU-22 rechaza teléfono o dirección vacíos
+    √ PU-23 rechaza teléfono o dirección vacíos
+    √ PU-24 acepta teléfono y dirección completos
+    × PU-25 rechaza teléfono y dirección de solo espacios (1 ms)
+    × H-02 rechaza un campo de solo espacios aunque el otro tenga contenido ( 	 )
+    × H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (00000000)
+    √ H-02 conserva teléfono y dirección con espacios exteriores
+  Usuarios - validación local del perfil médico
+    √ PU-26 rechaza nombre o celular vacío o de solo espacios
+    √ PU-27 rechaza nombre o celular vacío o de solo espacios
+    √ PU-28 rechaza nombre o celular vacío o de solo espacios
+    √ PU-29 rechaza nombre o celular vacío o de solo espacios (1 ms)
+    √ PU-30 acepta nombre y celular completos rodeados de espacios
+
+  ● Usuarios - validación local del registro › PU-21 rechaza un nombre formado solo por espacios
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 1
+
+      Object {
+    -   "error": "Por favor completa todos los campos comunes.",
+    -   "isValid": false,
+    +   "isValid": true,
+      }
+
+      70 |
+      71 |   it('PU-21 rechaza un nombre formado solo por espacios', () => {
+    > 72 |     expect(validateRegistrationFields({ ...patient, fullName: '   ' })).toEqual({
+         |                                                                         ^
+      73 |       isValid: false, error: 'Por favor completa todos los campos comunes.',
+      74 |     });
+      75 |   });
+
+      at Object.toEqual (__tests__/userValidation.test.ts:72:73)
+
+  ● Usuarios - validación local del registro › H-01 rechaza espacios en el campo obligatorio email
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      75 |   });
+      76 |   it.each(['email', 'identityCard', 'phoneNumber', 'address'])('H-01 rechaza espacios en el campo obligatorio %s', (field) => {
+    > 77 |     expect(validateRegistrationFields({ ...patient, [field]: ' \t\n ' }).isValid).toBe(false);
+         |                                                                                   ^
+      78 |   });
+      79 |   it('H-01 conserva los datos completos con espacios exteriores', () => {
+      80 |     expect(validateRegistrationFields({ ...patient, fullName: ' Persona de Prueba ' }).isValid).toBe(true);
+
+      at toBe (__tests__/userValidation.test.ts:77:83)
+
+  ● Usuarios - validación local del registro › H-01 rechaza espacios en el campo obligatorio identityCard
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      75 |   });
+      76 |   it.each(['email', 'identityCard', 'phoneNumber', 'address'])('H-01 rechaza espacios en el campo obligatorio %s', (field) => {
+    > 77 |     expect(validateRegistrationFields({ ...patient, [field]: ' \t\n ' }).isValid).toBe(false);
+         |                                                                                   ^
+      78 |   });
+      79 |   it('H-01 conserva los datos completos con espacios exteriores', () => {
+      80 |     expect(validateRegistrationFields({ ...patient, fullName: ' Persona de Prueba ' }).isValid).toBe(true);
+
+      at toBe (__tests__/userValidation.test.ts:77:83)
+
+  ● Usuarios - validación local del registro › H-01 rechaza espacios en el campo obligatorio phoneNumber
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      75 |   });
+      76 |   it.each(['email', 'identityCard', 'phoneNumber', 'address'])('H-01 rechaza espacios en el campo obligatorio %s', (field) => {
+    > 77 |     expect(validateRegistrationFields({ ...patient, [field]: ' \t\n ' }).isValid).toBe(false);
+         |                                                                                   ^
+      78 |   });
+      79 |   it('H-01 conserva los datos completos con espacios exteriores', () => {
+      80 |     expect(validateRegistrationFields({ ...patient, fullName: ' Persona de Prueba ' }).isValid).toBe(true);
+
+      at toBe (__tests__/userValidation.test.ts:77:83)
+
+  ● Usuarios - validación local del registro › H-01 rechaza espacios en el campo obligatorio address
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      75 |   });
+      76 |   it.each(['email', 'identityCard', 'phoneNumber', 'address'])('H-01 rechaza espacios en el campo obligatorio %s', (field) => {
+    > 77 |     expect(validateRegistrationFields({ ...patient, [field]: ' \t\n ' }).isValid).toBe(false);
+         |                                                                                   ^
+      78 |   });
+      79 |   it('H-01 conserva los datos completos con espacios exteriores', () => {
+      80 |     expect(validateRegistrationFields({ ...patient, fullName: ' Persona de Prueba ' }).isValid).toBe(true);
+
+      at toBe (__tests__/userValidation.test.ts:77:83)
+
+  ● Usuarios - validación local del registro › H-01 rechaza una especialidad formada solo por espacios
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      81 |   });
+      82 |   it('H-01 rechaza una especialidad formada solo por espacios', () => {
+    > 83 |     expect(validateRegistrationFields({ ...doctor, selectedSpecialty: '   ' }).isValid).toBe(false);
+         |                                                                                         ^
+      84 |   });
+      85 | });
+      86 |
+
+      at Object.toBe (__tests__/userValidation.test.ts:83:89)
+
+  ● Usuarios - validación local del perfil de paciente › PU-25 rechaza teléfono y dirección de solo espacios
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 1
+
+      Object {
+    -   "error": "Por favor completa el número de teléfono y la dirección.",
+    -   "isValid": false,
+    +   "isValid": true,
+      }
+
+       98 |   });
+       99 |   it('PU-25 rechaza teléfono y dirección de solo espacios', () => {
+    > 100 |     expect(validatePatientProfileFields('   ', '   ')).toEqual({
+          |                                                        ^
+      101 |       isValid: false, error: 'Por favor completa el número de teléfono y la dirección.',
+      102 |     });
+      103 |   });
+
+      at Object.toEqual (__tests__/userValidation.test.ts:100:56)
+
+  ● Usuarios - validación local del perfil de paciente › H-02 rechaza un campo de solo espacios aunque el otro tenga contenido ( 	 )
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      103 |   });
+      104 |   it.each([[' \t ', 'Dirección ficticia'], ['00000000', '\n  ']])('H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (%s)', (phone, address) => {
+    > 105 |     expect(validatePatientProfileFields(phone, address).isValid).toBe(false);
+          |                                                                  ^
+      106 |   });
+      107 |   it('H-02 conserva teléfono y dirección con espacios exteriores', () => {
+      108 |     expect(validatePatientProfileFields(' 00000000 ', ' Dirección ficticia ').isValid).toBe(true);
+
+      at toBe (__tests__/userValidation.test.ts:105:66)
+
+  ● Usuarios - validación local del perfil de paciente › H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (00000000)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      103 |   });
+      104 |   it.each([[' \t ', 'Dirección ficticia'], ['00000000', '\n  ']])('H-02 rechaza un campo de solo espacios aunque el otro tenga contenido (%s)', (phone, address) => {
+    > 105 |     expect(validatePatientProfileFields(phone, address).isValid).toBe(false);
+          |                                                                  ^
+      106 |   });
+      107 |   it('H-02 conserva teléfono y dirección con espacios exteriores', () => {
+      108 |     expect(validatePatientProfileFields(' 00000000 ', ' Dirección ficticia ').isValid).toBe(true);
+
+      at toBe (__tests__/userValidation.test.ts:105:66)
+
+FAIL __tests__/consultationRules.test.ts
+  Videoconsultas - decisiones locales de la sala de espera
+    √ PU-45 reconoce el cierre con estado completed
+    √ PU-46 reconoce el cierre con estado resolved (1 ms)
+    √ PU-47 un triaje en espera no está cerrado
+    √ PU-48 un triaje en progreso habilita la llamada sin cita
+    √ PU-49 una cita programada habilita la llamada
+    √ PU-50 sin cita ni atención en progreso no habilita la llamada
+    × PU-51 una cita cancelada no habilita la llamada (1 ms)
+    × H-04 una cita con estado cancelled no habilita la llamada aunque el triaje siga en progreso (1 ms)
+    × H-04 una cita con estado completed no habilita la llamada aunque el triaje siga en progreso
+    × H-04 una cita con estado unknown no habilita la llamada aunque el triaje siga en progreso
+    × H-04 una cita con estado undefined no habilita la llamada aunque el triaje siga en progreso
+    × H-04 un triaje cerrado como completed no habilita una cita programada (1 ms)
+    × H-04 un triaje cerrado como resolved no habilita una cita programada
+    × H-04 una cita sin estado no demuestra que el médico esté listo (1 ms)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › PU-51 una cita cancelada no habilita la llamada
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      15 |   });
+      16 |   it('PU-51 una cita cancelada no habilita la llamada', () => {
+    > 17 |     expect(isDoctorReadyForCall('waiting', { status: 'cancelled' })).toBe(false);
+         |                                                                      ^
+      18 |   });
+      19 |   it.each(['cancelled', 'completed', 'unknown', undefined])('H-04 una cita con estado %s no habilita la llamada aunque el triaje siga en progreso', (status) => {
+      20 |     expect(isDoctorReadyForCall('in_progress', { status })).toBe(false);
+
+      at Object.toBe (__tests__/consultationRules.test.ts:17:70)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 una cita con estado cancelled no habilita la llamada aunque el triaje siga en progreso
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      18 |   });
+      19 |   it.each(['cancelled', 'completed', 'unknown', undefined])('H-04 una cita con estado %s no habilita la llamada aunque el triaje siga en progreso', (status) => {
+    > 20 |     expect(isDoctorReadyForCall('in_progress', { status })).toBe(false);
+         |                                                             ^
+      21 |   });
+      22 |   it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
+      23 |     expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
+
+      at toBe (__tests__/consultationRules.test.ts:20:61)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 una cita con estado completed no habilita la llamada aunque el triaje siga en progreso
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      18 |   });
+      19 |   it.each(['cancelled', 'completed', 'unknown', undefined])('H-04 una cita con estado %s no habilita la llamada aunque el triaje siga en progreso', (status) => {
+    > 20 |     expect(isDoctorReadyForCall('in_progress', { status })).toBe(false);
+         |                                                             ^
+      21 |   });
+      22 |   it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
+      23 |     expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
+
+      at toBe (__tests__/consultationRules.test.ts:20:61)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 una cita con estado unknown no habilita la llamada aunque el triaje siga en progreso
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      18 |   });
+      19 |   it.each(['cancelled', 'completed', 'unknown', undefined])('H-04 una cita con estado %s no habilita la llamada aunque el triaje siga en progreso', (status) => {
+    > 20 |     expect(isDoctorReadyForCall('in_progress', { status })).toBe(false);
+         |                                                             ^
+      21 |   });
+      22 |   it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
+      23 |     expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
+
+      at toBe (__tests__/consultationRules.test.ts:20:61)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 una cita con estado undefined no habilita la llamada aunque el triaje siga en progreso
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      18 |   });
+      19 |   it.each(['cancelled', 'completed', 'unknown', undefined])('H-04 una cita con estado %s no habilita la llamada aunque el triaje siga en progreso', (status) => {
+    > 20 |     expect(isDoctorReadyForCall('in_progress', { status })).toBe(false);
+         |                                                             ^
+      21 |   });
+      22 |   it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
+      23 |     expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
+
+      at toBe (__tests__/consultationRules.test.ts:20:61)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 un triaje cerrado como completed no habilita una cita programada
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      21 |   });
+      22 |   it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
+    > 23 |     expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
+         |                                                                   ^
+      24 |   });
+      25 |   it('H-04 una cita sin estado no demuestra que el médico esté listo', () => {
+      26 |     expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia' })).toBe(false);
+
+      at toBe (__tests__/consultationRules.test.ts:23:67)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 un triaje cerrado como resolved no habilita una cita programada
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      21 |   });
+      22 |   it.each(['completed', 'resolved'])('H-04 un triaje cerrado como %s no habilita una cita programada', (status) => {
+    > 23 |     expect(isDoctorReadyForCall(status, { status: 'scheduled' })).toBe(false);
+         |                                                                   ^
+      24 |   });
+      25 |   it('H-04 una cita sin estado no demuestra que el médico esté listo', () => {
+      26 |     expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia' })).toBe(false);
+
+      at toBe (__tests__/consultationRules.test.ts:23:67)
+
+  ● Videoconsultas - decisiones locales de la sala de espera › H-04 una cita sin estado no demuestra que el médico esté listo
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      24 |   });
+      25 |   it('H-04 una cita sin estado no demuestra que el médico esté listo', () => {
+    > 26 |     expect(isDoctorReadyForCall('waiting', { id: 'cita-ficticia' })).toBe(false);
+         |                                                                      ^
+      27 |   });
+      28 | });
+      29 |
+
+      at Object.toBe (__tests__/consultationRules.test.ts:26:70)
+
+FAIL __tests__/paymentSimulation.test.ts
+  Pagos - orquestación de la simulación con Supabase sustituido
+    × PU-61 no solicita cambios sin identificador de triaje (1 ms)
+    √ PU-62 solicita el estado waiting para el identificador ficticio
+    × PU-63 propaga el error devuelto por Supabase
+    × PU-64 propaga una excepción de la actualización (1 ms)
+    × H-07 rechaza un identificador vacío o ambiguo ()
+    × H-07 rechaza un identificador vacío o ambiguo (   )
+    × H-07 rechaza un identificador vacío o ambiguo (["uno", "dos"]) (1 ms)
+    × H-07 rechaza un identificador vacío o ambiguo ([])
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › PU-61 no solicita cambios sin identificador de triaje
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      14 |   afterEach(() => errorLog.mockRestore());
+      15 |   it('PU-61 no solicita cambios sin identificador de triaje', async () => {
+    > 16 |     await expect(markSimulatedPaymentWaiting(undefined)).rejects.toThrow('Identificador de triaje requerido');
+         |           ^
+      17 |     expect(supabase.from).not.toHaveBeenCalled();
+      18 |   });
+      19 |   it('PU-62 solicita el estado waiting para el identificador ficticio', async () => {
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at Object.expect (__tests__/paymentSimulation.test.ts:16:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at Object.<anonymous> (node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12)
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › PU-63 propaga el error devuelto por Supabase
+
+    expect(received).rejects.toEqual()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      25 |   it('PU-63 propaga el error devuelto por Supabase', async () => {
+      26 |     eq.mockResolvedValue({ error: { message: 'Fallo ficticio' } });
+    > 27 |     await expect(markSimulatedPaymentWaiting('triaje-ficticio')).rejects.toEqual({ message: 'Fallo ficticio' });
+         |           ^
+      28 |     expect(errorLog).not.toHaveBeenCalled();
+      29 |   });
+      30 |   it('PU-64 propaga una excepción de la actualización', async () => {
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at Object.expect (__tests__/paymentSimulation.test.ts:27:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at Object.<anonymous> (node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12)
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › PU-64 propaga una excepción de la actualización
+
+    expect(received).rejects.toBe()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      30 |   it('PU-64 propaga una excepción de la actualización', async () => {
+      31 |     const failure = new Error('Fallo ficticio'); eq.mockRejectedValue(failure);
+    > 32 |     await expect(markSimulatedPaymentWaiting('triaje-ficticio')).rejects.toBe(failure);
+         |           ^
+      33 |   });
+      34 |   it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
+      35 |     await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at Object.expect (__tests__/paymentSimulation.test.ts:32:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at Object.<anonymous> (node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12)
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › H-07 rechaza un identificador vacío o ambiguo ()
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      33 |   });
+      34 |   it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
+    > 35 |     await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
+         |           ^
+      36 |     expect(supabase.from).not.toHaveBeenCalled();
+      37 |   });
+      38 | });
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at expect (__tests__/paymentSimulation.test.ts:35:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12
+      at apply (__tests__/paymentSimulation.test.ts:37:4)
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › H-07 rechaza un identificador vacío o ambiguo (   )
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      33 |   });
+      34 |   it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
+    > 35 |     await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
+         |           ^
+      36 |     expect(supabase.from).not.toHaveBeenCalled();
+      37 |   });
+      38 | });
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at expect (__tests__/paymentSimulation.test.ts:35:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12
+      at apply (__tests__/paymentSimulation.test.ts:37:4)
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › H-07 rechaza un identificador vacío o ambiguo (["uno", "dos"])
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      33 |   });
+      34 |   it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
+    > 35 |     await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
+         |           ^
+      36 |     expect(supabase.from).not.toHaveBeenCalled();
+      37 |   });
+      38 | });
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at expect (__tests__/paymentSimulation.test.ts:35:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12
+      at apply (__tests__/paymentSimulation.test.ts:37:4)
+
+  ● Pagos - orquestación de la simulación con Supabase sustituido › H-07 rechaza un identificador vacío o ambiguo ([])
+
+    expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      33 |   });
+      34 |   it.each([{ id: '' }, { id: '   ' }, { id: ['uno', 'dos'] }, { id: [] }])('H-07 rechaza un identificador vacío o ambiguo ($id)', async ({ id }) => {
+    > 35 |     await expect(markSimulatedPaymentWaiting(id)).rejects.toThrow('Identificador de triaje requerido');
+         |           ^
+      36 |     expect(supabase.from).not.toHaveBeenCalled();
+      37 |   });
+      38 | });
+
+      at expect (node_modules/@jest/expect/node_modules/expect/build/index.js:113:15)
+      at expect (__tests__/paymentSimulation.test.ts:35:11)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12
+      at apply (__tests__/paymentSimulation.test.ts:37:4)
+
+PASS __tests__/loginValidation.test.ts
+  Pruebas Unitarias - Validación de Campos Obligatorios del Inicio de Sesión
+    √ debe rechazar cuando el correo y la contraseña están vacíos
+    √ debe rechazar cuando el correo está completo pero la contraseña está vacía (1 ms)
+    √ debe rechazar cuando el correo está vacío pero la contraseña está completa
+    √ debe rechazar y considerar vacío cuando el correo está compuesto solo por espacios
+    √ debe superar la validación de campos obligatorios cuando ambos campos están completos (1 ms)
+
+FAIL __tests__/reportStats.test.ts
+  Reportes - cálculos locales existentes
+    √ PU-65 una colección vacía produce contadores e ingreso cero (1 ms)
+    √ PU-66 cuenta niveles reconocidos sin clasificar un nivel desconocido (1 ms)
+    × PU-67 no cuenta espera ni atención en progreso como completadas
+    √ PU-68 un registro completado aporta cincuenta a la estimación
+    √ PU-69 estados no contemplados no aportan ingresos estimados (1 ms)
+
+  ● Reportes - cálculos locales existentes › PU-67 no cuenta espera ni atención en progreso como completadas
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 2
+
+       9 |   it('PU-67 no cuenta espera ni atención en progreso como completadas', () => {
+      10 |     const stats = calculateReportStats([{ status: 'waiting' }, { status: 'in_progress' }]);
+    > 11 |     expect(stats.completedTriages).toBe(0); expect(stats.totalRevenue).toBe(100);
+         |                                    ^
+      12 |   });
+      13 |   it('PU-68 un registro completado aporta cincuenta a la estimación', () => {
+      14 |     const stats = calculateReportStats([{ status: 'completed' }]);
+
+      at Object.toBe (__tests__/reportStats.test.ts:11:36)
+
+Test Suites: 5 failed, 2 passed, 7 total
+Tests:       34 failed, 58 passed, 92 total
+Snapshots:   0 total
+Time:        3.456 s
+Ran all test suites.
+Test results written to: evidencias\revision-hallazgos-20260930\regresion-antes\jest.json

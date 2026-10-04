@@ -1,0 +1,33 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    },
+    {
+      "archivo": "utils\\userValidation.ts.txt",
+      "sha256": "1037438939dc561f7628218fb3616270535a9200f200f3aa2bca86eb686ed5f1"
+    },
+    {
+      "archivo": "utils\\validation.ts.txt",
+      "sha256": "aa250d6d54f8badc0a2d5d8d4682111bbd8b652895282135ff5f61c9fb243f81"
+    },
+    {
+      "archivo": "__tests__\\loginValidation.test.ts.txt",
+      "sha256": "1a3cf746aee48d94b46b82b10191b091c5e8911e3e41f42b1ac31d58e79752dd"
+    },
+    {
+      "archivo": "__tests__\\userValidation.test.ts.txt",
+      "sha256": "e7d39f9685b235f857c8e7aea326d79caa157aeaf13704b72b85f7253c7eb01e"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "inicio": "2026-09-30T20:45:56.645Z",
+  "zona": "America/La_Paz",
+  "comando": "node node_modules/jest/bin/jest.js --runInBand --watch=false --verbose --runTestsByPath __tests__/loginValidation.test.ts __tests__/userValidation.test.ts --json --outputFile=evidencias/pruebas-completas/usuarios/resultado.json",
+  "archivos": [
+    "__tests__/loginValidation.test.ts",
+    "__tests__/userValidation.test.ts"
+  ],
+  "versiones": {
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "jest": "29.7.0",
+    "jest-expo": "57.0.5",
+    "typescript": "6.0.3",
+    "expo": "57.0.19"
+  },
+  "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+  "cambiosLocales": " M app/(doctor)/profile.tsx\n M app/(patient)/profile.tsx\n M app/index.tsx\n M app/register.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? evidencias/\n?? jest.config.js\n?? output/\n?? scripts/record-unit-tests.cjs\n?? tmp/\n?? utils/\n",
+  "fin": "2026-09-30T20:46:14.323Z",
+  "codigoSalida": 0
+}

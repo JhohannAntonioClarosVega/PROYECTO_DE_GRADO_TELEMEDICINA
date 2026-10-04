@@ -1,0 +1,43 @@
+{
+  "creadosOModificadosEnEstaAmpliacion": [
+    "app/(doctor)/medical-record.tsx",
+    "components/TriageEvaluation.tsx",
+    "utils/medicalRecord.ts",
+    "utils/triagePresentation.ts",
+    "__tests__/medicalRecord.test.ts"
+  ],
+  "fuentesConservadas": [
+    {
+      "archivo": "jest.config.js.txt",
+      "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+    },
+    {
+      "archivo": "package.json.txt",
+      "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+    },
+    {
+      "archivo": "components\\TriageEvaluation.tsx.txt",
+      "sha256": "5867fbf88b5e3cb2a81625c2e88fb65dc9d43b2ecae2b8ae067c21d2c33e7812"
+    },
+    {
+      "archivo": "scripts\\record-unit-tests.cjs.txt",
+      "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+    },
+    {
+      "archivo": "utils\\medicalRecord.ts.txt",
+      "sha256": "071e8db2acf2680afed305c26ff8244c9d3a256ed7a67536d8841fe91189d5ad"
+    },
+    {
+      "archivo": "utils\\triagePresentation.ts.txt",
+      "sha256": "80241869b835dba24fd635e552eb424bd4c309778ddfe733d16d563812633478"
+    },
+    {
+      "archivo": "__tests__\\medicalRecord.test.ts.txt",
+      "sha256": "51c1ebce4c0d690bbe42c29b7fe4ebbcf91bd209a2155bd146d7b8946e38549c"
+    },
+    {
+      "archivo": "app\\(doctor)\\medical-record.tsx.txt",
+      "sha256": "2c50daf2c0fd6c470a85aab5a91c6091c82cc2e169e8838d59b0aa01d82173b8"
+    }
+  ]
+}

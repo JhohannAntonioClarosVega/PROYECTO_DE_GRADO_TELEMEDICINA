@@ -1,0 +1,133 @@
+{
+  "inicioUTC": "2026-09-30T22:23:37.039610+00:00",
+  "etapa": "base",
+  "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "cambiosLocales": true,
+  "comandos": [
+    {
+      "tipo": "jest",
+      "argumentos": [
+        "node",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--watch=false",
+        "--verbose",
+        "--json",
+        "--outputFile=C:\\Users\\inutil\\Documents\\GitHub\\PROYECTO_DE_GRADO_TELEMEDICINA\\evidencias\\revision-hallazgos-20260930\\base\\jest.json"
+      ],
+      "inicioUTC": "2026-09-30T22:23:37.174705+00:00",
+      "finUTC": "2026-09-30T22:23:40.969390+00:00",
+      "codigoSalida": 0
+    },
+    {
+      "tipo": "python",
+      "argumentos": [
+        "C:\\Users\\inutil\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "C:\\Users\\inutil\\Documents\\GitHub\\PROYECTO_DE_GRADO_TELEMEDICINA\\scripts\\record-python-unit-tests.py",
+        "C:\\Users\\inutil\\Documents\\GitHub\\PROYECTO_DE_GRADO_TELEMEDICINA\\evidencias\\revision-hallazgos-20260930\\base"
+      ],
+      "inicioUTC": "2026-09-30T22:23:40.969390+00:00",
+      "finUTC": "2026-09-30T22:23:41.421071+00:00",
+      "codigoSalida": 1
+    }
+  ],
+  "versiones": {
+    "node": "v24.15.0",
+    "jest": "29.7.0",
+    "jest-expo": "57.0.5",
+    "typescript": "6.0.3",
+    "expo": "57.0.19"
+  },
+  "fuentes": [
+    {
+      "archivo": "__tests__\\consultationRules.test.ts",
+      "sha256": "d6ca7cc59c93cbf24c676dc4d0d95b1f6476cda460d9583e89337e70d13d59d4"
+    },
+    {
+      "archivo": "__tests__\\loginValidation.test.ts",
+      "sha256": "1a3cf746aee48d94b46b82b10191b091c5e8911e3e41f42b1ac31d58e79752dd"
+    },
+    {
+      "archivo": "__tests__\\medicalRecord.test.ts",
+      "sha256": "51c1ebce4c0d690bbe42c29b7fe4ebbcf91bd209a2155bd146d7b8946e38549c"
+    },
+    {
+      "archivo": "__tests__\\paymentSimulation.test.ts",
+      "sha256": "7966cdc77e0c0d4c08b3a3a3358b4fa1e5dfe5591490d0edd1bcd45a8e4c9d1f"
+    },
+    {
+      "archivo": "__tests__\\reportStats.test.ts",
+      "sha256": "2d5c67524b1a7da00c2adab85169ce8537eafe08786cbcb6e225ae9acf4a5478"
+    },
+    {
+      "archivo": "__tests__\\triageWorkflow.test.ts",
+      "sha256": "eb7696f84985dd56c9f59e5dd47d0e80e17047ad802fa38d66e88db070ca0377"
+    },
+    {
+      "archivo": "__tests__\\userValidation.test.ts",
+      "sha256": "e7d39f9685b235f857c8e7aea326d79caa157aeaf13704b72b85f7253c7eb01e"
+    },
+    {
+      "archivo": "utils\\consultationRules.ts",
+      "sha256": "4d261f1d5fed79f696795bb74bf7f38f2571856bd058f77a03876fbf4c437ff5"
+    },
+    {
+      "archivo": "utils\\medicalRecord.ts",
+      "sha256": "071e8db2acf2680afed305c26ff8244c9d3a256ed7a67536d8841fe91189d5ad"
+    },
+    {
+      "archivo": "utils\\reportStats.ts",
+      "sha256": "31c70692f2b729a6e1ed13d443c8072c703413aecf5a13052a4cd551f03a2325"
+    },
+    {
+      "archivo": "utils\\triagePresentation.ts",
+      "sha256": "80241869b835dba24fd635e552eb424bd4c309778ddfe733d16d563812633478"
+    },
+    {
+      "archivo": "utils\\triageWorkflow.ts",
+      "sha256": "ea88526bbdd81f61170525865de1d253d3997b756fa6ce5402c08df972ee293f"
+    },
+    {
+      "archivo": "utils\\userValidation.ts",
+      "sha256": "1037438939dc561f7628218fb3616270535a9200f200f3aa2bca86eb686ed5f1"
+    },
+    {
+      "archivo": "utils\\validation.ts",
+      "sha256": "aa250d6d54f8badc0a2d5d8d4682111bbd8b652895282135ff5f61c9fb243f81"
+    },
+    {
+      "archivo": "services\\paymentSimulation.ts",
+      "sha256": "7b747aad7833488ace05eec85a2d2491adf1941fb84ff3223b231190060c9290"
+    },
+    {
+      "archivo": "ai-engine\\llm_service.py",
+      "sha256": "af32ab3686a2976c5978e96339e5d53ac1840c147b9f7ba7608821aa66e7cb33"
+    },
+    {
+      "archivo": "ai-engine\\main.py",
+      "sha256": "f1d223d24b81fd5f529a0ab57be259c77f90e8f455836005a116465d34cbbcbf"
+    },
+    {
+      "archivo": "ai-engine\\test_unit_llm.py",
+      "sha256": "7a352229484f6d9f28e1e1a4bc11266cffaf93696bcae50789e773a649e5d51d"
+    },
+    {
+      "archivo": "components\\TriageEvaluation.tsx",
+      "sha256": "5867fbf88b5e3cb2a81625c2e88fb65dc9d43b2ecae2b8ae067c21d2c33e7812"
+    },
+    {
+      "archivo": "app\\(patient)\\payment.tsx",
+      "sha256": "7509088f4c4263dbcd98f642d417270606dd479ce0d8087d6022d4d90ffd0dcb"
+    },
+    {
+      "archivo": "app\\(patient)\\waiting-room.tsx",
+      "sha256": "b428014f2e0393e91cd5726250d5d20765481d98a58829f01218e2e112de9c32"
+    },
+    {
+      "archivo": "app\\(admin)\\reports.tsx",
+      "sha256": "678a7ba41002448ffb2464adccd771f6184ffd91b5de1bfd9f5556d96652840d"
+    }
+  ],
+  "finUTC": "2026-09-30T22:23:41.421071+00:00"
+}

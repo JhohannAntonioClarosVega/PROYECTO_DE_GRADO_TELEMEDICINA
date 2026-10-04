@@ -1,0 +1,118 @@
+import React, { act } from 'react';
+import { TouchableOpacity } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { supabase } from '../lib/supabase';
+import PaymentScreen from '../app/(patient)/payment';
+import WaitingRoomScreen from '../app/(patient)/waiting-room';
+import TriageEvaluation from '../components/TriageEvaluation';
+
+jest.mock('../lib/supabase', () => ({ supabase: { from: jest.fn(), channel: jest.fn(), removeChannel: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() }, useLocalSearchParams: jest.fn() }));
+jest.mock('@expo/vector-icons', () => ({ Ionicons: 'Icon' }));
+jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: jest.requireActual('react-native').View }));
+jest.mock('react-native-css-interop', () => ({ createInteropElement: jest.requireActual('react').createElement }));
+jest.mock('react-native-css-interop/jsx-runtime', () => jest.requireActual('react/jsx-runtime'));
+jest.mock('react-native-css-interop/jsx-dev-runtime', () => jest.requireActual('react/jsx-dev-runtime'));
+jest.mock('nativewind/jsx-runtime', () => jest.requireActual('react/jsx-runtime'));
+jest.mock('nativewind/jsx-dev-runtime', () => jest.requireActual('react/jsx-dev-runtime'));
+const { create } = jest.requireActual('react-test-renderer');
+
+describe('Regresión de componentes aislados con navegación y Supabase sustituidos', () => {
+  let view: any;
+  let warn: jest.SpyInstance;
+  let error: jest.SpyInstance;
+  beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask'] });
+    jest.clearAllMocks();
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    (useLocalSearchParams as jest.Mock).mockReturnValue({ triageId: 'triaje-ficticio' });
+    // React 19 avisa que react-test-renderer está obsoleto; no es un fallo de la aplicación.
+    error = jest.spyOn(console, 'error').mockImplementation(() => {});
+    warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(async () => {
+    if (view) await act(async () => view.unmount());
+    view = undefined;
+    jest.clearAllTimers();
+    jest.useRealTimers();
+    warn.mockRestore();
+    error.mockRestore();
+  });
+  const text = () => JSON.stringify(view.toJSON());
+  const simulate = async () => {
+    const button = view.root.findAllByType(TouchableOpacity).find((b: any) => b.props.disabled === false);
+    await act(async () => button.props.onPress());
+    await act(async () => { await jest.advanceTimersByTimeAsync(2500); });
+  };
+
+  it.each(['respuesta con error', 'excepción'])('H-07 no anuncia éxito ni navega ante %s', async (mode) => {
+    const eq = mode === 'excepción' ? jest.fn().mockRejectedValue(new Error('Fallo ficticio')) : jest.fn().mockResolvedValue({ error: { message: 'Fallo ficticio' } });
+    (supabase.from as jest.Mock).mockReturnValue({ update: () => ({ eq }) });
+    await act(async () => { view = create(<PaymentScreen />); });
+    await simulate();
+    expect(text()).toContain('No se pudo completar la simulación');
+    expect(text()).not.toContain('Simulación completada');
+    await act(async () => { await jest.advanceTimersByTimeAsync(2000); });
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(view.root.findAllByType(TouchableOpacity).some((b: any) => b.props.disabled === false)).toBe(true);
+  });
+
+  it('H-07 habilita la continuación solo después de actualizar la simulación', async () => {
+    (supabase.from as jest.Mock).mockReturnValue({ update: () => ({ eq: jest.fn().mockResolvedValue({ error: null }) }) });
+    await act(async () => { view = create(<PaymentScreen />); });
+    await simulate();
+    expect(text()).toContain('Simulación completada');
+    expect(text()).not.toContain('Tu transferencia ha sido validada');
+    await act(async () => { await jest.advanceTimersByTimeAsync(2000); });
+    expect(router.replace).toHaveBeenCalledWith({ pathname: '/(patient)/waiting-room', params: { triageId: 'triaje-ficticio' } });
+  });
+
+  it('H-06 muestra ausencia de clasificación y bloquea atención sin un triaje real', async () => {
+    await act(async () => { view = create(<TriageEvaluation />); });
+    expect(text()).toContain('URGENCIA NO DISPONIBLE');
+    expect(text()).not.toContain('Juan Perez');
+    expect(text()).not.toContain('NIVEL CRÍTICO');
+    expect(view.root.findAllByType(TouchableOpacity).some((b: any) => b.props.disabled === true)).toBe(true);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  const waiting = (initialStatus: string) => {
+    let appointmentStatus = initialStatus;
+    const callbacks: Record<string, (...args: any[]) => unknown> = {};
+    const channel = { on: jest.fn(), subscribe: jest.fn() };
+    channel.on.mockImplementation((kind: string, filter: any, callback: any) => {
+      callbacks[filter.table || kind] = callback;
+      return channel;
+    });
+    channel.subscribe.mockReturnValue(channel);
+    (supabase.channel as jest.Mock).mockReturnValue(channel);
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      const query: any = {};
+      query.select = query.eq = query.limit = jest.fn(() => query);
+      query.maybeSingle = jest.fn(async () => ({ data: table === 'triages'
+        ? { id: 'triaje-ficticio', status: 'waiting', patient_id: 'paciente-ficticio' }
+        : { id: 'cita-ficticia', status: appointmentStatus }, error: null }));
+      return query;
+    });
+    return { callbacks, cancel: () => { appointmentStatus = 'cancelled'; } };
+  };
+
+  it('H-04 ni los eventos ni el aviso del médico habilitan una cita cancelada', async () => {
+    const state = waiting('cancelled');
+    await act(async () => { view = create(<WaitingRoomScreen />); });
+    for (const [key, payload] of Object.entries({ appointments: { new: { triage_id: 'triaje-ficticio', status: 'cancelled' } }, triages: { new: { status: 'in_progress' } }, broadcast: {} })) {
+      await act(async () => { state.callbacks[key](payload); });
+      await act(async () => { await jest.advanceTimersByTimeAsync(1200); });
+    }
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('H-04 una cancelación revoca la navegación pendiente de una cita programada', async () => {
+    const state = waiting('scheduled');
+    await act(async () => { view = create(<WaitingRoomScreen />); });
+    state.cancel();
+    await act(async () => { state.callbacks.appointments({ new: { triage_id: 'triaje-ficticio', status: 'cancelled' } }); });
+    await act(async () => { await jest.advanceTimersByTimeAsync(1200); });
+    expect(router.push).not.toHaveBeenCalled();
+  });
+});

@@ -1,0 +1,12 @@
+test_PU_38_prioridad_pediatrica (__main__.LlmUnitTests.test_PU_38_prioridad_pediatrica) ... ok
+test_PU_39_respaldo_sin_configuracion (__main__.LlmUnitTests.test_PU_39_respaldo_sin_configuracion) ... ok
+test_PU_40_interpretar_respuesta_simulada (__main__.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada) ... ok
+test_PU_41_caracterizar_respuesta_incompleta (__main__.LlmUnitTests.test_PU_41_caracterizar_respuesta_incompleta) ... ok
+test_PU_42_respaldo_ante_respuesta_no_json (__main__.LlmUnitTests.test_PU_42_respaldo_ante_respuesta_no_json) ... ok
+test_PU_43_transcripcion_simulada (__main__.LlmUnitTests.test_PU_43_transcripcion_simulada) ... ok
+test_PU_44_error_controlado_de_transcripcion (__main__.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.016s
+
+OK

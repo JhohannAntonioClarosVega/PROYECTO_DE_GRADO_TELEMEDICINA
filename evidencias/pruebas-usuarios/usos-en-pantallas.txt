@@ -1,0 +1,8 @@
+app/(patient)/profile.tsx:6:import { validatePatientProfileFields } from '@/utils/userValidation';
+app/(patient)/profile.tsx:121:    const validation = validatePatientProfileFields(phoneNumber, address);
+app/(doctor)/profile.tsx:6:import { validateDoctorProfileFields } from '@/utils/userValidation';
+app/(doctor)/profile.tsx:81:    const validation = validateDoctorProfileFields(fullName, phoneNumber);
+app/register.tsx:18:import { validateRegistrationFields } from '@/utils/userValidation';
+app/register.tsx:77:    const validation = validateRegistrationFields({
+app/index.tsx:17:import { validateLoginFields } from '@/utils/validation';
+app/index.tsx:73:    const validation = validateLoginFields(email, password);

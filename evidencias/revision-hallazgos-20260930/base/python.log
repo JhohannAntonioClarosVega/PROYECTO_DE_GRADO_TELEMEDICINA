@@ -1,0 +1,60 @@
+test_gemini (unittest.loader._FailedTest.test_gemini) ... ERROR
+test_models (unittest.loader._FailedTest.test_models) ... ERROR
+test_supabase (unittest.loader._FailedTest.test_supabase) ... ERROR
+test_PU_38_prioridad_pediatrica (test_unit_llm.LlmUnitTests.test_PU_38_prioridad_pediatrica) ... ok
+test_PU_39_respaldo_sin_configuracion (test_unit_llm.LlmUnitTests.test_PU_39_respaldo_sin_configuracion) ... ok
+test_PU_40_interpretar_respuesta_simulada (test_unit_llm.LlmUnitTests.test_PU_40_interpretar_respuesta_simulada) ... ok
+test_PU_41_caracterizar_respuesta_incompleta (test_unit_llm.LlmUnitTests.test_PU_41_caracterizar_respuesta_incompleta) ... ok
+test_PU_42_respaldo_ante_respuesta_no_json (test_unit_llm.LlmUnitTests.test_PU_42_respaldo_ante_respuesta_no_json) ... ok
+test_PU_43_transcripcion_simulada (test_unit_llm.LlmUnitTests.test_PU_43_transcripcion_simulada) ... ok
+test_PU_44_error_controlado_de_transcripcion (test_unit_llm.LlmUnitTests.test_PU_44_error_controlado_de_transcripcion) ... ok
+
+======================================================================
+ERROR: test_gemini (unittest.loader._FailedTest.test_gemini)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_gemini
+Traceback (most recent call last):
+  File "C:\Users\inutil\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\inutil\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_gemini.py", line 3, in <module>
+    from dotenv import load_dotenv
+ModuleNotFoundError: No module named 'dotenv'
+
+
+======================================================================
+ERROR: test_models (unittest.loader._FailedTest.test_models)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_models
+Traceback (most recent call last):
+  File "C:\Users\inutil\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\inutil\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_models.py", line 4, in <module>
+    from dotenv import load_dotenv
+ModuleNotFoundError: No module named 'dotenv'
+
+
+======================================================================
+ERROR: test_supabase (unittest.loader._FailedTest.test_supabase)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_supabase
+Traceback (most recent call last):
+  File "C:\Users\inutil\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\inutil\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "C:\Users\inutil\Documents\GitHub\PROYECTO_DE_GRADO_TELEMEDICINA\ai-engine\test_supabase.py", line 2, in <module>
+    from supabase import create_client, Client
+ModuleNotFoundError: No module named 'supabase'
+
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.018s
+
+FAILED (errors=3)

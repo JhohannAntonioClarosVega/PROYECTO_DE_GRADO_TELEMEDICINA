@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Keyb
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
+import { validatePatientProfileFields } from '@/utils/userValidation';
 import { Picker } from '@react-native-picker/picker';
 import CustomModal from '@/components/CustomModal';
 
@@ -117,11 +118,12 @@ export default function ProfileScreen() {
   };
 
   const handleSaveProfile = async () => {
-    if (!phoneNumber || !address) {
+    const validation = validatePatientProfileFields(phoneNumber, address);
+    if (!validation.isValid) {
       setModalConfig({
         visible: true,
         title: 'Campos requeridos',
-        message: 'Por favor completa el número de teléfono y la dirección.',
+        message: validation.error!,
         type: 'alert',
         confirmText: 'Entendido',
         onConfirm: closeModal

@@ -1,0 +1,35 @@
+jest.mock('../lib/supabase', () => ({ supabase: { from: jest.fn() } }));
+import { supabase } from '../lib/supabase';
+import { markSimulatedPaymentWaiting } from '../services/paymentSimulation';
+describe('Pagos - orquestación de la simulación con Supabase sustituido', () => {
+  const eq = jest.fn();
+  const update = jest.fn(() => ({ eq }));
+  let errorLog: jest.SpyInstance;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (supabase.from as jest.Mock).mockReturnValue({ update });
+    eq.mockResolvedValue({ error: null });
+    errorLog = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => errorLog.mockRestore());
+  it('PU-61 no solicita cambios sin identificador de triaje', async () => {
+    await markSimulatedPaymentWaiting(undefined);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+  it('PU-62 solicita el estado waiting para el identificador ficticio', async () => {
+    await markSimulatedPaymentWaiting('triaje-ficticio');
+    expect(supabase.from).toHaveBeenCalledWith('triages');
+    expect(update).toHaveBeenCalledWith({ status: 'waiting' });
+    expect(eq).toHaveBeenCalledWith('id', 'triaje-ficticio');
+  });
+  it('PU-63 caracteriza que el error devuelto por Supabase no se propaga', async () => {
+    eq.mockResolvedValue({ error: { message: 'Fallo ficticio' } });
+    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).resolves.toBeUndefined();
+    expect(errorLog).not.toHaveBeenCalled();
+  });
+  it('PU-64 caracteriza que una excepción se registra pero no se propaga', async () => {
+    const failure = new Error('Fallo ficticio'); eq.mockRejectedValue(failure);
+    await expect(markSimulatedPaymentWaiting('triaje-ficticio')).resolves.toBeUndefined();
+    expect(errorLog).toHaveBeenCalledWith('Error updating triage status mock:', failure);
+  });
+});

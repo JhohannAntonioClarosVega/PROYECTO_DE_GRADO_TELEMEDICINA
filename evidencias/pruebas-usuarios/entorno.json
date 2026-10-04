@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-09-30T18:10:50.433Z",
+  "timezone": "America/La_Paz",
+  "node": "v24.15.0",
+  "npm": "11.12.1",
+  "versions": {
+    "jest": "29.7.0",
+    "jest-expo": "57.0.5",
+    "typescript": "6.0.3",
+    "expo": "57.0.19",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "@types/jest": "30.0.0"
+  },
+  "commit": "355b1d9ddb8508f811fa5a9e419eba16eb0919e2",
+  "localChanges": " M app/(doctor)/profile.tsx\n M app/(patient)/profile.tsx\n M app/index.tsx\n M app/register.tsx\n M package-lock.json\n M package.json\n M tsconfig.json\n?? __tests__/\n?? evidencias/\n?? jest.config.js\n?? utils/\n",
+  "initialLocalChanges": [
+    "M app/index.tsx",
+    "M package-lock.json",
+    "M package.json",
+    "M tsconfig.json",
+    "?? __tests__/",
+    "?? jest.config.js",
+    "?? utils/"
+  ],
+  "initialCommand": "npm test -- --runInBand --watch=false --verbose --runTestsByPath __tests__/loginValidation.test.ts --json --outputFile=evidencias/pruebas-usuarios/inicial.json",
+  "finalCommand": "npm test -- --runInBand --watch=false --verbose --runTestsByPath __tests__/loginValidation.test.ts __tests__/userValidation.test.ts --json --outputFile=evidencias/pruebas-usuarios/final.json",
+  "typecheck": {
+    "command": ".\\node_modules\\.bin\\tsc.cmd --noEmit --pretty false",
+    "exitCode": 0
+  },
+  "mocks": "Datos ficticios y objeto de documento ficticio; sin mocks de red ni acceso a servicios. Se usa el preset jest-expo."
+}

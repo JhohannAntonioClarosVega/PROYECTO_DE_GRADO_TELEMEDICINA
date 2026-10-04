@@ -1,0 +1,498 @@
+[
+  {
+    "archivo": "evidencias\\pruebas-completas\\cambios-aplicacion.patch",
+    "sha256": "529dc715ce1b288d575ba4bd0f5cafe2fa5c9229717d4e5a8d951e7cae6ccb1f"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\casos.json",
+    "sha256": "8d7b172a884c929c6f2b36620d06635b5be46f032a90c09d728c6aa156b883c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\diff-check.log",
+    "sha256": "3a42980e98525516e06b77e067391b248eab39a10af12169e0823f0bded89a91"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\figuras-pendientes.json",
+    "sha256": "17ec21c550db60f3bc129e3359c4fbd1dec1b54c840f4dbede310c7c3938fbd7"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\README.md",
+    "sha256": "ba6318309f48e94f3dbe0201913f5e13e6b134541fc81deeeec60d2a690152bd"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\referencias.json",
+    "sha256": "35f655474864979675a8b7f6738bd612233c2f30540f3e143ad79a225447f138"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\resumen.json",
+    "sha256": "5663f3025649735b4afec737acca63866abf0e616e169d3a0f87f172d0a2ad7f"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\revision-documentos.json",
+    "sha256": "a442ba91e728c1c4a891d3ad1dcc2c9b266d22a0b4701b79aa285f25a277a52b"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\typescript.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\verificacion-estatica.json",
+    "sha256": "04ef65b903e006bbfbce8ebec8fdf0b23e0f110bc4598f4ffd9f5503be12dc54"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\alcance.md",
+    "sha256": "a1190dcc45c707917bccc0eb134a703437aacfb5b86fa3808e74f58ca2c661f1"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\archivos.json",
+    "sha256": "5ff563a3e9d877e128aabc60e9daea3d559441c6efa5e225afff6a207f6b4ce3"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\capturas.md",
+    "sha256": "4f89239efc58b7251bd5334d2761b219c29e37f0356dcac35f22bdee015b917c"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\ejecucion.json",
+    "sha256": "12b98d8da040e88b62c9cf9233ecaaccf4ba69cc6d68eb34f2e9886578c7224e"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\resultado.json",
+    "sha256": "c3c5a2b5693a6a61220609ca62b7de91a3a379ab042fa0ae10cbbd8de2e2f0aa"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\salida.log",
+    "sha256": "5d3ac02ea1ff323bb1f176b364e1f7b5f504f3f396730061a42032d4d9abda04"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\alcance.md",
+    "sha256": "d996281ee4381f6a6212a3e4546d81969da74c34156e2eb06f20e463dd3fee67"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\archivos.json",
+    "sha256": "8bc5299a88b9eb8f6028d90fc3bf0a4b0409f8392a18666678eb4a0d3c8993aa"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\capturas.md",
+    "sha256": "31046054adb2e8d8135ba836b801e3cdabecae80e95fb1d9e0c629cd0aa3c4ac"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\ejecucion.json",
+    "sha256": "3dc725fabb4a82d123429e7b67a964cf33c67438a52c5161098e07d2092e8ee8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\resultado.json",
+    "sha256": "5563c00de088ae5b53a0a24628c2677655262ca1c11b7243d37e7bc7af865c7d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\salida.log",
+    "sha256": "c5f89721958cca0390e1ace1e67e2966392d5ac0b98ab55ba5397b13904d0e52"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\alcance.md",
+    "sha256": "dd2b9011181b85a9df9c5711377cd5db90fb975c6c6ddf255cfbc915d51a3857"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\archivos.json",
+    "sha256": "0206ab6c079aed27a685818ac282ec7897ae40ab5a5a578c3709175df1e0ae8f"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\capturas.md",
+    "sha256": "96cdbe76932729195ca663ee42bb56553390f01faa776f1166764b56010aad3d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\ejecucion.json",
+    "sha256": "59eed5558278a1ec395bb40cb884f6c1b23aec091440c4c9f94b24121372cfda"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\resultado.json",
+    "sha256": "f76f4553567b1f1a3e3b1d6092bef629ea94b97dc066d44e339911ba636f7cba"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\salida.log",
+    "sha256": "7222861ebb111268031df261ec15927c946efa94986dbfeea5425e7a7da5f1db"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\alcance.md",
+    "sha256": "60cb81674a882f26b13de62f5980cd8fa85d7d42ca61802d5ecd7dc77a5236ab"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\archivos.json",
+    "sha256": "cda6fbfd3bfe4c024f33ee3b9a2f374c75d85988c260f1a69ad2c4a8801ed1c6"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\capturas.md",
+    "sha256": "62451ed976ff5362791ac4fc7bd10890c216c496b5859ca011b253794a72f581"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\ejecucion.json",
+    "sha256": "12dbdefff45565c83f79caae67d0d5f5cc311be663792ae5c642afd448a7e33c"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\resultado.json",
+    "sha256": "0daf922f5bceef96a94443478573a031e7427946b3ac2a4f65aef0ef37847afc"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\salida.log",
+    "sha256": "64adf8402d230cff03211d6ce1e8ce1759c971d4c6027d595bccc408b81f2298"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\alcance.md",
+    "sha256": "2d29ddc91e788c5e309068afa097b669b891c125b2d371f05feee86b742ef0c4"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\archivos.json",
+    "sha256": "c5c9b9eabe9d6a44350e95304d67cdbdda78c8885a407547e6958bd5912dc7d7"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\capturas.md",
+    "sha256": "9ae270e6786698ccfd05abbf55a41a3f415680d3181aeddc47025aec35cfd187"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\ejecucion.json",
+    "sha256": "7fdd8c40b3a49583469326c4ecde45fe3321dbb421d79ecb8548ae834a74c1df"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\intento-inicial.json",
+    "sha256": "71d797af643c405479e5907b90e30c49468bbcac3d08a9ef726af6208eace448"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\intento-inicial.log",
+    "sha256": "6a7877ac22787351e734fd539c7d7b16328638d3d82d86eff2e452f3c2896022"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\resultado.json",
+    "sha256": "f523d2a96d14cb6ff22714e48b3d17be2acc784fad5468d4cdebba5de816165c"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\salida.log",
+    "sha256": "a64ac7fa6d475f361a7d924cc17eaffba26469cd78d03b6fec090cd72d635e5d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\alcance.md",
+    "sha256": "dc10efb3894363d01ba481a69b90bb015bc22d64717d4d7c08b3c964036b8a6a"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\archivos.json",
+    "sha256": "9e3e40a62b55be36f7d0f3de1d78c497a92ce5e186c03fbea438e7ef34e1b302"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\capturas.md",
+    "sha256": "04789851a607f4edb47978b95ee6a0582ae5a09c2495f02d124f77fbbd7581bc"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\ejecucion.json",
+    "sha256": "8079653c276951aafd33f8da3646f52844f5bcffc752e30ad0085a3c02b5f349"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\resultado.json",
+    "sha256": "8902d984931d35801e9c5801e24d73f1b14e3b64e34200fee3494ed41b8a95ef"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\salida.log",
+    "sha256": "2335d45aa4ffed4e97133b767e5c823b9499184d035b5dcf20cd321c02bd0203"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\alcance.md",
+    "sha256": "c13462d9b328eadde5b9e0a4c608b737eebf2858aa36bcac292415e9e2b4c99c"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\archivos.json",
+    "sha256": "f6c2bd6ac932c645ad273b85fa46b7d58fee851958e808d0bab33a98c17d2ea5"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\capturas.md",
+    "sha256": "f883ecf64af4aae9902de28fd5897ad13fd4a81946c81b5d828e0a549235a8a5"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\ejecucion.json",
+    "sha256": "aa5c003bcd62ebc6cbad1274f481ccca8bd897036ecb136bc9f43d4feb62a0cd"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\resultado.json",
+    "sha256": "e5dc605aca9c51738b67d4277a1834408763e68e3aec34e7746f62cb49e864e7"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\salida.log",
+    "sha256": "21158f8fe9243118c06466c1e4602e193e620926dfbb1a424d06cc2dae08a5b7"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\antes\\components\\TriageEvaluation.tsx.txt",
+    "sha256": "71dd7c536c04c58e573a4a926e5389cd4a3d3fa9981712df4068d4a8495ab1d4"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\antes\\app\\(admin)\\reports.tsx.txt",
+    "sha256": "db44af7472e457afdd5d646ecdcbd96e0b945e113c054ab7f44888c79e49c0b9"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\antes\\app\\(doctor)\\dashboard.tsx.txt",
+    "sha256": "7b4ef735e1c8918af2d1067ee4f50ca583621bc7cc1b7c3d5a479a2a92e1055a"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\antes\\app\\(doctor)\\medical-record.tsx.txt",
+    "sha256": "5533f00a6c2375fb1c899e76b96c11659961f0df45fe62ef471d0cc06d623ea4"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\antes\\app\\(patient)\\payment.tsx.txt",
+    "sha256": "8b89b7834b17511a6fdb9e27849774f7af1b15fed9b077e6dea15195a0e1b5c2"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\components\\TriageEvaluation.tsx.txt",
+    "sha256": "5867fbf88b5e3cb2a81625c2e88fb65dc9d43b2ecae2b8ae067c21d2c33e7812"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\utils\\medicalRecord.ts.txt",
+    "sha256": "071e8db2acf2680afed305c26ff8244c9d3a256ed7a67536d8841fe91189d5ad"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\utils\\triagePresentation.ts.txt",
+    "sha256": "80241869b835dba24fd635e552eb424bd4c309778ddfe733d16d563812633478"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\__tests__\\medicalRecord.test.ts.txt",
+    "sha256": "51c1ebce4c0d690bbe42c29b7fe4ebbcf91bd209a2155bd146d7b8946e38549c"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\historial-recetas\\fuentes\\app\\(doctor)\\medical-record.tsx.txt",
+    "sha256": "2c50daf2c0fd6c470a85aab5a91c6091c82cc2e169e8838d59b0aa01d82173b8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\fuentes\\services\\paymentSimulation.ts.txt",
+    "sha256": "7b747aad7833488ace05eec85a2d2491adf1941fb84ff3223b231190060c9290"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\fuentes\\__tests__\\paymentSimulation.test.ts.txt",
+    "sha256": "7966cdc77e0c0d4c08b3a3a3358b4fa1e5dfe5591490d0edd1bcd45a8e4c9d1f"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\pagos\\fuentes\\app\\(patient)\\payment.tsx.txt",
+    "sha256": "7509088f4c4263dbcd98f642d417270606dd479ce0d8087d6022d4d90ffd0dcb"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\fuentes\\utils\\reportStats.ts.txt",
+    "sha256": "31c70692f2b729a6e1ed13d443c8072c703413aecf5a13052a4cd551f03a2325"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\fuentes\\__tests__\\reportStats.test.ts.txt",
+    "sha256": "2d5c67524b1a7da00c2adab85169ce8537eafe08786cbcb6e225ae9acf4a5478"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\reportes\\fuentes\\app\\(admin)\\reports.tsx.txt",
+    "sha256": "678a7ba41002448ffb2464adccd771f6184ffd91b5de1bfd9f5556d96652840d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\components\\SymptomChatbot.tsx.txt",
+    "sha256": "eaca25c0a97ef5acb6a39d3efaa5c2e3f4f2b9180e2c011750cb0410e87d0501"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\utils\\triageWorkflow.ts.txt",
+    "sha256": "ea88526bbdd81f61170525865de1d253d3997b756fa6ce5402c08df972ee293f"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\__tests__\\triageWorkflow.test.ts.txt",
+    "sha256": "eb7696f84985dd56c9f59e5dd47d0e80e17047ad802fa38d66e88db070ca0377"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje\\fuentes\\app\\(doctor)\\dashboard.tsx.txt",
+    "sha256": "4bae1c13cd9988130416462449ff04c347524122e1b56c09df3ccdbef24a0d4e"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\fuentes\\ai-engine\\llm_service.py.txt",
+    "sha256": "af32ab3686a2976c5978e96339e5d53ac1840c147b9f7ba7608821aa66e7cb33"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\fuentes\\ai-engine\\test_unit_llm.py.txt",
+    "sha256": "7a352229484f6d9f28e1e1a4bc11266cffaf93696bcae50789e773a649e5d51d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\triaje-python\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\utils\\userValidation.ts.txt",
+    "sha256": "1037438939dc561f7628218fb3616270535a9200f200f3aa2bca86eb686ed5f1"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\utils\\validation.ts.txt",
+    "sha256": "aa250d6d54f8badc0a2d5d8d4682111bbd8b652895282135ff5f61c9fb243f81"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\__tests__\\loginValidation.test.ts.txt",
+    "sha256": "1a3cf746aee48d94b46b82b10191b091c5e8911e3e41f42b1ac31d58e79752dd"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\usuarios\\fuentes\\__tests__\\userValidation.test.ts.txt",
+    "sha256": "e7d39f9685b235f857c8e7aea326d79caa157aeaf13704b72b85f7253c7eb01e"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\fuentes\\package.json.txt",
+    "sha256": "a2e4e75fb4e73dc3607b8cfcff7ae3702fcdc2e2be856a6fb2ced8c23cde1bec"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\fuentes\\scripts\\record-unit-tests.cjs.txt",
+    "sha256": "d1a5131f1fcb26f3510878bef50a9943839526a1485296ca4bf74b4195246b4d"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\fuentes\\utils\\consultationRules.ts.txt",
+    "sha256": "4d261f1d5fed79f696795bb74bf7f38f2571856bd058f77a03876fbf4c437ff5"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\fuentes\\__tests__\\consultationRules.test.ts.txt",
+    "sha256": "d6ca7cc59c93cbf24c676dc4d0d95b1f6476cda460d9583e89337e70d13d59d4"
+  },
+  {
+    "archivo": "evidencias\\pruebas-completas\\videoconsultas\\fuentes\\app\\(patient)\\waiting-room.tsx.txt",
+    "sha256": "b428014f2e0393e91cd5726250d5d20765481d98a58829f01218e2e112de9c32"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\entorno.json",
+    "sha256": "9596193cab9ed91ff38e175dac6b54f4f0cbc30a7d657dfa6ca7b2b72251f4a3"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\extraccion-validaciones.patch",
+    "sha256": "eb0d6d07fc8a0654abef3b7d2f084ca98ed6778bae498445194863b19efafc93"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fecha-final.txt",
+    "sha256": "33d5ef5c3f45e0a7e4908bfb22b722fd350c136362b447469d987a4a21cfdcb2"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fecha-inicial.txt",
+    "sha256": "0f5bd221e5e1cee35920105a024241cb84b845b674c4bedbb04ee0e7387d3480"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\final.json",
+    "sha256": "443598ca15bd8fd6c3c0e1f2f7e19b36a73e7232c45d2529a496677b3719db9b"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\final.log",
+    "sha256": "add38376d021ca29f795fae504b141b8b120207738d4e52af31da264fc296747"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\informe-usuarios.md",
+    "sha256": "0344b6fb073f12c36938dcca25de3dc45ae71a76352929c0927731079e146085"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\inicial.json",
+    "sha256": "cced0c7039ee8558aa7ef6eb00378eefa27643b6e4e5a019178e7ef056a8e2f5"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\inicial.log",
+    "sha256": "adb63392fff6dd42f69d9aa0f2cdc615a51afbd645b21d14855cdcce1d1cf384"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\referencia-pdf.txt",
+    "sha256": "bfb21232d7a6a2f9420ae9d41b635d8f7381d70f079c7a3a8f96e5dfc6aaaed1"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\usos-en-pantallas.txt",
+    "sha256": "709719a86238870fad05256c7fedd716e0bf61d5ed9590bc085c1ccf5947a399"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fuentes\\jest.config.js.txt",
+    "sha256": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fuentes\\utils\\userValidation.ts.txt",
+    "sha256": "1037438939dc561f7628218fb3616270535a9200f200f3aa2bca86eb686ed5f1"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fuentes\\utils\\validation.ts.txt",
+    "sha256": "aa250d6d54f8badc0a2d5d8d4682111bbd8b652895282135ff5f61c9fb243f81"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fuentes\\__tests__\\loginValidation.test.ts.txt",
+    "sha256": "1a3cf746aee48d94b46b82b10191b091c5e8911e3e41f42b1ac31d58e79752dd"
+  },
+  {
+    "archivo": "evidencias\\pruebas-usuarios\\fuentes\\__tests__\\userValidation.test.ts.txt",
+    "sha256": "e7d39f9685b235f857c8e7aea326d79caa157aeaf13704b72b85f7253c7eb01e"
+  },
+  {
+    "archivo": "output\\documents\\Informe_detallado_pruebas_unitarias_telemedicina.docx",
+    "sha256": "b60e974d3d0f33355d7fe332925eb3cb745e5b39236f4e12d23ebd276eb2355e"
+  },
+  {
+    "archivo": "output\\documents\\Pruebas_unitarias_RUP2_resultados_actualizados.docx",
+    "sha256": "1b5be2384c907b31f8997f35cb27f03aa8cc69c6c7bef1431bf40353f9e0f644"
+  },
+  {
+    "archivo": "output\\documents\\Pruebas_unitarias_usuarios_capitulo_y_apendice.docx",
+    "sha256": "09595270ec41282ed892fd8dd726eac061da7712be9306186aec87df94a154c7"
+  },
+  {
+    "archivo": "output\\documents\\Pruebas_unitarias_usuarios_formato_RUP2.docx",
+    "sha256": "d2d8dfe1c1b88059b1996fa6d7d1b9594b1c4b79acce8b545c3eb28a192d6ae3"
+  }
+]

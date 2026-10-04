@@ -1,0 +1,344 @@
+diff --git a/app/(admin)/reports.tsx b/app/(admin)/reports.tsx
+index d447b9e..6b47bff 100644
+--- a/app/(admin)/reports.tsx
++++ b/app/(admin)/reports.tsx
+@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
+ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { Ionicons } from '@expo/vector-icons';
+ import { supabase } from '@/lib/supabase';
++import { calculateReportStats } from '@/utils/reportStats';
+ import { router } from 'expo-router';
+ 
+ export default function AdminReportsScreen() {
+@@ -31,24 +32,7 @@ export default function AdminReportsScreen() {
+       if (error) throw error;
+ 
+       if (data) {
+-        const total = data.length;
+-        const critical = data.filter(t => t.urgency_level === 'Critical').length;
+-        const medium = data.filter(t => t.urgency_level === 'Medium').length;
+-        const low = data.filter(t => t.urgency_level === 'Low').length;
+-        
+-        // Simular pacientes que pasaron a pago o completados.
+-        // Asumimos que status = 'waiting' o 'completed' implica pago realizado (50 Bs)
+-        const paidCount = data.filter(t => t.status === 'waiting' || t.status === 'completed' || t.status === 'in_progress').length;
+-        const revenue = paidCount * 50; // 50 Bs por consulta
+-
+-        setStats({
+-          totalTriages: total,
+-          criticalTriages: critical,
+-          mediumTriages: medium,
+-          lowTriages: low,
+-          totalRevenue: revenue,
+-          completedTriages: paidCount
+-        });
++        setStats(calculateReportStats(data));
+       }
+     } catch (err) {
+       console.error('Error al obtener estadísticas:', err);
+diff --git a/app/(doctor)/dashboard.tsx b/app/(doctor)/dashboard.tsx
+index c96de24..f0690a6 100644
+--- a/app/(doctor)/dashboard.tsx
++++ b/app/(doctor)/dashboard.tsx
+@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router } from 'expo-router';
+ import { triageService } from '@/services/triage.service';
++import { filterTriagesBySpecialty } from '@/utils/triageWorkflow';
+ import { supabase } from '@/lib/supabase';
+ import CustomModal from '@/components/CustomModal';
+ 
+@@ -61,17 +62,7 @@ export default function DoctorDashboardScreen() {
+     try {
+       const data = await triageService.getActiveTriages();
+       setRawTriages(data || []);
+-      let filtered = data || [];
+-
+-      // Filtro Inteligente por especialidad (Loose) para atrapar variaciones como "Pediatría" vs "Pediatra"
+-      if (applyFilter && currentSpecialty && currentSpecialty !== 'Medicina General') {
+-        const normalize = (s: string) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
+-        filtered = filtered.filter((t: any) => {
+-          const doc = normalize(currentSpecialty);
+-          const ai = normalize(t.recommended_specialty);
+-          return ai === doc || ai.includes(doc) || doc.includes(ai) || (ai.length > 4 && ai.substring(0, 5) === doc.substring(0, 5));
+-        });
+-      }
++      const filtered = filterTriagesBySpecialty(data || [], currentSpecialty, applyFilter);
+       
+       setTriages(filtered);
+     } catch (error: any) {
+diff --git a/app/(doctor)/medical-record.tsx b/app/(doctor)/medical-record.tsx
+index 96e2b84..a9d3746 100644
+--- a/app/(doctor)/medical-record.tsx
++++ b/app/(doctor)/medical-record.tsx
+@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, SafeAr
+ import { Ionicons } from '@expo/vector-icons';
+ import { router, useLocalSearchParams } from 'expo-router';
+ import { supabase } from '@/lib/supabase';
++import { hasClinicalRecordFields, generatePrescriptionHtml } from '@/utils/medicalRecord';
+ import CustomModal from '@/components/CustomModal';
+ import * as Print from 'expo-print';
+ import * as Sharing from 'expo-sharing';
+@@ -77,92 +78,10 @@ export default function MedicalRecordScreen() {
+     fetchInitialData();
+   }, []);
+ 
+-  const generatePdfTemplate = (pharmacyName: string) => {
+-    const currentDate = new Date().toLocaleDateString('es-BO', {
+-      day: '2-digit',
+-      month: 'long',
+-      year: 'numeric'
+-    });
+-
+-    return `
+-      <!DOCTYPE html>
+-      <html>
+-      <head>
+-        <meta charset="utf-8">
+-        <title>Receta Médica Digital</title>
+-        <style>
+-          body { font-family: 'Arial', sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+-          .header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px; }
+-          .header h1 { margin: 0; color: #0f172a; font-size: 22px; text-transform: uppercase; }
+-          .header h2 { margin: 4px 0 0; color: #2563eb; font-size: 15px; }
+-          .header p { margin: 4px 0 0; color: #64748b; font-size: 12px; }
+-          .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+-          .meta-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+-          .meta-label { font-weight: bold; color: #475569; width: 30%; }
+-          .section { margin-bottom: 20px; background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #2563eb; }
+-          .section-title { font-size: 13px; font-weight: bold; color: #2563eb; text-transform: uppercase; margin-bottom: 8px; }
+-          .section-content { font-size: 14px; color: #0f172a; white-space: pre-wrap; }
+-          .pharmacy-box { background: #ecfdf5; border: 1px solid #a7f3d0; padding: 14px; border-radius: 8px; margin-top: 16px; }
+-          .pharmacy-title { font-weight: bold; color: #065f46; font-size: 12px; text-transform: uppercase; }
+-          .pharmacy-name { color: #047857; font-size: 14px; margin-top: 4px; font-weight: bold; }
+-          .footer { margin-top: 50px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 24px; }
+-          .signature-line { width: 200px; border-top: 1px solid #0f172a; margin: 0 auto 8px; }
+-          .signature-title { font-size: 13px; font-weight: bold; color: #0f172a; }
+-          .signature-sub { font-size: 11px; color: #64748b; }
+-        </style>
+-      </head>
+-      <body>
+-        <div class="header">
+-          <h1>Gobierno Autónomo Municipal de Cochabamba</h1>
+-          <h2>Sistema de Telemedicina IA & Red Salud UNIVALLE</h2>
+-          <p>Receta Médica y Prescripción Digital</p>
+-        </div>
+-
+-        <table class="meta-table">
+-          <tr>
+-            <td class="meta-label">Paciente:</td>
+-            <td><strong>${patientName}</strong></td>
+-          </tr>
+-          <tr>
+-            <td class="meta-label">Médico Tratante:</td>
+-            <td><strong>${doctorName}</strong></td>
+-          </tr>
+-          <tr>
+-            <td class="meta-label">Fecha de Emisión:</td>
+-            <td>${currentDate}</td>
+-          </tr>
+-        </table>
+-
+-        <div class="section">
+-          <div class="section-title">Diagnóstico Clínico</div>
+-          <div class="section-content">${diagnosis}</div>
+-        </div>
+-
+-        <div class="section" style="border-left-color: #10b981;">
+-          <div class="section-title" style="color: #10b981;">Plan de Tratamiento y Receta</div>
+-          <div class="section-content">${treatment}</div>
+-        </div>
+-
+-        ${pharmacyName ? `
+-          <div class="pharmacy-box">
+-            <div class="pharmacy-title">Farmacia Aliada Sugerida</div>
+-            <div class="pharmacy-name">${pharmacyName}</div>
+-          </div>
+-        ` : ''}
+-
+-        <div class="footer">
+-          <div class="signature-line"></div>
+-          <div class="signature-title">${doctorName}</div>
+-          <div class="signature-sub">Firma y Registro Médico Digital</div>
+-          <p style="font-size: 10px; color: #94a3b8; margin-top: 16px;">Documento oficial expedido electrónicamente por el G.A.M. Cochabamba.</p>
+-        </div>
+-      </body>
+-      </html>
+-    `;
+-  };
++
+ 
+   const handleGenerateAndSharePdf = async () => {
+-    if (!diagnosis || !treatment) {
++    if (!hasClinicalRecordFields(diagnosis, treatment)) {
+       setModalConfig({
+         visible: true,
+         title: 'Campos requeridos',
+@@ -178,7 +97,7 @@ export default function MedicalRecordScreen() {
+     setGeneratingPdf(true);
+     try {
+       const selectedPharm = pharmacies.find(p => p.id === selectedPharmacy);
+-      const htmlContent = generatePdfTemplate(selectedPharm ? selectedPharm.name : '');
++      const htmlContent = generatePrescriptionHtml({ patientName, doctorName, diagnosis, treatment, pharmacyName: selectedPharm ? selectedPharm.name : '' });
+       const { uri } = await Print.printToFileAsync({ html: htmlContent });
+ 
+       setGeneratedPdfUri(uri);
+@@ -217,7 +136,7 @@ export default function MedicalRecordScreen() {
+   };
+ 
+   const handleSaveRecord = async () => {
+-    if (!diagnosis || !treatment) {
++    if (!hasClinicalRecordFields(diagnosis, treatment)) {
+       setModalConfig({
+         visible: true,
+         title: 'Campos requeridos',
+@@ -252,7 +171,7 @@ export default function MedicalRecordScreen() {
+       let pdfFileUrl = generatedPdfUri;
+       if (!pdfFileUrl) {
+         const selectedPharm = pharmacies.find(p => p.id === selectedPharmacy);
+-        const htmlContent = generatePdfTemplate(selectedPharm ? selectedPharm.name : '');
++        const htmlContent = generatePrescriptionHtml({ patientName, doctorName, diagnosis, treatment, pharmacyName: selectedPharm ? selectedPharm.name : '' });
+         const { uri } = await Print.printToFileAsync({ html: htmlContent });
+         pdfFileUrl = uri;
+       }
+diff --git a/app/(patient)/payment.tsx b/app/(patient)/payment.tsx
+index c041cce..8fbb97d 100644
+--- a/app/(patient)/payment.tsx
++++ b/app/(patient)/payment.tsx
+@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform }
+ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router, useLocalSearchParams } from 'expo-router';
+-import { supabase } from '@/lib/supabase';
++import { markSimulatedPaymentWaiting } from '@/services/paymentSimulation';
+ 
+ export default function PaymentScreen() {
+   const { triageId } = useLocalSearchParams();
+@@ -19,18 +19,7 @@ export default function PaymentScreen() {
+     // Simular el tiempo que toma el Webhook del banco en validar la transacción
+     setTimeout(async () => {
+       
+-      try {
+-        // En un caso real, un webhook actualizaría la BD. Aquí lo simulamos:
+-        if (triageId) {
+-           // Cambiar el estado del triaje para que entre formalmente a la cola
+-           await supabase
+-             .from('triages')
+-             .update({ status: 'waiting' })
+-             .eq('id', triageId);
+-        }
+-      } catch (err) {
+-        console.error("Error updating triage status mock:", err);
+-      }
++      await markSimulatedPaymentWaiting(triageId);
+ 
+       setLoading(false);
+       setPaymentSuccess(true);
+diff --git a/app/(patient)/waiting-room.tsx b/app/(patient)/waiting-room.tsx
+index 70d6355..054a358 100644
+--- a/app/(patient)/waiting-room.tsx
++++ b/app/(patient)/waiting-room.tsx
+@@ -1,4 +1,5 @@
+ import { supabase } from '@/lib/supabase';
++import { isClosedTriage, isDoctorReadyForCall } from '@/utils/consultationRules';
+ import { Ionicons } from '@expo/vector-icons';
+ import { router, useLocalSearchParams } from 'expo-router';
+ import React, { useEffect, useState, useRef } from 'react';
+@@ -62,7 +63,7 @@ export default function WaitingRoomScreen() {
+         return;
+       }
+ 
+-      if (triageData.status === 'completed' || triageData.status === 'resolved') {
++      if (isClosedTriage(triageData.status)) {
+         setNoActiveRoom(true);
+         setLoading(false);
+         return;
+@@ -94,7 +95,7 @@ export default function WaitingRoomScreen() {
+       }
+ 
+       // El médico está listo si el triaje pasó a in_progress O si ya existe una cita en appointments
+-      const ready = triageData?.status === 'in_progress' || !!apptData;
++      const ready = isDoctorReadyForCall(triageData?.status, apptData);
+       if (ready) {
+         setIsDoctorReady(true);
+       }
+diff --git a/components/SymptomChatbot.tsx b/components/SymptomChatbot.tsx
+index 55634f1..57b5a4e 100644
+--- a/components/SymptomChatbot.tsx
++++ b/components/SymptomChatbot.tsx
+@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
+ import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+ import { Ionicons } from '@expo/vector-icons';
+ import { triageService } from '@/services/triage.service';
++import { normalizeSymptomText, buildSymptomReport } from '@/utils/triageWorkflow';
+ import { router } from 'expo-router';
+ import { supabase } from '@/lib/supabase';
+ import CustomModal from '@/components/CustomModal';
+@@ -168,9 +169,9 @@ export default function SymptomChatbot() {
+   }
+ 
+   const sendMessage = async () => {
+-    if (inputText.trim().length === 0) return;
++    if (normalizeSymptomText(inputText).length === 0) return;
+ 
+-    const currentText = inputText.trim();
++    const currentText = normalizeSymptomText(inputText);
+ 
+     const userMessage: Message = {
+       id: Date.now().toString(),
+@@ -211,7 +212,7 @@ export default function SymptomChatbot() {
+       }, 300);
+     } else if (chatStep === 2) {
+       // Paso final: Juntar todo y enviar a Supabase
+-      const finalSymptomReport = `Síntomas principales: ${collectedData.main}\nTiempo/Intensidad: ${collectedData.time}\nMedicamentos previos: ${currentText}`;
++      const finalSymptomReport = buildSymptomReport(collectedData.main, collectedData.time, currentText);
+ 
+       try {
+         // 1. Consultar a nuestro nuevo Motor IA (FastAPI)
+diff --git a/components/TriageEvaluation.tsx b/components/TriageEvaluation.tsx
+index a4883dd..0d03d12 100644
+--- a/components/TriageEvaluation.tsx
++++ b/components/TriageEvaluation.tsx
+@@ -1,4 +1,5 @@
+ import React from 'react';
++import { prepareTriageView } from '@/utils/triagePresentation';
+ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+ import { SafeAreaView } from 'react-native-safe-area-context';
+ import { Ionicons } from '@expo/vector-icons';
+@@ -6,35 +7,7 @@ import { router } from 'expo-router';
+ 
+ export default function TriageEvaluation({ onBack, triage }: { onBack?: () => void; triage?: any }) {
+   // Usamos los datos reales si existen, o datos de respaldo si venimos sin parámetros
+-  const triageData = triage ? {
+-    patient: {
+-      full_name: triage.patients?.profiles?.full_name || "Desconocido",
+-      identity_card: triage.patients?.profiles?.identity_card || "No registrado",
+-      blood_type: triage.patients?.blood_type || "No especificado",
+-      allergies: triage.patients?.allergies || "No reportadas",
+-      emergency_contact: triage.patients?.emergency_contact || "No reportado"
+-    },
+-    symptoms: triage.reported_symptoms || "Sin síntomas reportados",
+-    ai_analysis: {
+-      urgency_level: triage.urgency_level || "Medium",
+-      raw_analysis: triage.ai_raw_analysis || "Sin análisis.",
+-      recommendation: triage.ai_recommendation || "Sin recomendación."
+-    }
+-  } : {
+-    patient: {
+-      full_name: "Juan Perez",
+-      identity_card: "12345678",
+-      blood_type: "O+",
+-      allergies: "Penicilina",
+-      emergency_contact: "70012345"
+-    },
+-    symptoms: "Datos de prueba...",
+-    ai_analysis: {
+-      urgency_level: "Critical",
+-      raw_analysis: "Análisis de prueba...",
+-      recommendation: "Recomendación de prueba..."
+-    }
+-  };
++  const triageData = prepareTriageView(triage);
+ 
+   const isCritical = triageData.ai_analysis.urgency_level === 'Critical';
+ 

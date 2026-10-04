@@ -1,0 +1,40 @@
+import type { ValidationResult } from './validation';
+
+export interface RegistrationFields {
+  email: string;
+  password: string;
+  fullName: string;
+  identityCard: string;
+  phoneNumber: string;
+  address: string;
+  isDoctor: boolean;
+  selectedSpecialty: string;
+  document: object | null;
+}
+
+// Reglas existentes de handleRegister, sin modificar el tratamiento de espacios.
+export function validateRegistrationFields(fields: RegistrationFields): ValidationResult {
+  const { email, password, fullName, identityCard, phoneNumber, address,
+    isDoctor, selectedSpecialty, document } = fields;
+  if (!email || !password || !fullName || !identityCard || !phoneNumber || !address) {
+    return { isValid: false, error: 'Por favor completa todos los campos comunes.' };
+  }
+  if (isDoctor && (!selectedSpecialty || !document)) {
+    return { isValid: false, error: 'Por favor selecciona una especialidad y adjunta tu título.' };
+  }
+  return { isValid: true };
+}
+
+export function validatePatientProfileFields(phoneNumber: string, address: string): ValidationResult {
+  if (!phoneNumber || !address) {
+    return { isValid: false, error: 'Por favor completa el número de teléfono y la dirección.' };
+  }
+  return { isValid: true };
+}
+
+export function validateDoctorProfileFields(fullName: string, phoneNumber: string): ValidationResult {
+  if (!fullName.trim() || !phoneNumber.trim()) {
+    return { isValid: false, error: 'El nombre y el celular no pueden estar vacíos' };
+  }
+  return { isValid: true };
+}

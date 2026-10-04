@@ -1,0 +1,28 @@
+{
+  "fechaUTC": "2026-09-30T21:33:36.431536+00:00",
+  "archivos": [
+    {
+      "archivo": "Pruebas_unitarias_RUP2_resultados_actualizados.docx",
+      "sha256": "1b5be2384c907b31f8997f35cb27f03aa8cc69c6c7bef1431bf40353f9e0f644",
+      "paginas": 23,
+      "revisionVisualTodasLasPaginas": true,
+      "textoCortadoDetectado": false,
+      "tablasIlegiblesDetectadas": false
+    },
+    {
+      "archivo": "Informe_detallado_pruebas_unitarias_telemedicina.docx",
+      "sha256": "b60e974d3d0f33355d7fe332925eb3cb745e5b39236f4e12d23ebd276eb2355e",
+      "paginas": 31,
+      "revisionVisualTodasLasPaginas": true,
+      "textoCortadoDetectado": false,
+      "tablasIlegiblesDetectadas": false
+    }
+  ],
+  "metodo": "Exportación de Microsoft Word a PDF y revisión de cada PNG de Poppler a 120 dpi.",
+  "renderizadorEmpaquetado": "No disponible por ausencia de LibreOffice; se utilizó Microsoft Word.",
+  "casosCoincidentes": 69,
+  "tablasCapituloRUP": 2,
+  "referenciasOriginalesPreservadas": true,
+  "figurasPendientes": 15,
+  "estado": "Contenido revisado; evidencias gráficas pendientes de incorporación."
+}

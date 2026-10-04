@@ -1,0 +1,51 @@
+{
+  "heading": "3.3.1",
+  "counts": [
+    9,
+    12,
+    4,
+    5
+  ],
+  "sources": {
+    "utils/validation.ts": "aa250d6d54f8badc0a2d5d8d4682111bbd8b652895282135ff5f61c9fb243f81",
+    "utils/userValidation.ts": "1037438939dc561f7628218fb3616270535a9200f200f3aa2bca86eb686ed5f1",
+    "__tests__/loginValidation.test.ts": "1a3cf746aee48d94b46b82b10191b091c5e8911e3e41f42b1ac31d58e79752dd",
+    "__tests__/userValidation.test.ts": "e7d39f9685b235f857c8e7aea326d79caa157aeaf13704b72b85f7253c7eb01e",
+    "jest.config.js": "7c9b6b2555624fda9ce561e3cc6235e5b98bcf0851bf48da723ddd966a61f8c8"
+  },
+  "reference_hash": "7dbea4834f980d1c137c88946eec2b5626e8564a9a49ce3f8112b285c37615a6",
+  "cases": {
+    "PU-06": "PU-06 rechaza ambos argumentos ausentes",
+    "PU-07": "PU-07 rechaza ambos argumentos ausentes",
+    "PU-08": "PU-08 acepta correo rodeado de espacios",
+    "PU-09": "PU-09 no considera vacía una contraseña formada por espacios",
+    "PU-10": "PU-10 rechaza el campo común vacío: email",
+    "PU-11": "PU-11 rechaza el campo común vacío: password",
+    "PU-12": "PU-12 rechaza el campo común vacío: fullName",
+    "PU-13": "PU-13 rechaza el campo común vacío: identityCard",
+    "PU-14": "PU-14 rechaza el campo común vacío: phoneNumber",
+    "PU-15": "PU-15 rechaza el campo común vacío: address",
+    "PU-16": "PU-16 acepta paciente completo sin título ni especialidad",
+    "PU-17": "PU-17 rechaza médico sin especialidad o título",
+    "PU-18": "PU-18 rechaza médico sin especialidad o título",
+    "PU-19": "PU-19 acepta médico con campos y requisitos completos",
+    "PU-20": "PU-20 prioriza campos comunes ante varios requisitos ausentes",
+    "PU-21": "PU-21 documenta que el registro acepta un nombre de solo espacios",
+    "PU-22": "PU-22 rechaza teléfono o dirección vacíos",
+    "PU-23": "PU-23 rechaza teléfono o dirección vacíos",
+    "PU-24": "PU-24 acepta teléfono y dirección completos",
+    "PU-25": "PU-25 documenta que el perfil de paciente acepta espacios",
+    "PU-26": "PU-26 rechaza nombre o celular vacío o de solo espacios",
+    "PU-27": "PU-27 rechaza nombre o celular vacío o de solo espacios",
+    "PU-28": "PU-28 rechaza nombre o celular vacío o de solo espacios",
+    "PU-29": "PU-29 rechaza nombre o celular vacío o de solo espacios",
+    "PU-30": "PU-30 acepta nombre y celular completos rodeados de espacios",
+    "PU-01": "debe rechazar cuando el correo y la contraseña están vacíos",
+    "PU-02": "debe rechazar cuando el correo está completo pero la contraseña está vacía",
+    "PU-03": "debe rechazar cuando el correo está vacío pero la contraseña está completa",
+    "PU-04": "debe rechazar y considerar vacío cuando el correo está compuesto solo por espacios",
+    "PU-05": "debe superar la validación de campos obligatorios cuando ambos campos están completos"
+  },
+  "screenshots": [],
+  "status": "Borrador pendiente de capturas reales; no se insertaron marcadores gráficos en el texto académico."
+}
