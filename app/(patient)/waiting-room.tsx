@@ -69,6 +69,7 @@ export default function WaitingRoomScreen() {
       }
       
       setTriage(triageData);
+      setNoActiveRoom(false);
 
       // 2. Verificar si hay cita creada para este triaje
       const { data: apptData, error: apptError } = await supabase
@@ -109,32 +110,36 @@ export default function WaitingRoomScreen() {
   useEffect(() => {
     let resolvedId = triageId;
     const init = async () => {
+      setLoading(true);
+      setNoActiveRoom(false);
+      hasNavigated.current = false;
+
       if (!resolvedId) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: latest, error: latestError } = await supabase
-          .from('triages')
-          .select('id')
-          .eq('patient_id', user.id)
-          .in('status', ['pending', 'waiting', 'in_progress'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-          
-        if (latestError) {
-          console.warn('Error obteniendo último triaje:', latestError);
-        }
+            .from('triages')
+            .select('id')
+            .eq('patient_id', user.id)
+            .in('status', ['pending', 'waiting', 'in_progress'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+            
+          if (latestError) {
+            console.warn('Error obteniendo último triaje:', latestError);
+          }
 
-        if (latest?.id) {
-          resolvedId = latest.id;
-          setActiveTriageId(latest.id);
-        }
+          if (latest?.id) {
+            resolvedId = latest.id;
+            setActiveTriageId(latest.id);
+          }
         }
       } else {
         setActiveTriageId(resolvedId);
       }
 
-      if (resolvedId && !noActiveRoom) {
+      if (resolvedId) {
         await checkStatus(resolvedId);
       } else {
         // Si al final del proceso no tenemos un ID de triaje válido, no hay sala activa

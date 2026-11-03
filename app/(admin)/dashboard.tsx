@@ -277,7 +277,7 @@ export default function AdminDashboardScreen() {
 
       setModalConfig({
         visible: true,
-        title: 'Médico Aprobado ✅',
+        title: 'Médico Aprobado',
         message: 'La cuenta médica ha sido activada exitosamente y la especialidad ha sido asignada. El médico ya puede iniciar sesión.',
         type: 'alert',
         confirmText: 'Genial',

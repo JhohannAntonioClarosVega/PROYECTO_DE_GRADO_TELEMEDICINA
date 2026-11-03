@@ -20,10 +20,19 @@ type Message = {
   timestamp: Date;
 };
 
+type TriageData = {
+  detected_language: string;
+  standardized_symptoms: string;
+  urgency_level: string;
+  ai_recommendation: string;
+  recommended_specialty: string;
+};
+
 export default function SymptomChatbot() {
   const insets = useSafeAreaInsets();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // Mensaje inicial de bienvenida
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -43,14 +52,10 @@ export default function SymptomChatbot() {
       Speech.speak(text, { language: 'es-BO', rate: 1.0 });
     }
   };
+
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [chatStep, setChatStep] = useState(0);
-  const [collectedData, setCollectedData] = useState({
-    main: '',
-    time: '',
-    meds: ''
-  });
+  const [pendingTriage, setPendingTriage] = useState<TriageData | null>(null);
   const [createdTriageId, setCreatedTriageId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const [alertVisible, setAlertVisible] = useState(false);
@@ -66,7 +71,6 @@ export default function SymptomChatbot() {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Buscar el registro del paciente asociado a este usuario
         const { data: patientData } = await supabase
           .from('patients')
           .select('id')
@@ -75,7 +79,6 @@ export default function SymptomChatbot() {
         if (patientData) {
           setCurrentUserId(patientData.id);
         } else {
-          // Fallback: usar el user.id directamente
           setCurrentUserId(user.id);
         }
       }
@@ -167,8 +170,113 @@ export default function SymptomChatbot() {
     }
   }
 
+  // Guardar el triaje en Supabase y activar botón de pago
+  const commitTriage = async (triageData: TriageData) => {
+    try {
+      setIsTyping(true);
+      const userText = messages
+        .filter(m => m.sender === 'user')
+        .map(m => m.text)
+        .join('\n');
+
+      const result = await triageService.createTriage({
+        patient_id: currentUserId || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
+        reported_symptoms: triageData.standardized_symptoms || userText || 'Consulta general de telemedicina',
+        ai_raw_analysis: triageData.standardized_symptoms || userText,
+        urgency_level: (triageData.urgency_level as any) || 'Medium',
+        ai_recommendation: triageData.ai_recommendation || 'Evaluación médica ambulatoria recomendada.',
+        detected_language: triageData.detected_language || 'Español',
+        recommended_specialty: triageData.recommended_specialty || 'Medicina General'
+      });
+
+      if (result && result.id) {
+        setCreatedTriageId(result.id);
+        // Redirigir automáticamente a la sala de espera de la videollamada tras 1.5 segundos
+        setTimeout(() => {
+          router.replace({
+            pathname: '/(patient)/waiting-room' as any,
+            params: { triageId: result.id }
+          });
+        }, 1500);
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          text: `¡Ficha de triaje generada con éxito!\n\nEspecialidad recomendada: ${triageData.recommended_specialty}\nNivel de prioridad: ${triageData.urgency_level}\nRecomendación: ${triageData.ai_recommendation}\n\nIngresando a la sala de espera para aguardar al médico de turno...`,
+          quechuaText: `¡Ñañam qillqapusqayki unquyniykimanta (${triageData.recommended_specialty})! Suyana wasiman yaykuchkanki hampiqwan rimanaykipaq...`,
+          sender: 'bot',
+          timestamp: new Date()
+        }
+      ]);
+    } catch (error: any) {
+      console.error('Error guardando triaje en Supabase:', error);
+      setAlertMessage('Error al guardar el triaje: ' + (error?.message || JSON.stringify(error)));
+      setAlertVisible(true);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Solicitar finalizar triaje directamente
+  const handleRequestFinishTriage = async () => {
+    if (isTyping) return;
+    if (pendingTriage) {
+      await commitTriage(pendingTriage);
+      return;
+    }
+
+    setIsTyping(true);
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_AI_API_URL || 'http://localhost:8000';
+      const payloadMessages = messages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
+
+      const res = await fetch(`${apiUrl}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Bypass-Tunnel-Reminder': 'true',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          patient_id: currentUserId || 'guest',
+          messages: payloadMessages,
+          finish_triage: true
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error en el asistente (${res.status})`);
+      }
+
+      const data = await res.json();
+      if (data.triage_data) {
+        await commitTriage(data.triage_data);
+      } else {
+        const userSummary = messages.filter(m => m.sender === 'user').map(m => m.text).join('\n');
+        await commitTriage({
+          detected_language: 'Español',
+          standardized_symptoms: userSummary || 'Consulta médica general',
+          urgency_level: 'Medium',
+          ai_recommendation: 'Evaluación médica por videollamada.',
+          recommended_specialty: 'Medicina General'
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAlertMessage('No se pudo finalizar el triaje: ' + (err?.message || err));
+      setAlertVisible(true);
+      setIsTyping(false);
+    }
+  };
+
+  // Enviar mensaje interactivo como asistente de WhatsApp
   const sendMessage = async () => {
-    if (inputText.trim().length === 0) return;
+    if (inputText.trim().length === 0 || isTyping) return;
 
     const currentText = inputText.trim();
 
@@ -179,98 +287,71 @@ export default function SymptomChatbot() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInputText('');
     setIsTyping(true);
 
-    if (chatStep === 0) {
-      setCollectedData(prev => ({ ...prev, main: currentText }));
-      setChatStep(1);
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          text: 'Comprendo. ¿Hace cuánto tiempo empezaron estos síntomas y del 1 al 10 qué tan fuerte es el malestar?',
-          quechuaText: 'Entiendeni. ¿Hayk\'aqmanta pachataq chay nanaykuna qallarirqan, hinallataq 1manta 10kama, mayna sinchitaq nanasunki?',
-          sender: 'bot',
-          timestamp: new Date()
-        }]);
-        setIsTyping(false);
-      }, 300);
-    } else if (chatStep === 1) {
-      setCollectedData(prev => ({ ...prev, time: currentText }));
-      setChatStep(2);
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          text: 'Entendido. Por último, ¿has tomado algún medicamento el día de hoy para tratar de aliviar esto?',
-          quechuaText: 'Allinmi. Tukupanapaq, ¿Upyarqankichu ima hampitapas kunan p\'unchaw chay nanay ch\'inyachinapaq?',
-          sender: 'bot',
-          timestamp: new Date()
-        }]);
-        setIsTyping(false);
-      }, 300);
-    } else if (chatStep === 2) {
-      // Paso final: Juntar todo y enviar a Supabase
-      const finalSymptomReport = `Síntomas principales: ${collectedData.main}\nTiempo/Intensidad: ${collectedData.time}\nMedicamentos previos: ${currentText}`;
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_AI_API_URL || 'http://localhost:8000';
+      const payloadMessages = nextMessages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
 
-      try {
-        // 1. Consultar a nuestro nuevo Motor IA (FastAPI)
-        const apiUrl = process.env.EXPO_PUBLIC_AI_API_URL || 'http://localhost:8000';
-        const aiResponse = await fetch(`${apiUrl}/api/analyze-symptoms`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Bypass-Tunnel-Reminder': 'true',
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body: JSON.stringify({
-            patient_id: currentUserId || 'guest',
-            reported_symptoms: finalSymptomReport,
-            ...(audioBase64 && { audio_base64: audioBase64 })
-          })
-        });
+      const currentAudio = audioBase64;
+      setAudioBase64(null);
 
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          console.error('API Error:', aiResponse.status, errorText);
-          throw new Error(`Error del servidor (${aiResponse.status}). Verifica la conexión o localtunnel.`);
-        }
+      const res = await fetch(`${apiUrl}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Bypass-Tunnel-Reminder': 'true',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          patient_id: currentUserId || 'guest',
+          messages: payloadMessages,
+          finish_triage: false,
+          ...(currentAudio ? { audio_base64: currentAudio } : {})
+        })
+      });
 
-        const aiData = await aiResponse.json();
-
-        // 2. Guardar el resultado estructurado en Supabase
-        const result = await triageService.createTriage({
-          patient_id: currentUserId || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
-          reported_symptoms: finalSymptomReport,
-          ai_raw_analysis: aiData.standardized_symptoms,
-          urgency_level: aiData.urgency_level as any,
-          ai_recommendation: aiData.ai_recommendation,
-          detected_language: aiData.detected_language,
-          recommended_specialty: aiData.recommended_specialty
-        });
-
-        if (result && result.id) {
-          setCreatedTriageId(result.id);
-        }
-
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            text: '✅ ¡He analizado tus síntomas! Para ingresar a la sala de espera y ser atendido, por favor presiona el botón inferior para proceder al pago.',
-            quechuaText: '✅ ¡Ñañam qillqapusqayki unquyniykimanta! Suyana wasiman yaykunaykipaqqa, ama hina kaspa urapi kaq ñit\'inata ñit\'iy qullqita qunaykipaq.',
-            sender: 'bot',
-            timestamp: new Date()
-          }]);
-          setIsTyping(false);
-        }, 300);
-        
-        setChatStep(3); // Fin de la conversación
-      } catch (error: any) {
-        console.error(error);
-        setIsTyping(false);
-        setAlertMessage('Error de Supabase: ' + (error?.message || JSON.stringify(error)));
-        setAlertVisible(true);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('API Chat Error:', res.status, errorText);
+        throw new Error(`Error del servidor (${res.status})`);
       }
+
+      const data = await res.json();
+
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: data.reply_text || 'Te escucho, por favor cuéntame más.',
+        quechuaText: data.reply_quechua || undefined,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+
+      if (data.is_triage_ready && data.triage_data) {
+        setPendingTriage(data.triage_data);
+      }
+    } catch (error: any) {
+      console.error('Error enviando mensaje al chatbot:', error);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: 'Disculpa, tuve un problema de conexión momentáneo. ¿Podrías volver a escribir tu mensaje?',
+          quechuaText: 'Pampachaway, llika pantay karqan. ¿Kutillatawanchu willariwankiman?',
+          sender: 'bot',
+          timestamp: new Date()
+        }
+      ]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -282,6 +363,8 @@ export default function SymptomChatbot() {
       }, 100);
     }
   }, [messages, isTyping]);
+
+  const userMessagesCount = messages.filter(m => m.sender === 'user').length;
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isBot = item.sender === 'bot';
@@ -334,9 +417,13 @@ export default function SymptomChatbot() {
         <View style={styles.headerIcon}>
           <Ionicons name="hardware-chip" size={24} color="#3b82f6" />
         </View>
-        <View>
+        <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Asistente de Triaje IA</Text>
           <Text style={styles.headerSubtitle}>Gobierno Autónomo Municipal de Cochabamba</Text>
+        </View>
+        <View style={styles.onlineBadge}>
+          <View style={styles.onlineDot} />
+          <Text style={styles.onlineText}>En línea</Text>
         </View>
       </View>
 
@@ -350,27 +437,60 @@ export default function SymptomChatbot() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Indicador de que la IA está "Escribiendo..." */}
+      {/* Indicador de que el Asistente está "Escribiendo..." */}
       {isTyping && (
         <View style={styles.typingIndicator}>
-          <ActivityIndicator size="small" color="#3b82f6" />
-          <Text style={styles.typingText}>La IA está analizando tus síntomas...</Text>
+          <ActivityIndicator size="small" color="#059669" />
+          <Text style={styles.typingText}>El asistente médico está escribiendo...</Text>
         </View>
       )}
 
-      {/* Input para escribir mensajes o botón de sala de espera */}
+      {/* Barra de acción rápida para pasar al médico cuando el triaje está listo o se han compartido síntomas */}
+      {!createdTriageId && (
+        <View style={styles.quickActionBar}>
+          {pendingTriage ? (
+            <TouchableOpacity 
+              style={styles.triageReadyBanner}
+              onPress={() => commitTriage(pendingTriage)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.triageReadyIcon}>
+                <Ionicons name="checkmark-done-circle" size={22} color="#059669" />
+              </View>
+              <View style={styles.triageReadyTextContainer}>
+                <Text style={styles.triageReadyTitle}>
+                  Triaje Listo: <Text style={styles.triageReadySpecialty}>{pendingTriage.recommended_specialty}</Text>
+                </Text>
+                <Text style={styles.triageReadySubtitle}>Toca aquí para pasar a consulta médica</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#059669" />
+            </TouchableOpacity>
+          ) : userMessagesCount >= 1 ? (
+            <TouchableOpacity 
+              style={styles.finishTriageChip}
+              onPress={handleRequestFinishTriage}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="clipboard-outline" size={16} color="#059669" />
+              <Text style={styles.finishTriageChipText}>Finalizar y ser derivado al médico</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      )}
+
+      {/* Input para escribir mensajes o botón directo a sala de espera */}
       {createdTriageId ? (
         <View style={styles.waitingRoomContainer}>
           <TouchableOpacity 
             style={styles.waitingRoomBtn}
-            onPress={() => router.push({
-              pathname: '/(patient)/payment' as any,
+            onPress={() => router.replace({
+              pathname: '/(patient)/waiting-room' as any,
               params: { triageId: createdTriageId }
             })}
             activeOpacity={0.8}
           >
-            <Ionicons name="card" size={20} color="#ffffff" />
-            <Text style={styles.waitingRoomBtnText}>Proceder al Pago</Text>
+            <Ionicons name="videocam" size={20} color="#ffffff" />
+            <Text style={styles.waitingRoomBtnText}>Ingresar a la Sala de Espera</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -383,19 +503,19 @@ export default function SymptomChatbot() {
             onChangeText={setInputText}
             multiline
             maxLength={500}
+            onSubmitEditing={sendMessage}
           />
           <TouchableOpacity
             style={[styles.micButton, isRecording && styles.micButtonRecording]}
             onPress={isRecording ? stopRecording : startRecording}
             activeOpacity={0.8}
-            disabled={chatStep === 3}
           >
             <Ionicons name={isRecording ? "stop" : "mic"} size={20} color={isRecording ? "#ef4444" : "#64748b"} />
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.sendButton, (!inputText.trim() || chatStep === 3) && styles.sendButtonDisabled]} 
+            style={[styles.sendButton, (!inputText.trim() || isTyping) && styles.sendButtonDisabled]} 
             onPress={sendMessage}
-            disabled={!inputText.trim() || chatStep === 3}
+            disabled={!inputText.trim() || isTyping}
             activeOpacity={0.8}
           >
             <Ionicons name="send" size={18} color="#ffffff" style={styles.sendIcon} />
@@ -428,7 +548,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
     shadowColor: '#000',
@@ -440,7 +561,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     padding: 8,
-    marginRight: 8,
+    marginRight: 4,
   },
   headerIcon: {
     width: 40,
@@ -449,19 +570,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#ecfdf5',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
+  },
+  headerInfo: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0f172a',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
-    marginTop: 2,
+    marginTop: 1,
     fontWeight: '500',
+  },
+  onlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981',
+    marginRight: 4,
+  },
+  onlineText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#059669',
   },
   chatContainer: {
     padding: 16,
@@ -518,7 +664,7 @@ const styles = StyleSheet.create({
   messageTextBotQuechua: {
     color: '#059669',
     fontStyle: 'italic',
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 6,
   },
   messageFooter: {
@@ -549,19 +695,81 @@ const styles = StyleSheet.create({
   typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
   },
   typingText: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#059669',
     marginLeft: 8,
     fontStyle: 'italic',
+    fontWeight: '500',
+  },
+  quickActionBar: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  triageReadyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1.5,
+    borderColor: '#10b981',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  triageReadyIcon: {
+    marginRight: 10,
+  },
+  triageReadyTextContainer: {
+    flex: 1,
+  },
+  triageReadyTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#065f46',
+  },
+  triageReadySpecialty: {
+    color: '#047857',
+    fontWeight: '800',
+  },
+  triageReadySubtitle: {
+    fontSize: 11,
+    color: '#059669',
+    marginTop: 2,
+  },
+  finishTriageChip: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#059669',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  finishTriageChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#059669',
+    marginLeft: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 12,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
@@ -585,13 +793,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#059669',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
+    marginLeft: 10,
   },
   sendButtonDisabled: {
     backgroundColor: '#cbd5e1',
   },
   sendIcon: {
-    marginLeft: 4,
+    marginLeft: 2,
   },
   waitingRoomContainer: {
     padding: 16,
