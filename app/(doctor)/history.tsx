@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, SafeAreaView, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -20,83 +20,102 @@ interface MedicalRecord {
   } | null;
 }
 
+async function loadRecords(): Promise<MedicalRecord[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('No se pudo encontrar una sesión activa de doctor.');
+  }
+
+  // Paso 1: Traer los registros médicos del doctor
+  const { data: rawRecords, error } = await supabase
+    .from('medical_records')
+    .select('id, diagnosis, treatment_plan, clinical_notes, created_at, patient_id, allied_pharmacy_id')
+    .eq('doctor_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Supabase error en medical_records:', JSON.stringify(error));
+    throw new Error(`Error de base de datos: ${error.message}`);
+  }
+
+  if (!rawRecords || rawRecords.length === 0) {
+    return [];
+  }
+
+  // Paso 2: Traer los perfiles de los pacientes y farmacias
+  const patientIds = [...new Set(rawRecords.map((r: any) => r.patient_id).filter(Boolean))];
+  const pharmacyIds = [...new Set(rawRecords.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
+
+  const [patientsResult, pharmaciesResult] = await Promise.all([
+    patientIds.length > 0
+      ? supabase.from('profiles').select('id, full_name').in('id', patientIds)
+      : Promise.resolve({ data: [] }),
+    pharmacyIds.length > 0
+      ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
+      : Promise.resolve({ data: [] })
+  ]);
+
+  const patientMap: Record<string, string> = {};
+  (patientsResult.data || []).forEach((p: any) => { patientMap[p.id] = p.full_name; });
+
+  const pharmacyMap: Record<string, string> = {};
+  (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
+
+  const formattedRecords: MedicalRecord[] = rawRecords.map((item: any) => ({
+    id: item.id,
+    diagnosis: item.diagnosis || '',
+    treatment_plan: item.treatment_plan || '',
+    clinical_notes: item.clinical_notes || null,
+    created_at: item.created_at,
+    patients: item.patient_id
+      ? { profiles: { full_name: patientMap[item.patient_id] || 'Paciente Desconocido' } }
+      : null,
+    allied_pharmacies: item.allied_pharmacy_id
+      ? { name: pharmacyMap[item.allied_pharmacy_id] || '' }
+      : null
+  }));
+
+  return formattedRecords;
+}
+
 export default function DoctorHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const fetchRecords = async () => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('No se pudo encontrar una sesión activa de doctor.');
-      }
-
-      // Paso 1: Traer los registros médicos del doctor
-      const { data: rawRecords, error } = await supabase
-        .from('medical_records')
-        .select('id, diagnosis, treatment_plan, clinical_notes, created_at, patient_id, allied_pharmacy_id')
-        .eq('doctor_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Supabase error en medical_records:', JSON.stringify(error));
-        throw new Error(`Error de base de datos: ${error.message}`);
-      }
-
-      if (!rawRecords || rawRecords.length === 0) {
-        setRecords([]);
-        return;
-      }
-
-      // Paso 2: Traer los perfiles de los pacientes y farmacias
-      const patientIds = [...new Set(rawRecords.map((r: any) => r.patient_id).filter(Boolean))];
-      const pharmacyIds = [...new Set(rawRecords.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
-
-      const [patientsResult, pharmaciesResult] = await Promise.all([
-        patientIds.length > 0
-          ? supabase.from('profiles').select('id, full_name').in('id', patientIds)
-          : Promise.resolve({ data: [] }),
-        pharmacyIds.length > 0
-          ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
-          : Promise.resolve({ data: [] })
-      ]);
-
-      const patientMap: Record<string, string> = {};
-      (patientsResult.data || []).forEach((p: any) => { patientMap[p.id] = p.full_name; });
-
-      const pharmacyMap: Record<string, string> = {};
-      (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
-
-      const formattedRecords: MedicalRecord[] = rawRecords.map((item: any) => ({
-        id: item.id,
-        diagnosis: item.diagnosis || '',
-        treatment_plan: item.treatment_plan || '',
-        clinical_notes: item.clinical_notes || null,
-        created_at: item.created_at,
-        patients: item.patient_id
-          ? { profiles: { full_name: patientMap[item.patient_id] || 'Paciente Desconocido' } }
-          : null,
-        allied_pharmacies: item.allied_pharmacy_id
-          ? { name: pharmacyMap[item.allied_pharmacy_id] || '' }
-          : null
-      }));
-
-      setRecords(formattedRecords);
-    } catch (err: any) {
-      console.error('Error cargando registros del doctor:', err);
-      setErrorMsg(err.message || 'Error al conectar con el servidor.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const requestVersion = useRef(0);
+  const fetchRecords = useCallback(() => {
+    const version = ++requestVersion.current;
+    return loadRecords()
+      .then(data => {
+        if (version !== requestVersion.current) return;
+        setRecords(data);
+      })
+      .catch((err: unknown) => {
+        if (version !== requestVersion.current) return;
+        console.error('Error cargando registros del doctor:', err);
+        setErrorMsg(
+          err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message
+            ? err.message
+            : 'Error al conectar con el servidor.'
+        );
+      })
+      .finally(() => {
+        if (version === requestVersion.current) setLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
-    fetchRecords();
-  }, []);
+    void fetchRecords();
+    return () => { requestVersion.current += 1; };
+  }, [fetchRecords]);
+
+  const refreshRecords = () => {
+    setLoading(true);
+    setErrorMsg('');
+    void fetchRecords();
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -108,7 +127,7 @@ export default function DoctorHistoryScreen() {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -187,7 +206,7 @@ export default function DoctorHistoryScreen() {
           <Text style={styles.headerTitle}>Pacientes Atendidos</Text>
           <Text style={styles.headerSubtitle}>Registro de atenciones y recetas emitidas</Text>
         </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={fetchRecords} disabled={loading}>
+        <TouchableOpacity style={styles.refreshBtn} onPress={refreshRecords} disabled={loading}>
           <Ionicons name="refresh" size={22} color="#64748b" />
         </TouchableOpacity>
       </View>
@@ -218,7 +237,7 @@ export default function DoctorHistoryScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#ef4444" />
           <Text style={styles.errorText}>{errorMsg}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchRecords}>
+          <TouchableOpacity style={styles.retryBtn} onPress={refreshRecords}>
             <Text style={styles.retryText}>Reintentar</Text>
           </TouchableOpacity>
         </View>

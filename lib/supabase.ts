@@ -7,7 +7,6 @@ import { Platform } from 'react-native'
 if (Platform.OS === 'web' && typeof window === 'undefined') {
   if (typeof (globalThis as any).WebSocket === 'undefined') {
     ;(globalThis as any).WebSocket = class WebSocket {
-      constructor() {}
       send() {}
       close() {}
     }

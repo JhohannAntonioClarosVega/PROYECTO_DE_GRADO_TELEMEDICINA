@@ -1,5 +1,5 @@
 import { Slot, router, usePathname } from 'expo-router';
-import { View, StyleSheet, useWindowDimensions, Platform, TouchableOpacity, Text, SafeAreaView, Alert } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, Platform, TouchableOpacity, Text, SafeAreaView } from 'react-native';
 import Sidebar from '@/components/Sidebar';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';

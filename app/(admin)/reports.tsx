@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
+import { useAdminLoad } from '@/hooks/use-admin-load';
 
 export default function AdminReportsScreen() {
   const [loading, setLoading] = useState(true);
+  const [hasStats, setHasStats] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { runLatest, captureLifetime, isMounted } = useAdminLoad();
   const [stats, setStats] = useState({
     totalTriages: 0,
     criticalTriages: 0,
@@ -16,46 +20,46 @@ export default function AdminReportsScreen() {
     completedTriages: 0
   });
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      // Obtener todos los triajes
-      const { data, error } = await supabase
-        .from('triages')
-        .select('*');
-
+  const fetchStats = useCallback(() => {
+    if (!isMounted()) return Promise.resolve(false);
+    setLoading(true);
+    setLoadError(null);
+    return runLatest(async ({ isCurrent, signal }) => {
+      const { data, error } = await supabase.from('triages').select('*').abortSignal(signal);
+      if (!isCurrent()) return;
       if (error) throw error;
+      if (!data) return;
 
-      if (data) {
-        const total = data.length;
-        const critical = data.filter(t => t.urgency_level === 'Critical').length;
-        const medium = data.filter(t => t.urgency_level === 'Medium').length;
-        const low = data.filter(t => t.urgency_level === 'Low').length;
-        
-        // Simular pacientes que pasaron a pago o completados.
-        // Asumimos que status = 'waiting' o 'completed' implica pago realizado (50 Bs)
-        const paidCount = data.filter(t => t.status === 'waiting' || t.status === 'completed' || t.status === 'in_progress').length;
-        const revenue = paidCount * 50; // 50 Bs por consulta
+      const total = data.length;
+      const critical = data.filter(t => t.urgency_level === 'Critical').length;
+      const medium = data.filter(t => t.urgency_level === 'Medium').length;
+      const low = data.filter(t => t.urgency_level === 'Low').length;
+      // Se conserva el cálculo simulado actual de ingresos y consultas pagadas.
+      const paidCount = data.filter(t => t.status === 'waiting' || t.status === 'completed' || t.status === 'in_progress').length;
+      const revenue = paidCount * 50;
 
-        setStats({
-          totalTriages: total,
-          criticalTriages: critical,
-          mediumTriages: medium,
-          lowTriages: low,
-          totalRevenue: revenue,
-          completedTriages: paidCount
-        });
-      }
-    } catch (err) {
-      console.error('Error al obtener estadísticas:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setStats({
+        totalTriages: total,
+        criticalTriages: critical,
+        mediumTriages: medium,
+        lowTriages: low,
+        totalRevenue: revenue,
+        completedTriages: paidCount
+      });
+      setHasStats(true);
+    }, {
+      onError: (err: unknown) => {
+        console.error('Error al obtener estadísticas:', err);
+        setLoadError('No se pudieron actualizar las estadísticas. Intenta nuevamente.');
+      },
+      onSettled: () => setLoading(false),
+    });
+  }, [runLatest, isMounted]);
+
+  useEffect(() => {
+    const alive = captureLifetime();
+    void Promise.resolve().then(() => { if (alive()) return fetchStats(); });
+  }, [fetchStats, captureLifetime]);
 
   const renderProgressBar = (value: number, total: number, color: string) => {
     const percentage = total === 0 ? 0 : Math.round((value / total) * 100);
@@ -80,12 +84,22 @@ export default function AdminReportsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {loadError && (
+          <View style={styles.infoCard}>
+            <View style={{ flex: 1 }}>
+              <Text accessibilityRole="alert" style={styles.infoCardDesc}>{loadError}</Text>
+              <TouchableOpacity onPress={fetchStats}>
+                <Text style={styles.infoCardTitle}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#3b82f6" />
             <Text style={{ marginTop: 10, color: '#64748b' }}>Generando análisis estadístico...</Text>
           </View>
-        ) : (
+        ) : !hasStats ? null : (
           <>
             <View style={styles.summaryGrid}>
               <View style={styles.summaryCard}>
@@ -108,7 +122,7 @@ export default function AdminReportsScreen() {
             <View style={styles.chartCard}>
               <Text style={styles.cardTitle}>Niveles de Urgencia (Triaje IA)</Text>
               <Text style={styles.cardSubtitle}>Distribución de pacientes según severidad</Text>
-              
+
               <View style={styles.chartRow}>
                 <Text style={styles.chartLabel}>Crítico (Emergencia)</Text>
                 {renderProgressBar(stats.criticalTriages, stats.totalTriages, '#ef4444')}

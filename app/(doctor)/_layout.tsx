@@ -1,9 +1,8 @@
 import { Drawer } from 'expo-router/drawer';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions, Platform } from 'react-native';
 import CustomDrawer from '@/components/CustomDrawer';
-import { usePathname } from 'expo-router';
 
 export default function DoctorLayout() {
   const { width } = useWindowDimensions();
@@ -42,10 +41,10 @@ export default function DoctorLayout() {
           drawerItemStyle: { borderRadius: 12, marginHorizontal: 16, marginVertical: 4 },
         }}
       >
-        <Drawer.Screen name="dashboard" options={{ title: 'Pacientes', drawerIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
-        <Drawer.Screen name="history" options={{ title: 'Historial', drawerIcon: ({ color, size }) => <Ionicons name="folder" size={size} color={color} /> }} />
-        <Drawer.Screen name="patient-records" options={{ title: 'Expedientes', drawerIcon: ({ color, size }) => <Ionicons name="medical" size={size} color={color} /> }} />
-        <Drawer.Screen name="profile" options={{ title: 'Perfil', drawerIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }} />
+        <Drawer.Screen name="dashboard" options={{ title: 'Pacientes', drawerIcon: ({ color, size }) => <Ionicons name="people" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="history" options={{ title: 'Historial', drawerIcon: ({ color, size }) => <Ionicons name="folder" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="patient-records" options={{ title: 'Expedientes', drawerIcon: ({ color, size }) => <Ionicons name="medical" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="profile" options={{ title: 'Perfil', drawerIcon: ({ color, size }) => <Ionicons name="person" size={size} style={{ color }} /> }} />
         <Drawer.Screen name="videocall" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
         <Drawer.Screen name="medical-record" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
       </Drawer>
@@ -74,10 +73,10 @@ export default function DoctorLayout() {
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' }
       }}
     >
-      <Tabs.Screen name="dashboard" options={{ title: 'Pacientes', tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} /> }} />
-      <Tabs.Screen name="history" options={{ title: 'Historial', tabBarIcon: ({ color, size }) => <Ionicons name="folder" size={size} color={color} /> }} />
-      <Tabs.Screen name="patient-records" options={{ title: 'Expedientes', tabBarIcon: ({ color, size }) => <Ionicons name="medical" size={size} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Perfil', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }} />
+      <Tabs.Screen name="dashboard" options={{ title: 'Pacientes', tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="history" options={{ title: 'Historial', tabBarIcon: ({ color, size }) => <Ionicons name="folder" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="patient-records" options={{ title: 'Expedientes', tabBarIcon: ({ color, size }) => <Ionicons name="medical" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Perfil', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} style={{ color }} /> }} />
       <Tabs.Screen name="videocall" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="medical-record" options={{ href: null, headerShown: false }} />
     </Tabs>

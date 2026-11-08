@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Linking, RefreshControl, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, RefreshControl, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { Picker } from '@react-native-picker/picker';
 import CustomModal from '@/components/CustomModal';
 import { WebView } from 'react-native-webview';
+import { useAdminLoad } from '@/hooks/use-admin-load';
 
 interface DoctorItem {
   id: string;
@@ -35,20 +36,21 @@ export default function AdminDashboardScreen() {
   const [activeDoctors, setActiveDoctors] = useState<DoctorItem[]>([]);
   const [rejectedDoctors, setRejectedDoctors] = useState<DoctorItem[]>([]);
   const [allSpecialties, setAllSpecialties] = useState<any[]>([]);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingIds, setProcessingIds] = useState<ReadonlySet<string>>(new Set());
   const [selectedSpecialtiesMap, setSelectedSpecialtiesMap] = useState<Record<string, string>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasSnapshot, setHasSnapshot] = useState(false);
+  const snapshotOwner = useRef<string | null>(null);
+  const operations = useRef(new Map<string, symbol>());
+  const latestOperation = useRef<symbol | null>(null);
+  const modalVersion = useRef(0);
+  const rejectFormVersion = useRef(0);
+  const { runLatest, captureLifetime, isMounted } = useAdminLoad();
 
   // Estado para el flujo de rechazo (Bug 2)
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [rejectingDoctorId, setRejectingDoctorId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-
-  // Estado para gestión de especialidades
-  const [specialtiesModalVisible, setSpecialtiesModalVisible] = useState(false);
-  const [newSpecialtyName, setNewSpecialtyName] = useState('');
-  const [isAddingSpecialty, setIsAddingSpecialty] = useState(false);
-  const [editingSpecialtyId, setEditingSpecialtyId] = useState<string | null>(null);
-  const [editingSpecialtyName, setEditingSpecialtyName] = useState('');
 
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
@@ -66,39 +68,59 @@ export default function AdminDashboardScreen() {
     confirmText: 'Aceptar',
   });
 
-  const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
+  const closeModal = useCallback(() => {
+    if (!isMounted()) return;
+    modalVersion.current += 1;
+    setModalConfig(prev => ({ ...prev, visible: false }));
+  }, [isMounted]);
+
+  const showModal = useCallback((config: typeof modalConfig) => {
+    const alive = captureLifetime();
+    if (!alive()) return;
+    const version = ++modalVersion.current;
+    const valid = () => alive() && modalVersion.current === version;
+    setModalConfig({
+      ...config,
+      onConfirm: () => { if (valid()) return (config.onConfirm || closeModal)(); },
+      onCancel: () => { if (valid()) return (config.onCancel || closeModal)(); },
+    });
+  }, [captureLifetime, closeModal]);
 
   // Estado para visor de documentos
   const [docViewerVisible, setDocViewerVisible] = useState(false);
   const [docViewerUrl, setDocViewerUrl] = useState<string | null>(null);
 
   // Helper para distinguir errores de red vs lógica de base de datos (Problema 4)
-  const handleErrorModal = (err: any, defaultTitle: string) => {
+  const handleErrorModal = useCallback((err: unknown, defaultTitle: string) => {
     console.error(`${defaultTitle}:`, err);
-    const errMsg = (err?.message || '').toLowerCase();
-    const isNetworkError = 
-      errMsg.includes('fetch') || 
-      errMsg.includes('network') || 
+    const details = typeof err === 'object' && err !== null ? err : {};
+    const message = 'message' in details && typeof details.message === 'string' ? details.message : '';
+    const code = 'code' in details && typeof details.code === 'string' ? details.code : undefined;
+    const name = 'name' in details && typeof details.name === 'string' ? details.name : undefined;
+    const errMsg = message.toLowerCase();
+    const isNetworkError =
+      errMsg.includes('fetch') ||
+      errMsg.includes('network') ||
       errMsg.includes('failed to fetch') ||
       errMsg.includes('timeout') ||
       errMsg.includes('connection') ||
-      err?.name === 'TypeError';
+      name === 'TypeError';
 
-    let userMessage = err?.message || 'Ocurrió un error inesperado al procesar la solicitud.';
+    let userMessage = message || 'Ocurrió un error inesperado al procesar la solicitud.';
 
     if (isNetworkError) {
       userMessage = 'Error de conexión. Por favor verifica tu conexión a internet e intenta nuevamente.';
-    } else if (err?.code) {
-      if (err.code === '23503') {
+    } else if (code) {
+      if (code === '23503') {
         userMessage = 'La especialidad médica seleccionada no es válida o no existe en la base de datos.';
-      } else if (err.code === '42501') {
+      } else if (code === '42501') {
         userMessage = 'No tienes permisos de administrador suficientes para realizar esta operación.';
-      } else if (err.code === '23505') {
+      } else if (code === '23505') {
         userMessage = 'Conflicto de clave duplicada en la base de datos.';
       }
     }
 
-    setModalConfig({
+    showModal({
       visible: true,
       title: defaultTitle,
       message: userMessage,
@@ -106,45 +128,83 @@ export default function AdminDashboardScreen() {
       confirmText: 'Entendido',
       onConfirm: closeModal
     });
-  };
+  }, [closeModal, showModal]);
 
-  const checkAdminAndFetchData = useCallback(async () => {
+  const clearSnapshot = useCallback(() => {
+    snapshotOwner.current = null;
+    setHasSnapshot(false);
+    setAllSpecialties([]);
+    setPendingDoctors([]);
+    setActiveDoctors([]);
+    setRejectedDoctors([]);
+    setSelectedSpecialtiesMap({});
+    setProcessingIds(new Set());
+    rejectFormVersion.current += 1;
+    latestOperation.current = null;
+    setRejectModalVisible(false);
+    setRejectingDoctorId(null);
+    setRejectReason('');
+    setDocViewerVisible(false);
+    setDocViewerUrl(null);
+    closeModal();
+  }, [closeModal]);
+
+  const checkAdminAndFetchData = useCallback(() => {
+    if (!isMounted()) return Promise.resolve(false);
     setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+    setLoadError(null);
+    let identityVerified = false;
+    return runLatest(async ({ isCurrent, signal }) => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (!isCurrent()) return;
+      if (authError) {
+        clearSnapshot();
+        setIsAdmin(null);
+        throw authError;
+      }
       if (!user) {
+        clearSnapshot();
         setIsAdmin(false);
-        setLoading(false);
         return;
       }
+      if (snapshotOwner.current !== user.id) clearSnapshot();
 
       // 1. Verificar si el usuario es Admin
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
+        .abortSignal(signal)
         .single();
 
+      if (!isCurrent()) return;
+      if (profileError) {
+        clearSnapshot();
+        setIsAdmin(null);
+        throw profileError;
+      }
       if (profile?.role !== 'admin') {
+        clearSnapshot();
+        setIsAdmin(false);
         if (profile?.role === 'doctor') {
           router.replace('/(doctor)/dashboard');
           return;
         }
-        setIsAdmin(false);
-        setLoading(false);
         return;
       }
 
       setIsAdmin(true);
+      identityVerified = true;
 
       // 2. Cargar Especialidades disponibles
       const { data: specData, error: specErr } = await supabase
         .from('specialties')
         .select('id, name')
-        .order('name');
+        .order('name')
+        .abortSignal(signal);
 
+      if (!isCurrent()) return;
       if (specErr) throw specErr;
-      if (specData) setAllSpecialties(specData);
 
       // 3. Cargar Médicos pendientes de aprobación (is_active = false Y rejection_reason IS NULL)
       const { data: pendingData, error: pendingErr } = await supabase
@@ -163,8 +223,10 @@ export default function AdminDashboardScreen() {
           )
         `)
         .eq('is_active', false)
-        .is('rejection_reason', null);
+        .is('rejection_reason', null)
+        .abortSignal(signal);
 
+      if (!isCurrent()) return;
       if (pendingErr) throw pendingErr;
 
       // 4. Cargar Médicos activos (is_active = true) para reasignación de especialidades
@@ -183,8 +245,10 @@ export default function AdminDashboardScreen() {
             name
           )
         `)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .abortSignal(signal);
 
+      if (!isCurrent()) return;
       if (activeErr) throw activeErr;
 
       // 5. Cargar Médicos rechazados (is_active = false Y rejection_reason IS NOT NULL)
@@ -204,55 +268,101 @@ export default function AdminDashboardScreen() {
           )
         `)
         .eq('is_active', false)
-        .not('rejection_reason', 'is', null);
+        .not('rejection_reason', 'is', null)
+        .abortSignal(signal);
 
+      if (!isCurrent()) return;
       if (rejectedErr) throw rejectedErr;
 
       const initialMap: Record<string, string> = {};
 
       if (pendingData) {
-        setPendingDoctors(pendingData as DoctorItem[]);
         pendingData.forEach((d: any) => {
           initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
         });
       }
 
       if (activeData) {
-        setActiveDoctors(activeData as DoctorItem[]);
         activeData.forEach((d: any) => {
           initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
         });
       }
 
       if (rejectedData) {
-        setRejectedDoctors(rejectedData as DoctorItem[]);
         rejectedData.forEach((d: any) => {
           initialMap[d.id] = d.specialty_id || (specData && specData[0]?.id) || '';
         });
       }
 
+      // Publish one complete read; a partial failure keeps the previous snapshot.
+      setAllSpecialties(specData || []);
+      setPendingDoctors(pendingData || []);
+      setActiveDoctors(activeData || []);
+      setRejectedDoctors(rejectedData || []);
       setSelectedSpecialtiesMap(initialMap);
-
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al Cargar Datos');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+      snapshotOwner.current = user.id;
+      setHasSnapshot(true);
+    }, {
+      onError: (err: unknown) => {
+        if (!identityVerified) {
+          clearSnapshot();
+          setIsAdmin(null);
+        }
+        setLoadError('No se pudieron actualizar los datos administrativos. Intenta nuevamente.');
+        handleErrorModal(err, 'Error al Cargar Datos');
+      },
+      onSettled: () => {
+        setLoading(false);
+        setRefreshing(false);
+      },
+    });
+  }, [isMounted, runLatest, clearSnapshot, handleErrorModal]);
 
   useEffect(() => {
-    checkAdminAndFetchData();
-  }, [checkAdminAndFetchData]);
+    const alive = captureLifetime();
+    void Promise.resolve().then(() => {
+      if (alive()) return checkAdminAndFetchData();
+    });
+  }, [checkAdminAndFetchData, captureLifetime]);
+
+  const reloadAdminData = () => {
+    return checkAdminAndFetchData();
+  };
 
   const onRefresh = () => {
+    if (!isMounted()) return;
     setRefreshing(true);
-    checkAdminAndFetchData();
+    reloadAdminData();
+  };
+
+  const beginOperation = (doctorId: string) => {
+    const lifetime = captureLifetime();
+    const owner = snapshotOwner.current;
+    const alive = () => lifetime() && snapshotOwner.current === owner;
+    if (!alive() || operations.current.has(doctorId)) return null;
+    const token = Symbol(doctorId);
+    operations.current.set(doctorId, token);
+    latestOperation.current = token;
+    setProcessingIds(prev => new Set(prev).add(doctorId));
+    return {
+      alive,
+      latest: () => alive() && latestOperation.current === token,
+      finish: () => {
+        if (operations.current.get(doctorId) !== token) return;
+        operations.current.delete(doctorId);
+        if (alive()) setProcessingIds(prev => {
+          const next = new Set(prev);
+          next.delete(doctorId);
+          return next;
+        });
+      },
+    };
   };
 
   // 1. Aprobar e Habilitar Médico Inicial (RF3 / Fig 2.8)
   const handleApproveDoctor = async (doctorId: string) => {
-    setProcessingId(doctorId);
+    const operation = beginOperation(doctorId);
+    if (!operation) return;
     try {
       const chosenSpecialty = selectedSpecialtiesMap[doctorId];
 
@@ -271,11 +381,13 @@ export default function AdminDashboardScreen() {
         .select(); // fuerza retorno para detectar si RLS silenció el UPDATE
 
       if (error) throw error;
+      if (!operation.alive()) return;
 
       // Re-fetch inmediato (no esperar al modal) para que la tarjeta desaparezca de Pendientes/Rechazados
-      await checkAdminAndFetchData();
+      const refreshed = await reloadAdminData();
+      if (!operation.latest() || !refreshed) return;
 
-      setModalConfig({
+      showModal({
         visible: true,
         title: 'Médico Aprobado',
         message: 'La cuenta médica ha sido activada exitosamente y la especialidad ha sido asignada. El médico ya puede iniciar sesión.',
@@ -283,16 +395,18 @@ export default function AdminDashboardScreen() {
         confirmText: 'Genial',
         onConfirm: closeModal,
       });
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al Aprobar Médico');
+    } catch (err: unknown) {
+      if (operation.latest()) handleErrorModal(err, 'Error al Aprobar Médico');
+      else console.warn('Resultado de una aprobación anterior pendiente de revisión:', err);
     } finally {
-      setProcessingId(null);
+      operation.finish();
     }
   };
 
   // 2. Reasignar Especialidad a Médico ya Activo (Problema 3 / RF3)
   const handleUpdateDoctorSpecialty = async (doctorId: string) => {
-    setProcessingId(doctorId);
+    const operation = beginOperation(doctorId);
+    if (!operation) return;
     try {
       const chosenSpecialty = selectedSpecialtiesMap[doctorId];
       if (!chosenSpecialty) {
@@ -307,36 +421,46 @@ export default function AdminDashboardScreen() {
         .eq('id', doctorId);
 
       if (error) throw error;
+      if (!operation.latest()) {
+        if (operation.alive()) await reloadAdminData();
+        return;
+      }
 
-      setModalConfig({
+      showModal({
         visible: true,
         title: 'Especialidad Actualizada',
         message: 'La especialidad del médico ha sido actualizada correctamente en el sistema.',
         type: 'alert',
         confirmText: 'Aceptar',
         onConfirm: () => {
+          if (!operation.latest()) return;
           closeModal();
-          checkAdminAndFetchData();
+          reloadAdminData();
         }
       });
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al Actualizar Especialidad');
+    } catch (err: unknown) {
+      if (operation.latest()) handleErrorModal(err, 'Error al Actualizar Especialidad');
+      else console.warn('Resultado de una reasignación anterior pendiente de revisión:', err);
     } finally {
-      setProcessingId(null);
+      operation.finish();
     }
   };
 
   // 3. Rechazar solicitud de médico (Bug 2)
   const openRejectModal = (doctorId: string) => {
+    if (!isMounted()) return;
+    rejectFormVersion.current += 1;
+    latestOperation.current = null;
     setRejectingDoctorId(doctorId);
     setRejectReason('');
     setRejectModalVisible(true);
   };
 
   const handleRejectDoctor = async () => {
+    if (!isMounted()) return;
     if (!rejectingDoctorId) return;
     if (!rejectReason.trim()) {
-      setModalConfig({
+      showModal({
         visible: true,
         title: 'Motivo requerido',
         message: 'Por favor ingresa un motivo de rechazo antes de continuar.',
@@ -347,8 +471,11 @@ export default function AdminDashboardScreen() {
       return;
     }
 
+    const operation = beginOperation(rejectingDoctorId);
+    if (!operation) return;
+    const formVersion = rejectFormVersion.current;
+    const currentForm = () => operation.latest() && rejectFormVersion.current === formVersion;
     setRejectModalVisible(false);
-    setProcessingId(rejectingDoctorId);
     try {
       // Marcar como rechazado con motivo (no se elimina la cuenta — trazabilidad académica)
       const { error } = await supabase
@@ -360,11 +487,13 @@ export default function AdminDashboardScreen() {
         .eq('id', rejectingDoctorId);
 
       if (error) throw error;
+      if (!operation.alive()) return;
 
       // Re-fetch inmediato
-      await checkAdminAndFetchData();
+      const refreshed = await reloadAdminData();
+      if (!currentForm() || !refreshed) return;
 
-      setModalConfig({
+      showModal({
         visible: true,
         title: 'Solicitud Rechazada',
         message: `La solicitud fue rechazada. Motivo registrado: "${rejectReason.trim()}". El médico verá este mensaje al intentar iniciar sesión.`,
@@ -372,81 +501,22 @@ export default function AdminDashboardScreen() {
         confirmText: 'Aceptar',
         onConfirm: closeModal,
       });
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al Rechazar Solicitud');
+    } catch (err: unknown) {
+      if (currentForm()) handleErrorModal(err, 'Error al Rechazar Solicitud');
+      else console.warn('Resultado de un rechazo anterior pendiente de revisión:', err);
     } finally {
-      setProcessingId(null);
-      setRejectingDoctorId(null);
-      setRejectReason('');
-    }
-  };
-
-  // 4. Cerrar sesión (Bug 3)
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.replace('/');
-    } catch (err) {
-      console.error('Error al cerrar sesión:', err);
-      router.replace('/');
-    }
-  };
-
-  const handleAddSpecialty = async () => {
-    if (!newSpecialtyName.trim()) return;
-    setIsAddingSpecialty(true);
-    try {
-      const { data, error } = await supabase
-        .from('specialties')
-        .insert([{ name: newSpecialtyName.trim() }])
-        .select();
-
-      if (error) throw error;
-      
-      setNewSpecialtyName('');
-      await checkAdminAndFetchData(); // Refrescar lista
-      
-      setModalConfig({
-        visible: true,
-        title: 'Éxito',
-        message: 'Especialidad añadida correctamente.',
-        type: 'alert',
-        confirmText: 'Aceptar',
-        onConfirm: closeModal
-      });
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al añadir especialidad');
-    } finally {
-      setIsAddingSpecialty(false);
-    }
-  };
-
-  const handleDeleteSpecialty = async (id: string) => {
-    try {
-      const { error } = await supabase.from('specialties').delete().eq('id', id);
-      if (error) throw error;
-      await checkAdminAndFetchData();
-    } catch (err: any) {
-      handleErrorModal(err, 'No se puede eliminar porque hay médicos asignados a esta especialidad.');
-    }
-  };
-
-  const handleUpdateSpecialty = async () => {
-    if (!editingSpecialtyId || !editingSpecialtyName.trim()) return;
-    try {
-      const { error } = await supabase.from('specialties').update({ name: editingSpecialtyName.trim() }).eq('id', editingSpecialtyId);
-      if (error) throw error;
-      setEditingSpecialtyId(null);
-      setEditingSpecialtyName('');
-      await checkAdminAndFetchData();
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al actualizar especialidad');
+      operation.finish();
+      if (currentForm()) {
+        setRejectingDoctorId(null);
+        setRejectReason('');
+      }
     }
   };
 
   const handleOpenDocument = (url: string | null) => {
+    if (!isMounted()) return;
     if (!url) {
-      setModalConfig({
+      showModal({
         visible: true,
         title: 'Sin documento',
         message: 'Este médico no ha adjuntado una URL de documento de título.',
@@ -457,7 +527,7 @@ export default function AdminDashboardScreen() {
       });
       return;
     }
-    
+
     // En lugar de sacarlos de la app, mostrarlo en nuestro propio Modal
     setDocViewerUrl(url);
     setDocViewerVisible(true);
@@ -498,6 +568,20 @@ export default function AdminDashboardScreen() {
     );
   }
 
+  if (loadError && !hasSnapshot) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContainer}>
+          <Text accessibilityRole="alert" style={styles.emptySub}>{loadError}</Text>
+          <TouchableOpacity style={styles.returnBtn} onPress={onRefresh}>
+            <Text style={styles.returnBtnText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+        <CustomModal {...modalConfig} onConfirm={modalConfig.onConfirm || closeModal} onCancel={modalConfig.onCancel || closeModal} />
+      </SafeAreaView>
+    );
+  }
+
   const renderDoctorCard = ({ item }: { item: DoctorItem }) => {
     const name = item.profiles?.full_name || 'Médico Sin Nombre';
     const ci = item.profiles?.identity_card || 'No registrado';
@@ -511,13 +595,13 @@ export default function AdminDashboardScreen() {
       <View style={styles.doctorCard}>
         <View style={styles.cardHeader}>
           <View style={[
-            styles.avatar, 
+            styles.avatar,
             { backgroundColor: isActive ? '#ecfdf5' : isPending ? '#eff6ff' : '#fef2f2' }
           ]}>
-            <Ionicons 
-              name={isActive ? 'shield-checkmark' : isPending ? 'time' : 'close-circle'} 
-              size={24} 
-              color={isActive ? '#059669' : isPending ? '#2563eb' : '#ef4444'} 
+            <Ionicons
+              name={isActive ? 'shield-checkmark' : isPending ? 'time' : 'close-circle'}
+              size={24}
+              color={isActive ? '#059669' : isPending ? '#2563eb' : '#ef4444'}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -555,7 +639,7 @@ export default function AdminDashboardScreen() {
 
           <View style={styles.infoCol}>
             <Text style={styles.infoLabel}>Documento de Título</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.docBtn}
               onPress={() => handleOpenDocument(item.title_document_url)}
             >
@@ -591,10 +675,10 @@ export default function AdminDashboardScreen() {
             <TouchableOpacity
               style={styles.rejectBtn}
               onPress={() => openRejectModal(item.id)}
-              disabled={processingId === item.id}
+              disabled={processingIds.has(item.id)}
               activeOpacity={0.8}
             >
-              {processingId === item.id ? (
+              {processingIds.has(item.id) ? (
                 <ActivityIndicator color="#ef4444" size="small" />
               ) : (
                 <>
@@ -606,10 +690,10 @@ export default function AdminDashboardScreen() {
             <TouchableOpacity
               style={styles.approveBtn}
               onPress={() => handleApproveDoctor(item.id)}
-              disabled={processingId === item.id}
+              disabled={processingIds.has(item.id)}
               activeOpacity={0.8}
             >
-              {processingId === item.id ? (
+              {processingIds.has(item.id) ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
                 <>
@@ -622,13 +706,13 @@ export default function AdminDashboardScreen() {
         )}
 
         {isActive && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.updateBtn}
             onPress={() => handleUpdateDoctorSpecialty(item.id)}
-            disabled={processingId === item.id}
+            disabled={processingIds.has(item.id)}
             activeOpacity={0.8}
           >
-            {processingId === item.id ? (
+            {processingIds.has(item.id) ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
               <>
@@ -640,13 +724,13 @@ export default function AdminDashboardScreen() {
         )}
 
         {isRejected && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.reconsiderBtn}
             onPress={() => handleApproveDoctor(item.id)}
-            disabled={processingId === item.id}
+            disabled={processingIds.has(item.id)}
             activeOpacity={0.8}
           >
-            {processingId === item.id ? (
+            {processingIds.has(item.id) ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
               <>
@@ -660,10 +744,10 @@ export default function AdminDashboardScreen() {
     );
   };
 
-  const displayedList = currentTab === 'pending' 
-    ? pendingDoctors 
-    : currentTab === 'active' 
-    ? activeDoctors 
+  const displayedList = currentTab === 'pending'
+    ? pendingDoctors
+    : currentTab === 'active'
+    ? activeDoctors
     : rejectedDoctors;
 
   return (
@@ -683,48 +767,48 @@ export default function AdminDashboardScreen() {
 
       {/* Pestañas para Pendientes, Activos y Rechazados */}
       <View style={styles.tabBar}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabBtn, currentTab === 'pending' && styles.tabBtnActive]}
           onPress={() => setCurrentTab('pending')}
           activeOpacity={0.8}
         >
-          <Ionicons 
-            name="time-outline" 
-            size={16} 
-            color={currentTab === 'pending' ? '#2563eb' : '#64748b'} 
+          <Ionicons
+            name="time-outline"
+            size={16}
+            color={currentTab === 'pending' ? '#2563eb' : '#64748b'}
           />
           <Text style={[styles.tabBtnText, currentTab === 'pending' && styles.tabBtnTextActive]}>
             Pendientes ({pendingDoctors.length})
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabBtn, currentTab === 'active' && styles.tabBtnActive]}
           onPress={() => setCurrentTab('active')}
           activeOpacity={0.8}
         >
-          <Ionicons 
-            name="shield-checkmark-outline" 
-            size={16} 
-            color={currentTab === 'active' ? '#2563eb' : '#64748b'} 
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={16}
+            color={currentTab === 'active' ? '#2563eb' : '#64748b'}
           />
           <Text style={[styles.tabBtnText, currentTab === 'active' && styles.tabBtnTextActive]}>
             Activos ({activeDoctors.length})
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tabBtn, currentTab === 'rejected' && styles.tabBtnActive]}
           onPress={() => setCurrentTab('rejected')}
           activeOpacity={0.8}
         >
-          <Ionicons 
-            name="close-circle-outline" 
-            size={16} 
-            color={currentTab === 'rejected' ? '#ef4444' : '#64748b'} 
+          <Ionicons
+            name="close-circle-outline"
+            size={16}
+            color={currentTab === 'rejected' ? '#ef4444' : '#64748b'}
           />
           <Text style={[
-            styles.tabBtnText, 
+            styles.tabBtnText,
             currentTab === 'rejected' && [styles.tabBtnTextActive, { color: '#ef4444' }]
           ]}>
             Rechazados ({rejectedDoctors.length})
@@ -738,21 +822,21 @@ export default function AdminDashboardScreen() {
             styles.emptyIconBg,
             currentTab === 'rejected' && { backgroundColor: '#fef2f2' }
           ]}>
-            <Ionicons 
-              name={currentTab === 'rejected' ? 'checkmark-circle-outline' : 'checkmark-done-circle'} 
-              size={50} 
-              color={currentTab === 'rejected' ? '#ef4444' : '#10b981'} 
+            <Ionicons
+              name={currentTab === 'rejected' ? 'checkmark-circle-outline' : 'checkmark-done-circle'}
+              size={50}
+              color={currentTab === 'rejected' ? '#ef4444' : '#10b981'}
             />
           </View>
           <Text style={styles.emptyTitle}>
-            {currentTab === 'pending' 
-              ? '¡Todo al Día!' 
-              : currentTab === 'active' 
-              ? 'Sin Médicos Activos' 
+            {currentTab === 'pending'
+              ? '¡Todo al Día!'
+              : currentTab === 'active'
+              ? 'Sin Médicos Activos'
               : 'Sin Solicitudes Rechazadas'}
           </Text>
           <Text style={styles.emptySub}>
-            {currentTab === 'pending' 
+            {currentTab === 'pending'
               ? 'No hay solicitudes de médicos pendientes de aprobación.'
               : currentTab === 'active'
               ? 'Aún no hay médicos habilitados en el sistema.'
@@ -770,7 +854,7 @@ export default function AdminDashboardScreen() {
         />
       )}
 
-      <CustomModal 
+      <CustomModal
         visible={modalConfig.visible}
         title={modalConfig.title}
         message={modalConfig.message}
@@ -832,8 +916,8 @@ export default function AdminDashboardScreen() {
         <View style={styles.viewerModalContainer}>
           <View style={styles.viewerHeader}>
             <Text style={styles.viewerTitle}>Visor de Documentos</Text>
-            <TouchableOpacity 
-              onPress={() => setDocViewerVisible(false)} 
+            <TouchableOpacity
+              onPress={() => setDocViewerVisible(false)}
               style={styles.viewerCloseBtn}
             >
               <Ionicons name="close" size={24} color="#334155" />
@@ -844,15 +928,15 @@ export default function AdminDashboardScreen() {
               Platform.OS === 'web' ? (
                 <iframe src={docViewerUrl} style={{ width: '100%', height: '100%', border: 'none' }} />
               ) : (
-                <WebView 
-                  source={{ uri: docViewerUrl }} 
+                <WebView
+                  source={{ uri: docViewerUrl }}
                   style={{ flex: 1 }}
                   startInLoadingState={true}
                   renderLoading={() => (
-                    <ActivityIndicator 
-                      color="#3b82f6" 
-                      size="large" 
-                      style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -18 }, { translateY: -18 }] }} 
+                    <ActivityIndicator
+                      color="#3b82f6"
+                      size="large"
+                      style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -18 }, { translateY: -18 }] }}
                     />
                   )}
                 />

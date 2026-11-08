@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +26,6 @@ export default function ProfileScreen() {
   const [emergencyContact, setEmergencyContact] = useState('');
 
   // Doctor Schedule Fields
-  const [schedules, setSchedules] = useState<any[]>([]);
   const [selectedDay, setSelectedDay] = useState('Lunes');
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('16:00');
@@ -41,80 +40,82 @@ export default function ProfileScreen() {
     onConfirm: () => {},
   });
 
-  const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
+  const closeModal = useCallback(() => setModalConfig(prev => ({ ...prev, visible: false })), []);
 
   useEffect(() => {
+    let active = true;
+    const fetchProfileData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!active) return;
+        if (!user) {
+          throw new Error('No se encontró sesión activa.');
+        }
+        setUserId(user.id);
+
+        // 1. Obtener Perfil Principal
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!active) return;
+        if (profileErr) throw profileErr;
+
+        if (profile) {
+          setFullName(profile.full_name || '');
+          setEmail(profile.email || user.email || '');
+          setIdentityCard(profile.identity_card || '');
+          setPhoneNumber(profile.phone_number || '');
+          setAddress(profile.address || '');
+          setGender(profile.gender || 'Masculino');
+          setUserRole(profile.role || 'patient');
+
+          // 2. Si es Paciente, cargar datos de la tabla patients
+          if (profile.role === 'patient') {
+            const { data: patient } = await supabase
+              .from('patients')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (!active) return;
+            if (patient) {
+              setBloodType(patient.blood_type || 'O+');
+              setAllergies(patient.allergies || '');
+              setEmergencyContact(patient.emergency_contact || '');
+            }
+          }
+
+          // 3. Si es Médico, cargar sus horarios
+          if (profile.role === 'doctor') {
+            await supabase
+              .from('doctor_schedules')
+              .select('*')
+              .eq('doctor_id', user.id);
+
+          }
+        }
+      } catch (err: any) {
+        if (!active) return;
+        console.error('Error cargando perfil:', err);
+        setModalConfig({
+          visible: true,
+          title: 'Error de carga',
+          message: err.message || 'No se pudieron cargar los datos del perfil.',
+          type: 'alert',
+          confirmText: 'Entendido',
+          onConfirm: closeModal
+        });
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
     fetchProfileData();
-  }, []);
-
-  const fetchProfileData = async () => {
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('No se encontró sesión activa.');
-      }
-      setUserId(user.id);
-
-      // 1. Obtener Perfil Principal
-      const { data: profile, error: profileErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (profileErr) throw profileErr;
-
-      if (profile) {
-        setFullName(profile.full_name || '');
-        setEmail(profile.email || user.email || '');
-        setIdentityCard(profile.identity_card || '');
-        setPhoneNumber(profile.phone_number || '');
-        setAddress(profile.address || '');
-        setGender(profile.gender || 'Masculino');
-        setUserRole(profile.role || 'patient');
-
-        // 2. Si es Paciente, cargar datos de la tabla patients
-        if (profile.role === 'patient') {
-          const { data: patient } = await supabase
-            .from('patients')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (patient) {
-            setBloodType(patient.blood_type || 'O+');
-            setAllergies(patient.allergies || '');
-            setEmergencyContact(patient.emergency_contact || '');
-          }
-        }
-
-        // 3. Si es Médico, cargar sus horarios
-        if (profile.role === 'doctor') {
-          const { data: schedData } = await supabase
-            .from('doctor_schedules')
-            .select('*')
-            .eq('doctor_id', user.id);
-
-          if (schedData && schedData.length > 0) {
-            setSchedules(schedData);
-          }
-        }
-      }
-    } catch (err: any) {
-      console.error('Error cargando perfil:', err);
-      setModalConfig({
-        visible: true,
-        title: 'Error de carga',
-        message: err.message || 'No se pudieron cargar los datos del perfil.',
-        type: 'alert',
-        confirmText: 'Entendido',
-        onConfirm: closeModal
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => { active = false; };
+  }, [closeModal]);
 
   const handleSaveProfile = async () => {
     if (!phoneNumber || !address) {
@@ -200,7 +201,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
@@ -233,7 +234,7 @@ export default function ProfileScreen() {
             {/* Datos Inmutables / Lectura */}
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Datos de Identificación (No editables)</Text>
-              
+
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Correo Electrónico:</Text>
                 <Text style={styles.infoValue}>{email}</Text>
@@ -253,7 +254,7 @@ export default function ProfileScreen() {
                 <Text style={styles.label}>Número de Teléfono / Celular</Text>
                 <View style={styles.inputContainer}>
                   <Ionicons name="call-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                  <TextInput 
+                  <TextInput
                     style={styles.input}
                     placeholder="Ej: 71234567"
                     placeholderTextColor="#94a3b8"
@@ -268,7 +269,7 @@ export default function ProfileScreen() {
                 <Text style={styles.label}>Dirección de Domicilio</Text>
                 <View style={styles.inputContainer}>
                   <Ionicons name="location-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                  <TextInput 
+                  <TextInput
                     style={styles.input}
                     placeholder="Ej: Av. Blanco Galindo Km 3"
                     placeholderTextColor="#94a3b8"
@@ -322,7 +323,7 @@ export default function ProfileScreen() {
                   <Text style={styles.label}>Alergias Conocidas</Text>
                   <View style={styles.inputContainer}>
                     <Ionicons name="alert-circle-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                    <TextInput 
+                    <TextInput
                       style={styles.input}
                       placeholder="Ej: Penicilina, Polvo, Ninguna"
                       placeholderTextColor="#94a3b8"
@@ -336,7 +337,7 @@ export default function ProfileScreen() {
                   <Text style={styles.label}>Teléfono de Contacto de Emergencia</Text>
                   <View style={styles.inputContainer}>
                     <Ionicons name="people-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
-                    <TextInput 
+                    <TextInput
                       style={styles.input}
                       placeholder="Ej: 70012345 (Familiar)"
                       placeholderTextColor="#94a3b8"
@@ -353,7 +354,7 @@ export default function ProfileScreen() {
             {userRole === 'doctor' && (
               <View style={styles.sectionCard}>
                 <Text style={styles.sectionTitle}>Configuración de Horario de Atención</Text>
-                
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Día de la semana</Text>
                   <View style={[styles.inputContainer, { paddingHorizontal: 0, overflow: 'hidden' }]}>
@@ -376,7 +377,7 @@ export default function ProfileScreen() {
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={styles.label}>Hora Inicio</Text>
                     <View style={styles.inputContainer}>
-                      <TextInput 
+                      <TextInput
                         style={styles.input}
                         placeholder="08:00"
                         placeholderTextColor="#94a3b8"
@@ -389,7 +390,7 @@ export default function ProfileScreen() {
                   <View style={[styles.inputGroup, { flex: 1 }]}>
                     <Text style={styles.label}>Hora Fin</Text>
                     <View style={styles.inputContainer}>
-                      <TextInput 
+                      <TextInput
                         style={styles.input}
                         placeholder="16:00"
                         placeholderTextColor="#94a3b8"
@@ -403,7 +404,7 @@ export default function ProfileScreen() {
             )}
 
             {/* Botón de Guardado */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.saveBtn, { backgroundColor: userRole === 'doctor' ? '#2563eb' : '#059669' }]}
               onPress={handleSaveProfile}
               disabled={saving}
@@ -423,7 +424,7 @@ export default function ProfileScreen() {
         )}
       </KeyboardAvoidingView>
 
-      <CustomModal 
+      <CustomModal
         visible={modalConfig.visible}
         title={modalConfig.title}
         message={modalConfig.message}

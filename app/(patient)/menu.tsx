@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Href } from 'expo-router';
+import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
 
@@ -17,7 +17,7 @@ export default function PatientMenuScreen() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from('profiles')
             .select('full_name')
             .eq('id', user.id)

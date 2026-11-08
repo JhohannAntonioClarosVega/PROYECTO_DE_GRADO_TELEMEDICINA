@@ -3,11 +3,9 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useWindowDimensions, Platform } from 'react-native';
 import CustomDrawer from '@/components/CustomDrawer';
-import { usePathname } from 'expo-router';
 
 export default function PatientLayout() {
   const { width } = useWindowDimensions();
-  const pathname = usePathname();
   // Desktop breakpoint
   const isDesktop = width >= 768;
 
@@ -32,11 +30,11 @@ export default function PatientLayout() {
           drawerItemStyle: { borderRadius: 12, marginHorizontal: 16, marginVertical: 4 },
         }}
       >
-        <Drawer.Screen name="menu" options={{ title: 'Inicio', drawerIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} /> }} />
-        <Drawer.Screen name="chatbot" options={{ title: 'Triaje IA', drawerIcon: ({ color, size }) => <Ionicons name="hardware-chip" size={size} color={color} /> }} />
-        <Drawer.Screen name="waiting-room" options={{ title: 'Sala de Espera', drawerIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} /> }} />
-        <Drawer.Screen name="history" options={{ title: 'Mi Historial', drawerIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} /> }} />
-        <Drawer.Screen name="profile" options={{ title: 'Mi Perfil', drawerIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }} />
+        <Drawer.Screen name="menu" options={{ title: 'Inicio', drawerIcon: ({ color, size }) => <Ionicons name="home" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="chatbot" options={{ title: 'Triaje IA', drawerIcon: ({ color, size }) => <Ionicons name="hardware-chip" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="waiting-room" options={{ title: 'Sala de Espera', drawerIcon: ({ color, size }) => <Ionicons name="time" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="history" options={{ title: 'Mi Historial', drawerIcon: ({ color, size }) => <Ionicons name="document-text" size={size} style={{ color }} /> }} />
+        <Drawer.Screen name="profile" options={{ title: 'Mi Perfil', drawerIcon: ({ color, size }) => <Ionicons name="person" size={size} style={{ color }} /> }} />
         <Drawer.Screen name="payment" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
       </Drawer>
     );
@@ -64,11 +62,11 @@ export default function PatientLayout() {
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' }
       }}
     >
-      <Tabs.Screen name="menu" options={{ title: 'Inicio', tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} /> }} />
-      <Tabs.Screen name="chatbot" options={{ title: 'Triaje', tabBarStyle: { display: 'none' }, tabBarIcon: ({ color, size }) => <Ionicons name="hardware-chip" size={size} color={color} /> }} />
-      <Tabs.Screen name="waiting-room" options={{ title: 'Espera', tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} /> }} />
-      <Tabs.Screen name="history" options={{ title: 'Historial', tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Perfil', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }} />
+      <Tabs.Screen name="menu" options={{ title: 'Inicio', tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="chatbot" options={{ title: 'Triaje', tabBarStyle: { display: 'none' }, tabBarIcon: ({ color, size }) => <Ionicons name="hardware-chip" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="waiting-room" options={{ title: 'Espera', tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="history" options={{ title: 'Historial', tabBarIcon: ({ color, size }) => <Ionicons name="document-text" size={size} style={{ color }} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'Perfil', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} style={{ color }} /> }} />
       <Tabs.Screen name="payment" options={{ href: null, headerShown: false }} />
     </Tabs>
   );

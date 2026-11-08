@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, SafeAreaView, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -20,90 +20,109 @@ interface MedicalRecord {
   } | null;
 }
 
+async function loadRecords(): Promise<MedicalRecord[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('No se pudo encontrar una sesión activa de paciente.');
+  }
+
+  // Paso 1: Buscar también por el ID del paciente en la tabla patients (por si el patient_id guardado es el patients.id y no auth.uid directamente)
+  await supabase
+    .from('patients')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  // Paso 2: Traer los registros médicos (query simple sin joins complejos para evitar problemas de RLS)
+  const { data: rawRecords, error } = await supabase
+    .from('medical_records')
+    .select('id, diagnosis, treatment_plan, clinical_notes, created_at, doctor_id, allied_pharmacy_id')
+    .eq('patient_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Supabase error en medical_records:', JSON.stringify(error));
+    throw new Error(`Error de base de datos: ${error.message}`);
+  }
+
+  if (!rawRecords || rawRecords.length === 0) {
+    return [];
+  }
+
+  // Paso 3: Traer los perfiles de los doctores
+  const doctorIds = [...new Set(rawRecords.map((r: any) => r.doctor_id).filter(Boolean))];
+  const pharmacyIds = [...new Set(rawRecords.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
+
+  const [doctorsResult, pharmaciesResult] = await Promise.all([
+    doctorIds.length > 0
+      ? supabase.from('profiles').select('id, full_name').in('id', doctorIds)
+      : Promise.resolve({ data: [] }),
+    pharmacyIds.length > 0
+      ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
+      : Promise.resolve({ data: [] })
+  ]);
+
+  const doctorMap: Record<string, string> = {};
+  (doctorsResult.data || []).forEach((d: any) => { doctorMap[d.id] = d.full_name; });
+
+  const pharmacyMap: Record<string, string> = {};
+  (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
+
+  const formattedRecords: MedicalRecord[] = rawRecords.map((item: any) => ({
+    id: item.id,
+    diagnosis: item.diagnosis || '',
+    treatment_plan: item.treatment_plan || '',
+    clinical_notes: item.clinical_notes || null,
+    created_at: item.created_at,
+    doctors: item.doctor_id
+      ? { profiles: { full_name: doctorMap[item.doctor_id] || 'Médico General' } }
+      : null,
+    allied_pharmacies: item.allied_pharmacy_id
+      ? { name: pharmacyMap[item.allied_pharmacy_id] || '' }
+      : null
+  }));
+
+  return formattedRecords;
+}
+
 export default function PatientRecordsScreen() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const fetchRecords = async () => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('No se pudo encontrar una sesión activa de paciente.');
-      }
-
-      // Paso 1: Buscar también por el ID del paciente en la tabla patients (por si el patient_id guardado es el patients.id y no auth.uid directamente)
-      const { data: patientRow } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      // Paso 2: Traer los registros médicos (query simple sin joins complejos para evitar problemas de RLS)
-      const { data: rawRecords, error } = await supabase
-        .from('medical_records')
-        .select('id, diagnosis, treatment_plan, clinical_notes, created_at, doctor_id, allied_pharmacy_id')
-        .eq('patient_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Supabase error en medical_records:', JSON.stringify(error));
-        throw new Error(`Error de base de datos: ${error.message}`);
-      }
-
-      if (!rawRecords || rawRecords.length === 0) {
-        setRecords([]);
-        return;
-      }
-
-      // Paso 3: Traer los perfiles de los doctores
-      const doctorIds = [...new Set(rawRecords.map((r: any) => r.doctor_id).filter(Boolean))];
-      const pharmacyIds = [...new Set(rawRecords.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
-
-      const [doctorsResult, pharmaciesResult] = await Promise.all([
-        doctorIds.length > 0
-          ? supabase.from('profiles').select('id, full_name').in('id', doctorIds)
-          : Promise.resolve({ data: [] }),
-        pharmacyIds.length > 0
-          ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
-          : Promise.resolve({ data: [] })
-      ]);
-
-      const doctorMap: Record<string, string> = {};
-      (doctorsResult.data || []).forEach((d: any) => { doctorMap[d.id] = d.full_name; });
-
-      const pharmacyMap: Record<string, string> = {};
-      (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
-
-      const formattedRecords: MedicalRecord[] = rawRecords.map((item: any) => ({
-        id: item.id,
-        diagnosis: item.diagnosis || '',
-        treatment_plan: item.treatment_plan || '',
-        clinical_notes: item.clinical_notes || null,
-        created_at: item.created_at,
-        doctors: item.doctor_id
-          ? { profiles: { full_name: doctorMap[item.doctor_id] || 'Médico General' } }
-          : null,
-        allied_pharmacies: item.allied_pharmacy_id
-          ? { name: pharmacyMap[item.allied_pharmacy_id] || '' }
-          : null
-      }));
-
-      setRecords(formattedRecords);
-    } catch (err: any) {
-      console.error('Error cargando registros del paciente:', err);
-      setErrorMsg(err.message || 'Error al conectar con el servidor.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const requestVersion = useRef(0);
+  const fetchRecords = useCallback(() => {
+    const version = ++requestVersion.current;
+    return loadRecords()
+      .then(data => {
+        if (version !== requestVersion.current) return;
+        setRecords(data);
+      })
+      .catch((err: unknown) => {
+        if (version !== requestVersion.current) return;
+        console.error('Error cargando registros del paciente:', err);
+        setErrorMsg(
+          err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message
+            ? err.message
+            : 'Error al conectar con el servidor.'
+        );
+      })
+      .finally(() => {
+        if (version === requestVersion.current) setLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
-    fetchRecords();
-  }, []);
+    void fetchRecords();
+    return () => { requestVersion.current += 1; };
+  }, [fetchRecords]);
+
+  const refreshRecords = () => {
+    setLoading(true);
+    setErrorMsg('');
+    void fetchRecords();
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -115,7 +134,7 @@ export default function PatientRecordsScreen() {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -194,7 +213,7 @@ export default function PatientRecordsScreen() {
           <Text style={styles.headerTitle}>Mi Historial Clínico</Text>
           <Text style={styles.headerSubtitle}>Diagnósticos y recetas electrónicas</Text>
         </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={fetchRecords} disabled={loading}>
+        <TouchableOpacity style={styles.refreshBtn} onPress={refreshRecords} disabled={loading}>
           <Ionicons name="refresh" size={22} color="#64748b" />
         </TouchableOpacity>
       </View>
@@ -225,7 +244,7 @@ export default function PatientRecordsScreen() {
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#ef4444" />
           <Text style={styles.errorText}>{errorMsg}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={fetchRecords}>
+          <TouchableOpacity style={styles.retryBtn} onPress={refreshRecords}>
             <Text style={styles.retryText}>Reintentar</Text>
           </TouchableOpacity>
         </View>

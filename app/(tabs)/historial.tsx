@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput,
   Platform, TouchableOpacity, ActivityIndicator, RefreshControl
@@ -17,6 +17,58 @@ interface DoctorRecord {
   pharmacy_name: string;
 }
 
+async function loadDoctorRecords(): Promise<DoctorRecord[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Sin sesión activa.');
+
+  // Query simple a medical_records filtrando por doctor_id
+  const { data: raw, error } = await supabase
+    .from('medical_records')
+    .select('id, diagnosis, treatment_plan, clinical_notes, created_at, patient_id, allied_pharmacy_id')
+    .eq('doctor_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error historial médico:', JSON.stringify(error));
+    throw new Error(error.message);
+  }
+
+  if (!raw || raw.length === 0) {
+    return [];
+  }
+
+  // Obtener nombres de pacientes y farmacias en paralelo
+  const patientIds = [...new Set(raw.map((r: any) => r.patient_id).filter(Boolean))];
+  const pharmacyIds = [...new Set(raw.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
+
+  const [patientsResult, pharmaciesResult] = await Promise.all([
+    patientIds.length > 0
+      ? supabase.from('profiles').select('id, full_name').in('id', patientIds)
+      : Promise.resolve({ data: [] }),
+    pharmacyIds.length > 0
+      ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const patientMap: Record<string, string> = {};
+  (patientsResult.data || []).forEach((p: any) => { patientMap[p.id] = p.full_name; });
+
+  const pharmacyMap: Record<string, string> = {};
+  (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
+
+  const formatted: DoctorRecord[] = raw.map((item: any) => ({
+    id: item.id,
+    diagnosis: item.diagnosis || '',
+    treatment_plan: item.treatment_plan || '',
+    clinical_notes: item.clinical_notes || null,
+    created_at: item.created_at,
+    patient_name: item.patient_id ? (patientMap[item.patient_id] || 'Paciente') : 'Paciente',
+    pharmacy_name: item.allied_pharmacy_id ? (pharmacyMap[item.allied_pharmacy_id] || '') : '',
+  }));
+
+  return formatted;
+}
+
 export default function HistorialScreen() {
   const [records, setRecords] = useState<DoctorRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,75 +76,39 @@ export default function HistorialScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const fetchDoctorRecords = useCallback(async () => {
-    setErrorMsg('');
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Sin sesión activa.');
-
-      // Query simple a medical_records filtrando por doctor_id
-      const { data: raw, error } = await supabase
-        .from('medical_records')
-        .select('id, diagnosis, treatment_plan, clinical_notes, created_at, patient_id, allied_pharmacy_id')
-        .eq('doctor_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error historial médico:', JSON.stringify(error));
-        throw new Error(error.message);
-      }
-
-      if (!raw || raw.length === 0) {
-        setRecords([]);
-        return;
-      }
-
-      // Obtener nombres de pacientes y farmacias en paralelo
-      const patientIds = [...new Set(raw.map((r: any) => r.patient_id).filter(Boolean))];
-      const pharmacyIds = [...new Set(raw.map((r: any) => r.allied_pharmacy_id).filter(Boolean))];
-
-      const [patientsResult, pharmaciesResult] = await Promise.all([
-        patientIds.length > 0
-          ? supabase.from('profiles').select('id, full_name').in('id', patientIds)
-          : Promise.resolve({ data: [] }),
-        pharmacyIds.length > 0
-          ? supabase.from('allied_pharmacies').select('id, name').in('id', pharmacyIds)
-          : Promise.resolve({ data: [] }),
-      ]);
-
-      const patientMap: Record<string, string> = {};
-      (patientsResult.data || []).forEach((p: any) => { patientMap[p.id] = p.full_name; });
-
-      const pharmacyMap: Record<string, string> = {};
-      (pharmaciesResult.data || []).forEach((p: any) => { pharmacyMap[p.id] = p.name; });
-
-      const formatted: DoctorRecord[] = raw.map((item: any) => ({
-        id: item.id,
-        diagnosis: item.diagnosis || '',
-        treatment_plan: item.treatment_plan || '',
-        clinical_notes: item.clinical_notes || null,
-        created_at: item.created_at,
-        patient_name: item.patient_id ? (patientMap[item.patient_id] || 'Paciente') : 'Paciente',
-        pharmacy_name: item.allied_pharmacy_id ? (pharmacyMap[item.allied_pharmacy_id] || '') : '',
-      }));
-
-      setRecords(formatted);
-    } catch (err: any) {
-      console.error('Error en historial del doctor:', err);
-      setErrorMsg(err.message || 'No se pudo cargar el historial.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  const requestVersion = useRef(0);
+  const fetchDoctorRecords = useCallback(() => {
+    const version = ++requestVersion.current;
+    return loadDoctorRecords()
+      .then(data => {
+        if (version !== requestVersion.current) return;
+        setRecords(data);
+      })
+      .catch((err: unknown) => {
+        if (version !== requestVersion.current) return;
+        console.error('Error en historial del doctor:', err);
+        setErrorMsg(
+          err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message
+            ? err.message
+            : 'No se pudo cargar el historial.'
+        );
+      })
+      .finally(() => {
+        if (version !== requestVersion.current) return;
+        setLoading(false);
+        setRefreshing(false);
+      });
   }, []);
 
   useEffect(() => {
-    fetchDoctorRecords();
+    void fetchDoctorRecords();
+    return () => { requestVersion.current += 1; };
   }, [fetchDoctorRecords]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchDoctorRecords();
+    setErrorMsg('');
+    void fetchDoctorRecords();
   };
 
   const formatDate = (dateStr: string) => {

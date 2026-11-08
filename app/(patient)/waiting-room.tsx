@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useEffectEvent, useState, useRef } from 'react';
 import { 
   ActivityIndicator, 
   Platform, 
@@ -13,17 +13,76 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+interface WaitingTriage {
+  id: string;
+  status: string;
+  patient_id?: string;
+  urgency_level?: string;
+  recommended_specialty?: string;
+  reported_symptoms?: string;
+  patients?: { profiles?: { full_name?: string } };
+}
+
+interface WaitingStatus {
+  triageId: string;
+  triage: WaitingTriage | null;
+  ready: boolean;
+  noActiveRoom: boolean;
+  doctorName: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readTriage(value: unknown, expectedId: string): WaitingTriage {
+  if (!isRecord(value) || value.id !== expectedId || typeof value.status !== 'string') {
+    throw new Error('La respuesta del triaje no corresponde a la consulta solicitada.');
+  }
+  const profiles = isRecord(value.patients) && isRecord(value.patients.profiles)
+    ? value.patients.profiles
+    : null;
+  return {
+    id: expectedId,
+    status: value.status,
+    patient_id: typeof value.patient_id === 'string' ? value.patient_id : undefined,
+    urgency_level: typeof value.urgency_level === 'string' ? value.urgency_level : undefined,
+    recommended_specialty: typeof value.recommended_specialty === 'string' ? value.recommended_specialty : undefined,
+    reported_symptoms: typeof value.reported_symptoms === 'string' ? value.reported_symptoms : undefined,
+    patients: { profiles: { full_name: typeof profiles?.full_name === 'string' ? profiles.full_name : undefined } },
+  };
+}
+
 export default function WaitingRoomScreen() {
-  const params = useLocalSearchParams();
-  const triageId = params.triageId as string;
-  const [activeTriageId, setActiveTriageId] = useState<string | null>(triageId || null);
-  const [triage, setTriage] = useState<any>(null);
-  const [assignedDoctorName, setAssignedDoctorName] = useState<string>('Médico Tratante');
+  const params = useLocalSearchParams<{ triageId?: string | string[] }>();
+  const requestedId = Array.isArray(params.triageId) ? params.triageId[0] : params.triageId;
+  const triageId = requestedId || null;
+  // Cada cambio de consulta crea su propio estado, incluso en una secuencia A → B → A.
+  return <WaitingRoomContent key={triageId ?? 'latest'} triageId={triageId} />;
+}
+
+function WaitingRoomContent({ triageId }: { triageId: string | null }) {
+  const [activeTriageId, setActiveTriageId] = useState<string | null>(triageId);
+  const [triage, setTriage] = useState<WaitingTriage | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDoctorReady, setIsDoctorReady] = useState(false);
+  const [readyTriageId, setReadyTriageId] = useState<string | null>(null);
   const [noActiveRoom, setNoActiveRoom] = useState(false);
   const [glowingScale, setGlowingScale] = useState(1);
   const hasNavigated = useRef(false);
+  const joining = useRef(false);
+  const session = useRef({ mounted: false, triageId });
+  const pendingStatus = useRef<Promise<WaitingStatus | null> | null>(null);
+  const isDoctorReady = activeTriageId !== null && readyTriageId === activeTriageId && triage?.id === activeTriageId;
+
+  useEffect(() => {
+    const currentSession = session.current;
+    currentSession.mounted = true;
+    return () => { currentSession.mounted = false; };
+  }, []);
+
+  const isCurrent = useCallback((expectedId: string) =>
+    session.current.mounted && session.current.triageId === expectedId,
+  []);
 
   // Efecto visual de latido/pulso
   useEffect(() => {
@@ -33,122 +92,142 @@ export default function WaitingRoomScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // Función para comprobar el estado actual (Triaje y Cita)
-  const checkStatus = async (targetId: string) => {
-    try {
-      // 1. Obtener detalles del triaje
-      const { data: triageData, error: triageError } = await supabase
-        .from('triages')
-        .select(`
-          *,
-          patients (
-            id,
-            profiles (
-              full_name
-            )
+  const readStatus = useCallback(async (targetId: string): Promise<WaitingStatus | null> => {
+    if (!isCurrent(targetId)) return null;
+    const { data: triageData, error: triageError } = await supabase
+      .from('triages')
+      .select(`
+        *,
+        patients (
+          id,
+          profiles (
+            full_name
           )
-        `)
-        .eq('id', targetId)
-        .maybeSingle();
-
-      if (triageError) {
-        console.warn('Supabase error fetching triage:', triageError);
-        return; // Ignorar errores de red temporales, el polling reintentará
-      }
-
-      if (!triageData) {
-        setNoActiveRoom(true);
-        setLoading(false);
-        return;
-      }
-
-      if (triageData.status === 'completed' || triageData.status === 'resolved') {
-        setNoActiveRoom(true);
-        setLoading(false);
-        return;
-      }
-      
-      setTriage(triageData);
-      setNoActiveRoom(false);
-
-      // 2. Verificar si hay cita creada para este triaje
-      const { data: apptData, error: apptError } = await supabase
-        .from('appointments')
-        .select('id, doctor_id, status')
-        .eq('triage_id', targetId)
-        .limit(1)
-        .maybeSingle();
-
-      if (apptError) {
-        console.warn('Error fetching appointment:', apptError);
-      }
-
-      if (apptData?.doctor_id) {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', apptData.doctor_id)
-          .single();
-        if (prof?.full_name) {
-          setAssignedDoctorName(`Dr. ${prof.full_name}`);
-        }
-      }
-
-      // El médico está listo si el triaje pasó a in_progress O si ya existe una cita en appointments
-      const ready = triageData?.status === 'in_progress' || !!apptData;
-      if (ready) {
-        setIsDoctorReady(true);
-      }
-    } catch (err) {
-      console.warn('Error crítico comprobando estado en sala de espera:', err);
-    } finally {
-      setLoading(false);
+        )
+      `)
+      .eq('id', targetId)
+      .maybeSingle();
+    if (!isCurrent(targetId)) return null;
+    if (triageError) throw triageError;
+    if (!triageData) {
+      return { triageId: targetId, triage: null, ready: false, noActiveRoom: true, doctorName: 'Médico Tratante' };
     }
-  };
+    const currentTriage = readTriage(triageData, targetId);
+    if (currentTriage.status === 'completed' || currentTriage.status === 'resolved') {
+      return { triageId: targetId, triage: currentTriage, ready: false, noActiveRoom: true, doctorName: 'Médico Tratante' };
+    }
+
+    // 2. Verificar si hay cita creada para este triaje
+    const { data: apptData, error: apptError } = await supabase
+      .from('appointments')
+      .select('id, doctor_id, status, triage_id')
+      .eq('triage_id', targetId)
+      .limit(1)
+      .maybeSingle();
+    if (!isCurrent(targetId)) return null;
+    if (apptError) {
+      console.warn('Error fetching appointment:', apptError);
+    }
+    if (apptData && (!isRecord(apptData) || apptData.triage_id !== targetId)) {
+      throw new Error('La cita recibida no corresponde al triaje solicitado.');
+    }
+    const ownAppointment = !apptError && isRecord(apptData) && typeof apptData.id === 'string';
+    let doctorName = 'Médico Tratante';
+    if (ownAppointment && typeof apptData.doctor_id === 'string') {
+      const { data: prof, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', apptData.doctor_id)
+        .single();
+      if (!isCurrent(targetId)) return null;
+      if (profileError) console.warn('Error fetching doctor profile:', profileError);
+      if (isRecord(prof) && typeof prof.full_name === 'string' && prof.full_name) {
+        doctorName = `Dr. ${prof.full_name}`;
+      }
+    }
+    // El médico está listo si el triaje pasó a in_progress O si ya existe una cita en appointments
+    return {
+      triageId: targetId,
+      triage: currentTriage,
+      ready: currentTriage.status === 'in_progress' || ownAppointment,
+      noActiveRoom: false,
+      doctorName,
+    };
+  }, [isCurrent]);
+
+  const checkStatus = useCallback(function checkStatus(
+    targetId: string,
+    requireFresh = false
+  ): Promise<WaitingStatus | null> {
+    if (!isCurrent(targetId)) return Promise.resolve(null);
+    const pending = pendingStatus.current;
+    if (pending) {
+      // La entrada espera cualquier lectura anterior y solicita una confirmación nueva.
+      return requireFresh ? pending.then(() => checkStatus(targetId, true)) : pending;
+    }
+    const request = readStatus(targetId).then(snapshot => {
+      if (!isCurrent(targetId) || !snapshot) return null;
+      setTriage(snapshot.triage);
+      setNoActiveRoom(snapshot.noActiveRoom);
+      setReadyTriageId(snapshot.ready ? targetId : null);
+      return snapshot;
+    }).catch((err: unknown) => {
+      if (isCurrent(targetId)) {
+        console.warn('Error crítico comprobando estado en sala de espera:', err);
+        setReadyTriageId(null);
+      }
+      return null;
+    }).finally(() => {
+      pendingStatus.current = null;
+      if (isCurrent(targetId)) setLoading(false);
+    });
+    pendingStatus.current = request;
+    return request;
+  }, [isCurrent, readStatus]);
 
   // Inicialización del ID del triaje (con fallback automático por usuario si no llega por params)
   useEffect(() => {
-    let resolvedId = triageId;
+    let active = true;
     const init = async () => {
-      setLoading(true);
-      setNoActiveRoom(false);
-      hasNavigated.current = false;
-
-      if (!resolvedId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: latest, error: latestError } = await supabase
-            .from('triages')
-            .select('id')
-            .eq('patient_id', user.id)
-            .in('status', ['pending', 'waiting', 'in_progress'])
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-            
-          if (latestError) {
-            console.warn('Error obteniendo último triaje:', latestError);
-          }
-
-          if (latest?.id) {
-            resolvedId = latest.id;
-            setActiveTriageId(latest.id);
+      try {
+        let resolvedId = triageId;
+        if (!resolvedId) {
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+          if (!active || !session.current.mounted) return;
+          if (authError) throw authError;
+          if (user) {
+            const { data: latest, error: latestError } = await supabase
+              .from('triages')
+              .select('id')
+              .eq('patient_id', user.id)
+              .in('status', ['pending', 'waiting', 'in_progress'])
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (!active || !session.current.mounted) return;
+            if (latestError) throw latestError;
+            if (typeof latest?.id === 'string') resolvedId = latest.id;
           }
         }
-      } else {
-        setActiveTriageId(resolvedId);
-      }
-
-      if (resolvedId) {
-        await checkStatus(resolvedId);
-      } else {
-        // Si al final del proceso no tenemos un ID de triaje válido, no hay sala activa
+        if (!active || !session.current.mounted) return;
+        session.current.triageId = resolvedId;
+        if (resolvedId) {
+          setActiveTriageId(resolvedId);
+          await checkStatus(resolvedId);
+        } else {
+          setNoActiveRoom(true);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!active || !session.current.mounted) return;
+        console.warn('Error obteniendo el triaje de la sala de espera:', err);
         setNoActiveRoom(true);
         setLoading(false);
       }
     };
-    init();
-  }, [triageId]);
+    void init();
+    return () => { active = false; };
+  }, [triageId, checkStatus]);
 
   // Polling activo cada 2 segundos + Suscripción Realtime dual (triages y appointments)
   useEffect(() => {
@@ -156,7 +235,7 @@ export default function WaitingRoomScreen() {
 
     // 1. Polling periódico infalible cada 2 segundos
     const pollInterval = setInterval(() => {
-      checkStatus(activeTriageId);
+      void checkStatus(activeTriageId);
     }, 2000);
 
     // 2. Suscripción en tiempo real a cambios de estado y citas
@@ -168,9 +247,8 @@ export default function WaitingRoomScreen() {
         table: 'triages',
         filter: `id=eq.${activeTriageId}`
       }, payload => {
-        if (payload.new?.status === 'in_progress') {
-          setIsDoctorReady(true);
-          setTriage((prev: any) => ({ ...prev, status: 'in_progress' }));
+        if (isCurrent(activeTriageId) && payload.new?.id === activeTriageId) {
+          void checkStatus(activeTriageId);
         }
       })
       .on('postgres_changes', {
@@ -178,14 +256,14 @@ export default function WaitingRoomScreen() {
         schema: 'public',
         table: 'appointments'
       }, payload => {
-        if (payload.new?.triage_id === activeTriageId) {
-          setIsDoctorReady(true);
-          checkStatus(activeTriageId);
+        if (isCurrent(activeTriageId) && payload.new?.triage_id === activeTriageId) {
+          void checkStatus(activeTriageId);
         }
       })
       .on('broadcast', { event: 'doctor_ready' }, payload => {
-        setIsDoctorReady(true);
-        setTriage((prev: any) => ({ ...prev, status: 'in_progress' }));
+        if (isCurrent(activeTriageId) && isRecord(payload.payload) && payload.payload.triageId === activeTriageId) {
+          void checkStatus(activeTriageId);
+        }
       })
       .subscribe();
 
@@ -193,36 +271,43 @@ export default function WaitingRoomScreen() {
       clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
-  }, [activeTriageId]);
+  }, [activeTriageId, checkStatus, isCurrent]);
 
   // Auto-navegación cuando el médico se conecta
-  const handleJoinCall = () => {
-    if (hasNavigated.current) return;
-    hasNavigated.current = true;
+  const handleJoinCall = useCallback(async (expectedId: string) => {
+    if (!isCurrent(expectedId) || readyTriageId !== expectedId || hasNavigated.current || joining.current) return;
+    joining.current = true;
+    try {
+      const snapshot = await checkStatus(expectedId, true);
+      if (!isCurrent(expectedId) || !snapshot?.ready || snapshot.triageId !== expectedId || snapshot.triage?.id !== expectedId || hasNavigated.current) return;
+      hasNavigated.current = true;
+      router.push({
+        pathname: '/(doctor)/videocall',
+        params: {
+          role: 'patient',
+          patientId: snapshot.triage.patient_id || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
+          patientName: snapshot.triage.patients?.profiles?.full_name || 'Paciente',
+          triageId: expectedId,
+          doctorName: snapshot.doctorName,
+        }
+      });
+    } finally {
+      joining.current = false;
+    }
+  }, [isCurrent, readyTriageId, checkStatus]);
 
-    const patientName = triage?.patients?.profiles?.full_name || 'Paciente';
-
-    router.push({
-      pathname: '/(doctor)/videocall' as any,
-      params: {
-        role: 'patient',
-        patientId: triage?.patient_id || '95432c20-caed-43ca-8a01-4255e7a9dc1c',
-        patientName: patientName,
-        triageId: activeTriageId || '',
-        doctorName: assignedDoctorName
-      }
-    });
-  };
+  const joinReadyCall = useEffectEvent((expectedId: string) => { void handleJoinCall(expectedId); });
 
   useEffect(() => {
-    if (isDoctorReady && !hasNavigated.current) {
+    if (activeTriageId && readyTriageId === activeTriageId && !hasNavigated.current) {
+      const expectedId = activeTriageId;
       // Pequeño retardo de 1.2 segundos para que el usuario vea la transición a verde antes de entrar
       const timer = setTimeout(() => {
-        handleJoinCall();
+        joinReadyCall(expectedId);
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [isDoctorReady]);
+  }, [activeTriageId, readyTriageId]);
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -374,7 +459,7 @@ export default function WaitingRoomScreen() {
               ]}
               activeOpacity={0.8}
               disabled={!isDoctorReady}
-              onPress={handleJoinCall}
+              onPress={() => { if (activeTriageId) void handleJoinCall(activeTriageId); }}
             >
               {isDoctorReady ? (
                 <Ionicons name="videocam" size={22} color="#ffffff" />
@@ -393,10 +478,11 @@ export default function WaitingRoomScreen() {
               style={styles.cancelBtn}
               activeOpacity={0.6}
               onPress={async () => {
-                if (activeTriageId) {
-                  // Cancelar el triaje marcándolo como resuelto/cancelado para que no quede fantasma
-                  await supabase.from('triages').update({ status: 'resolved' }).eq('id', activeTriageId);
-                }
+                const expectedId = activeTriageId;
+                if (!expectedId || !isCurrent(expectedId)) return;
+                // Cancelar el triaje marcándolo como resuelto/cancelado para que no quede fantasma
+                await supabase.from('triages').update({ status: 'resolved' }).eq('id', expectedId);
+                if (!isCurrent(expectedId)) return;
                 router.replace('/(patient)/menu');
               }}
             >

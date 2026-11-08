@@ -7,12 +7,12 @@ import { supabase } from '@/lib/supabase';
 export default function DoctorProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // Campos editables
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
-  
+
   // Campos de solo lectura
   const [email, setEmail] = useState('');
   const [identityCard, setIdentityCard] = useState('');
@@ -23,57 +23,60 @@ export default function DoctorProfileScreen() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    let active = true;
+    const loadProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!active || !user) return;
+        setUserId(user.id);
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
+        // Cargar datos completos del perfil
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-      // Cargar datos completos del perfil
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileData) {
-        setFullName(profileData.full_name || '');
-        setPhoneNumber(profileData.phone_number || '');
-        setAddress(profileData.address || '');
-        setEmail(profileData.email || user.email || '');
-        setIdentityCard(profileData.identity_card || '');
-        setGender(profileData.gender === 'M' ? 'Masculino' : profileData.gender === 'F' ? 'Femenino' : 'No especificado');
-      }
-
-      // Cargar especialidad y estado
-      const { data: doctorData } = await supabase
-        .from('doctors')
-        .select('is_active, specialties(name)')
-        .eq('id', user.id)
-        .single();
-      
-      if (doctorData) {
-        setIsActive(doctorData.is_active);
-        const spec = Array.isArray(doctorData?.specialties) 
-          ? doctorData?.specialties[0] 
-          : doctorData?.specialties;
-
-        if (spec?.name) {
-          setSpecialtyName(spec.name);
-        } else {
-          setSpecialtyName('No asignada');
+        if (!active) return;
+        if (profileData) {
+          setFullName(profileData.full_name || '');
+          setPhoneNumber(profileData.phone_number || '');
+          setAddress(profileData.address || '');
+          setEmail(profileData.email || user.email || '');
+          setIdentityCard(profileData.identity_card || '');
+          setGender(profileData.gender === 'M' ? 'Masculino' : profileData.gender === 'F' ? 'Femenino' : 'No especificado');
         }
+
+        // Cargar especialidad y estado
+        const { data: doctorData } = await supabase
+          .from('doctors')
+          .select('is_active, specialties(name)')
+          .eq('id', user.id)
+          .single();
+
+        if (!active) return;
+        if (doctorData) {
+          setIsActive(doctorData.is_active);
+          const spec = Array.isArray(doctorData?.specialties)
+            ? doctorData?.specialties[0]
+            : doctorData?.specialties;
+
+          if (spec?.name) {
+            setSpecialtyName(spec.name);
+          } else {
+            setSpecialtyName('No asignada');
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando perfil:', error);
+      } finally {
+        if (active) setLoading(false);
       }
-    } catch (error) {
-      console.error('Error cargando perfil:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadProfile();
+    return () => { active = false; };
+  }, []);
 
   const saveProfile = async () => {
     if (!userId) return;
@@ -87,15 +90,15 @@ export default function DoctorProfileScreen() {
       setSaving(true);
       const { error } = await supabase
         .from('profiles')
-        .update({ 
+        .update({
           full_name: fullName.trim(),
           phone_number: phoneNumber.trim(),
           address: address.trim()
         })
         .eq('id', userId);
-      
+
       if (error) throw error;
-      
+
       if (Platform.OS === 'web') {
         window.alert('Perfil actualizado correctamente');
       } else {
@@ -140,7 +143,7 @@ export default function DoctorProfileScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Datos Profesionales (Solo Lectura)</Text>
-          
+
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
               <Ionicons name="medkit" size={20} color="#6366f1" />
@@ -170,7 +173,7 @@ export default function DoctorProfileScreen() {
               <Text style={styles.infoValue}>{email}</Text>
             </View>
           </View>
-          
+
           <View style={styles.infoRow}>
             <View style={styles.infoIcon}>
               <Ionicons name="male-female" size={20} color="#64748b" />
@@ -219,8 +222,8 @@ export default function DoctorProfileScreen() {
             />
           </View>
 
-          <TouchableOpacity 
-            style={[styles.saveBtn, saving && styles.saveBtnDisabled]} 
+          <TouchableOpacity
+            style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
             onPress={saveProfile}
             disabled={saving}
           >

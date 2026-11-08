@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -36,6 +36,57 @@ interface MedicalRecord {
   created_at: string;
 }
 
+async function loadDirectory(): Promise<PatientProfile[] | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // 1. Obtener todos los medical_records creados por este doctor
+  const { data: records, error } = await supabase
+    .from('medical_records')
+    .select('patient_id')
+    .eq('doctor_id', user.id);
+
+  if (error) throw error;
+
+  // 2. Extraer IDs únicos de pacientes atendidos
+  const patientIds = [...new Set(records.map(r => r.patient_id).filter(Boolean))];
+
+  if (patientIds.length === 0) {
+    return [];
+  }
+
+  // 3. Consultar datos de perfil y médicos
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, full_name, identity_card, phone_number, gender')
+    .in('id', patientIds);
+
+  const { data: patientsData } = await supabase
+    .from('patients')
+    .select('id, blood_type, allergies, emergency_contact')
+    .in('id', patientIds);
+
+  const patientMap = new Map();
+  patientsData?.forEach(p => patientMap.set(p.id, p));
+
+  const formattedPatients: PatientProfile[] = (profilesData || []).map(profile => {
+    const pData = patientMap.get(profile.id) || {};
+    return {
+      id: profile.id,
+      full_name: profile.full_name || 'Paciente sin nombre',
+      identity_card: profile.identity_card || 'S/N',
+      phone_number: profile.phone_number || '-',
+      gender: profile.gender || 'No especificado',
+      blood_type: pData.blood_type || 'No reg.',
+      allergies: pData.allergies || 'Ninguna registrada',
+      emergency_contact: pData.emergency_contact || '-',
+    };
+  });
+
+  formattedPatients.sort((a, b) => a.full_name.localeCompare(b.full_name));
+  return formattedPatients;
+}
+
 export default function PatientRecordsScreen() {
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState<PatientProfile[]>([]);
@@ -64,67 +115,29 @@ export default function PatientRecordsScreen() {
   const [patientToDelete, setPatientToDelete] = useState<PatientProfile | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchDirectory();
+  const requestVersion = useRef(0);
+  const fetchDirectory = useCallback(() => {
+    const version = ++requestVersion.current;
+    return loadDirectory()
+      .then(data => {
+        if (version === requestVersion.current && data) setPatients(data);
+      })
+      .catch((err: unknown) => {
+        if (version === requestVersion.current) console.error('Error cargando expedientes:', err);
+      })
+      .finally(() => {
+        if (version === requestVersion.current) setLoading(false);
+      });
   }, []);
 
-  const fetchDirectory = async () => {
+  useEffect(() => {
+    void fetchDirectory();
+    return () => { requestVersion.current += 1; };
+  }, [fetchDirectory]);
+
+  const refreshDirectory = () => {
     setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // 1. Obtener todos los medical_records creados por este doctor
-      const { data: records, error } = await supabase
-        .from('medical_records')
-        .select('patient_id')
-        .eq('doctor_id', user.id);
-
-      if (error) throw error;
-
-      // 2. Extraer IDs únicos de pacientes atendidos
-      const patientIds = [...new Set(records.map(r => r.patient_id).filter(Boolean))];
-
-      if (patientIds.length === 0) {
-        setPatients([]);
-        return;
-      }
-
-      // 3. Consultar datos de perfil y médicos
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, identity_card, phone_number, gender')
-        .in('id', patientIds);
-
-      const { data: patientsData } = await supabase
-        .from('patients')
-        .select('id, blood_type, allergies, emergency_contact')
-        .in('id', patientIds);
-
-      const patientMap = new Map();
-      patientsData?.forEach(p => patientMap.set(p.id, p));
-
-      const formattedPatients: PatientProfile[] = (profilesData || []).map(profile => {
-        const pData = patientMap.get(profile.id) || {};
-        return {
-          id: profile.id,
-          full_name: profile.full_name || 'Paciente sin nombre',
-          identity_card: profile.identity_card || 'S/N',
-          phone_number: profile.phone_number || '-',
-          gender: profile.gender || 'No especificado',
-          blood_type: pData.blood_type || 'No reg.',
-          allergies: pData.allergies || 'Ninguna registrada',
-          emergency_contact: pData.emergency_contact || '-',
-        };
-      });
-
-      formattedPatients.sort((a, b) => a.full_name.localeCompare(b.full_name));
-      setPatients(formattedPatients);
-    } catch (err) {
-      console.error('Error cargando expedientes:', err);
-    } finally {
-      setLoading(false);
-    }
+    void fetchDirectory();
   };
 
   // Abrir Modal de Detalles (Ojo)
@@ -264,7 +277,7 @@ export default function PatientRecordsScreen() {
         month: 'short',
         year: 'numeric',
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -285,7 +298,7 @@ export default function PatientRecordsScreen() {
           <Text style={styles.headerTitle}>Expedientes Clínicos</Text>
           <Text style={styles.headerSubtitle}>Tabla de pacientes atendidos</Text>
         </View>
-        <TouchableOpacity style={styles.headerBtn} onPress={fetchDirectory} disabled={loading}>
+        <TouchableOpacity style={styles.headerBtn} onPress={refreshDirectory} disabled={loading}>
           <Ionicons name="refresh" size={22} color="#64748b" />
         </TouchableOpacity>
       </View>

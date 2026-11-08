@@ -35,11 +35,11 @@ export const triageService = {
    * Trae los triajes y hace un "Join" automático con la tabla patients y profiles
    * para obtener el nombre del paciente.
    */
-  async getActiveTriages() {
+  async getActiveTriages(signal?: AbortSignal) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const { data, error } = await supabase
+    const query = supabase
       .from('triages')
       .select(`
         *,
@@ -56,8 +56,10 @@ export const triageService = {
       .gte('created_at', yesterday.toISOString())
       .order('created_at', { ascending: false });
 
+    const { data, error } = await (signal ? query.abortSignal(signal) : query);
+
     if (error) {
-      console.error('Error obteniendo triajes:', error);
+      if (!signal?.aborted) console.error('Error obteniendo triajes:', error);
       throw error;
     }
     

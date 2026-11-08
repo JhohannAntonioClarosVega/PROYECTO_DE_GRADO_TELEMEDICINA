@@ -34,7 +34,7 @@ export default function AdminLayout() {
           options={{
             drawerLabel: 'Gestión de Personal',
             title: 'Panel de Administración',
-            drawerIcon: ({ color, size }) => <Ionicons name="shield-checkmark" size={size} color={color} />,
+            drawerIcon: ({ color, size }) => <Ionicons name="shield-checkmark" size={size} style={{ color }} />,
           }}
         />
         <Drawer.Screen
@@ -42,7 +42,7 @@ export default function AdminLayout() {
           options={{
             drawerLabel: 'Especialidades',
             title: 'Gestión de Especialidades',
-            drawerIcon: ({ color, size }) => <Ionicons name="medkit" size={size} color={color} />,
+            drawerIcon: ({ color, size }) => <Ionicons name="medkit" size={size} style={{ color }} />,
           }}
         />
         <Drawer.Screen
@@ -50,7 +50,7 @@ export default function AdminLayout() {
           options={{
             drawerLabel: 'Reportes y Finanzas',
             title: 'Análisis Estadístico',
-            drawerIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} color={color} />,
+            drawerIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} style={{ color }} />,
           }}
         />
       </Drawer>

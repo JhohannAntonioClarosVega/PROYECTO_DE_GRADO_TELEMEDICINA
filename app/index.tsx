@@ -7,8 +7,7 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ActivityIndicator,
-  ScrollView,
-  Image
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Modal, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -17,91 +17,180 @@ export default function DoctorDashboardScreen() {
   const [doctorSpecialty, setDoctorSpecialty] = useState<string | null>(null);
   const [filterBySpecialty, setFilterBySpecialty] = useState(true);
   const [rawTriages, setRawTriages] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedTriage, setSelectedTriage] = useState<any>(null);
+  const filterRef = useRef(true);
+  const reloadRef = useRef<((showRefreshing?: boolean) => void) | null>(null);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      let specName = null;
+  useEffect(() => {
+    type DashboardRequest = {
+      version: number;
+      applyFilter: boolean;
+      controller: AbortController;
+      timeout: ReturnType<typeof setTimeout> | null;
+    };
+    let active = true;
+    let version = 0;
+    let pending: DashboardRequest | null = null;
+    let reloadRequested = false;
+    const isCurrent = (request: DashboardRequest) =>
+      active && pending === request && request.version === version;
 
-      if (user) {
-        const { data } = await supabase
+    const finish = (request: DashboardRequest) => {
+      if (pending !== request) return;
+      if (request.timeout !== null) clearTimeout(request.timeout);
+      pending = null;
+      if (!active) return;
+      if (reloadRequested) {
+        startLoad();
+      } else {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    };
+
+    const load = async (request: DashboardRequest) => {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (!isCurrent(request)) return;
+        if (authError) throw authError;
+        if (!user) throw new Error('No hay una sesión médica activa.');
+
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('full_name')
           .eq('id', user.id)
+          .abortSignal(request.controller.signal)
           .single();
-        if (data && data.full_name) {
-          setDoctorName(data.full_name);
-        }
+        if (!isCurrent(request)) return;
+        if (profileError) throw profileError;
 
-        const { data: doctorData } = await supabase
+        const { data: doctorData, error: specialtyError } = await supabase
           .from('doctors')
-          .select('specialties(name)')
+          .select('specialty_id, specialties(name)')
           .eq('id', user.id)
+          .abortSignal(request.controller.signal)
           .single();
-        
-        const spec = Array.isArray(doctorData?.specialties) 
-          ? doctorData?.specialties[0] 
+        if (!isCurrent(request)) return;
+        if (specialtyError) throw specialtyError;
+        if (!doctorData) throw new Error('No se pudo verificar el perfil médico.');
+
+        const spec = Array.isArray(doctorData?.specialties)
+          ? doctorData?.specialties[0]
           : doctorData?.specialties;
-
-        if (spec?.name) {
-          specName = spec.name;
-          setDoctorSpecialty(specName);
+        let currentSpecialty: string | null = null;
+        if (doctorData.specialty_id === null) {
+          if (spec) throw new Error('La asignación de especialidad no coincide con su relación.');
+        } else {
+          if (typeof doctorData.specialty_id !== 'string' || !doctorData.specialty_id ||
+              typeof spec?.name !== 'string' || !spec.name.trim()) {
+            throw new Error('No se pudo verificar la especialidad asignada al médico.');
+          }
+          currentSpecialty = spec.name;
         }
+        const data = await triageService.getActiveTriages(request.controller.signal);
+        if (!isCurrent(request)) return;
+        let filtered = data || [];
+
+        // Filtro Inteligente por especialidad (Loose) para atrapar variaciones como "Pediatría" vs "Pediatra"
+        if (request.applyFilter && currentSpecialty && currentSpecialty !== 'Medicina General') {
+          const normalize = (s: string) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
+          filtered = filtered.filter((t) => {
+            const doc = normalize(currentSpecialty);
+            const ai = normalize(t.recommended_specialty);
+            return ai === doc || ai.includes(doc) || doc.includes(ai) || (ai.length > 4 && ai.substring(0, 5) === doc.substring(0, 5));
+          });
+        }
+
+        // Publish one verified specialty/list pair, never a mixture of two loads.
+        setDoctorName(typeof profile?.full_name === 'string' && profile.full_name ? profile.full_name : 'Médico');
+        setDoctorSpecialty(currentSpecialty);
+        setRawTriages(data || []);
+        setTriages(filtered);
+        setLoadError(null);
+      } catch (error: unknown) {
+        if (!isCurrent(request)) return;
+        console.error('Error actualizando la especialidad y la cola de pacientes:', error);
+        setLoadError('No se pudo actualizar tu especialidad y la cola de pacientes. Vuelve a intentarlo.');
+      } finally {
+        finish(request);
       }
-      await fetchTriages(specName, filterBySpecialty);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-      setRefreshing(false);
+    };
+
+    function startLoad() {
+      if (!active || pending || !reloadRequested) return;
+      reloadRequested = false;
+      const request: DashboardRequest = {
+        version,
+        applyFilter: filterRef.current,
+        controller: new AbortController(),
+        timeout: null,
+      };
+      pending = request;
+      // Bound the whole read cycle so an unresponsive request cannot block a queued reload.
+      request.timeout = setTimeout(() => {
+        if (!active || pending !== request) return;
+        if (isCurrent(request)) {
+          setLoadError('La actualización tardó más de 30 segundos. Vuelve a intentarlo.');
+        }
+        finish(request);
+        request.controller.abort();
+      }, 30_000);
+      void load(request);
     }
-  };
 
-  const fetchTriages = async (currentSpecialty: string | null = doctorSpecialty, applyFilter: boolean = filterBySpecialty) => {
-    try {
-      const data = await triageService.getActiveTriages();
-      setRawTriages(data || []);
-      let filtered = data || [];
-
-      // Filtro Inteligente por especialidad (Loose) para atrapar variaciones como "Pediatría" vs "Pediatra"
-      if (applyFilter && currentSpecialty && currentSpecialty !== 'Medicina General') {
-        const normalize = (s: string) => s ? s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : '';
-        filtered = filtered.filter((t: any) => {
-          const doc = normalize(currentSpecialty);
-          const ai = normalize(t.recommended_specialty);
-          return ai === doc || ai.includes(doc) || doc.includes(ai) || (ai.length > 4 && ai.substring(0, 5) === doc.substring(0, 5));
-        });
+    const requestLoad = (showRefreshing = false) => {
+      if (!active) return;
+      version += 1;
+      reloadRequested = true;
+      setLoading(true);
+      if (showRefreshing) setRefreshing(true);
+      setLoadError(null);
+      setTriages([]);
+      setRawTriages([]);
+      setSelectedTriage(null);
+      if (pending) {
+        // Coalesce a burst into one fresh reload after the obsolete read settles.
+        pending.controller.abort();
+      } else {
+        startLoad();
       }
-      
-      setTriages(filtered);
-    } catch (error: any) {
-      console.error('Error cargando la cola de pacientes:', error);
-      alert('Error fetching triages: ' + (error?.message || JSON.stringify(error)));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    };
+    reloadRef.current = requestLoad;
+    requestLoad();
 
-  useEffect(() => {
-    loadData();
-    
-    // Suscribirse a nuevos triajes
+    // Keep the existing triage subscription; no specialty polling or new subscriptions.
     const subscription = supabase
       .channel('public:triages')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'triages' }, payload => {
-        loadData(); // Recargar datos frescos
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'triages' }, () => {
+        requestLoad();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      active = false;
+      version += 1;
+      reloadRequested = false;
+      if (reloadRef.current === requestLoad) reloadRef.current = null;
+      const request = pending;
+      pending = null;
+      if (request) {
+        if (request.timeout !== null) clearTimeout(request.timeout);
+        request.controller.abort();
+      }
+      void supabase.removeChannel(subscription);
     };
-  }, [filterBySpecialty]);
+  }, []);
+
+  const handleFilterChange = (applyFilter: boolean) => {
+    if (!reloadRef.current) return;
+    filterRef.current = applyFilter;
+    setFilterBySpecialty(applyFilter);
+    reloadRef.current();
+  };
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchTriages(doctorSpecialty, filterBySpecialty);
+    reloadRef.current?.(true);
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -133,8 +222,6 @@ export default function DoctorDashboardScreen() {
       router.replace('/');
     }
   };
-
-  const [selectedTriage, setSelectedTriage] = useState<any>(null);
 
   const handleAttend = async (item: any, patientName: string) => {
     try {
@@ -299,8 +386,7 @@ export default function DoctorDashboardScreen() {
             className={`px-5 py-2.5 rounded-full border mr-3 justify-center items-center ${filterBySpecialty ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}
             style={filterBySpecialty ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 } : {}}
             onPress={() => {
-              setFilterBySpecialty(true);
-              fetchTriages(doctorSpecialty, true);
+              handleFilterChange(true);
             }}
           >
             <Text className={`text-[13px] font-bold ${filterBySpecialty ? 'text-white' : 'text-slate-600'}`}>
@@ -312,12 +398,11 @@ export default function DoctorDashboardScreen() {
             className={`px-5 py-2.5 rounded-full border mr-6 justify-center items-center ${!filterBySpecialty ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`}
             style={!filterBySpecialty ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 } : {}}
             onPress={() => {
-              setFilterBySpecialty(false);
-              fetchTriages(doctorSpecialty, false);
+              handleFilterChange(false);
             }}
           >
             <Text className={`text-[13px] font-bold ${!filterBySpecialty ? 'text-white' : 'text-slate-600'}`}>
-              Todos ({rawTriages.length})
+              Todos ({loading || loadError ? '…' : rawTriages.length})
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -327,6 +412,14 @@ export default function DoctorDashboardScreen() {
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#0066CC" />
           <Text className="mt-4 text-slate-500 font-medium text-[15px]">Actualizando lista...</Text>
+        </View>
+      ) : loadError ? (
+        <View className="flex-1 justify-center items-center px-8">
+          <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
+          <Text accessibilityRole="alert" className="mt-4 text-slate-600 text-center text-[15px] leading-6">{loadError}</Text>
+          <TouchableOpacity className="mt-6 bg-slate-900 px-6 py-3.5 rounded-xl" onPress={onRefresh}>
+            <Text className="text-white font-bold">Reintentar</Text>
+          </TouchableOpacity>
         </View>
       ) : triages.length === 0 ? (
         <View className="flex-1 justify-center items-center px-8">
@@ -344,8 +437,7 @@ export default function DoctorDashboardScreen() {
               className="mt-8 bg-slate-900 px-6 py-3.5 rounded-xl flex-row items-center"
               style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }}
               onPress={() => {
-                setFilterBySpecialty(false);
-                fetchTriages(doctorSpecialty, false);
+                handleFilterChange(false);
               }}
             >
               <Ionicons name="people" size={18} color="#ffffff" />

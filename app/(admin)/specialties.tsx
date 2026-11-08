@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, TextInput, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
+import { useAdminLoad } from '@/hooks/use-admin-load';
 
 interface Specialty {
   id: string;
@@ -13,10 +14,18 @@ interface Specialty {
 export default function SpecialtiesScreen() {
   const [loading, setLoading] = useState(true);
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
-  
+  const [hasSnapshot, setHasSnapshot] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { runLatest, captureLifetime, isMounted } = useAdminLoad();
+  const addDraftVersion = useRef(0);
+  const editDraftVersion = useRef(0);
+  const modalVersion = useRef(0);
+  const operations = useRef(new Map<string, symbol>());
+  const latestOperation = useRef<symbol | null>(null);
+
   const [newSpecialtyName, setNewSpecialtyName] = useState('');
   const [isAddingSpecialty, setIsAddingSpecialty] = useState(false);
-  
+
   const [editingSpecialtyId, setEditingSpecialtyId] = useState<string | null>(null);
   const [editingSpecialtyName, setEditingSpecialtyName] = useState('');
 
@@ -36,15 +45,31 @@ export default function SpecialtiesScreen() {
     confirmText: 'Aceptar',
   });
 
-  const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
+  const closeModal = useCallback(() => {
+    if (!isMounted()) return;
+    modalVersion.current += 1;
+    setModalConfig(prev => ({ ...prev, visible: false }));
+  }, [isMounted]);
 
-  const handleErrorModal = (err: any, customTitle: string) => {
+  const showModal = useCallback((config: typeof modalConfig) => {
+    const alive = captureLifetime();
+    if (!alive()) return;
+    const version = ++modalVersion.current;
+    const valid = () => alive() && version === modalVersion.current;
+    setModalConfig({
+      ...config,
+      onConfirm: () => { if (valid()) return (config.onConfirm || closeModal)(); },
+      onCancel: () => { if (valid()) return (config.onCancel || closeModal)(); },
+    });
+  }, [captureLifetime, closeModal]);
+
+  const handleErrorModal = useCallback((err: unknown, customTitle: string) => {
     let msg = 'Ocurrió un error inesperado.';
     if (err instanceof Error) msg = err.message;
     else if (typeof err === 'string') msg = err;
-    else if (err?.message) msg = err.message;
+    else if (typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string') msg = err.message;
 
-    setModalConfig({
+    showModal({
       visible: true,
       title: customTitle,
       message: msg,
@@ -53,31 +78,85 @@ export default function SpecialtiesScreen() {
       onConfirm: closeModal,
       onCancel: closeModal
     });
-  };
+  }, [closeModal, showModal]);
 
-  const fetchSpecialties = async () => {
+  const fetchSpecialties = useCallback(() => {
+    if (!isMounted()) return Promise.resolve(false);
     setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('specialties')
-        .select('id, name')
-        .order('name');
-      
+    setLoadError(null);
+    return runLatest(async ({ isCurrent, signal }) => {
+      const { data, error } = await supabase.from('specialties').select('id, name').order('name').abortSignal(signal);
+      if (!isCurrent()) return;
       if (error) throw error;
       setSpecialties(data || []);
-    } catch (err: any) {
-      handleErrorModal(err, 'Error de Carga');
-    } finally {
-      setLoading(false);
-    }
-  };
+      setHasSnapshot(true);
+    }, {
+      onError: (err: unknown) => {
+        setLoadError('No se pudieron actualizar las especialidades. Intenta nuevamente.');
+        handleErrorModal(err, 'Error de Carga');
+      },
+      onSettled: () => setLoading(false),
+    });
+  }, [runLatest, isMounted, handleErrorModal]);
 
   useEffect(() => {
-    fetchSpecialties();
-  }, []);
+    const alive = captureLifetime();
+    void Promise.resolve().then(() => { if (alive()) return fetchSpecialties(); });
+  }, [fetchSpecialties, captureLifetime]);
+
+  const reloadSpecialties = () => {
+    return fetchSpecialties();
+  };
+
+  const beginOperation = (key: string) => {
+    const alive = captureLifetime();
+    if (!alive() || operations.current.has(key)) return null;
+    const token = Symbol(key);
+    operations.current.set(key, token);
+    latestOperation.current = token;
+    return {
+      alive,
+      latest: () => alive() && latestOperation.current === token,
+      finish: () => {
+        if (operations.current.get(key) === token) operations.current.delete(key);
+      },
+    };
+  };
+
+  const changeNewName = (value: string) => {
+    if (!isMounted()) return;
+    addDraftVersion.current += 1;
+    latestOperation.current = null;
+    setNewSpecialtyName(value);
+  };
+
+  const startEditing = (item: Specialty) => {
+    if (!isMounted()) return;
+    editDraftVersion.current += 1;
+    latestOperation.current = null;
+    setEditingSpecialtyId(item.id);
+    setEditingSpecialtyName(item.name);
+  };
+
+  const changeEditName = (value: string) => {
+    if (!isMounted()) return;
+    editDraftVersion.current += 1;
+    latestOperation.current = null;
+    setEditingSpecialtyName(value);
+  };
+
+  const cancelEditing = () => {
+    if (!isMounted()) return;
+    editDraftVersion.current += 1;
+    latestOperation.current = null;
+    setEditingSpecialtyId(null);
+  };
 
   const handleAddSpecialty = async () => {
     if (!newSpecialtyName.trim()) return;
+    const operation = beginOperation('add');
+    if (!operation) return;
+    let draftVersion = addDraftVersion.current;
     setIsAddingSpecialty(true);
     try {
       const { error } = await supabase
@@ -85,11 +164,16 @@ export default function SpecialtiesScreen() {
         .insert([{ name: newSpecialtyName.trim() }]);
 
       if (error) throw error;
-      
-      setNewSpecialtyName('');
-      await fetchSpecialties();
-      
-      setModalConfig({
+      if (!operation.alive()) return;
+
+      if (addDraftVersion.current === draftVersion) {
+        draftVersion = ++addDraftVersion.current;
+        setNewSpecialtyName('');
+      }
+      const refreshed = await reloadSpecialties();
+      if (!operation.latest() || addDraftVersion.current !== draftVersion || !refreshed) return;
+
+      showModal({
         visible: true,
         title: 'Éxito',
         message: 'Especialidad añadida correctamente.',
@@ -98,15 +182,19 @@ export default function SpecialtiesScreen() {
         onConfirm: closeModal,
         onCancel: closeModal
       });
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al añadir especialidad');
+    } catch (err: unknown) {
+      if (operation.latest()) handleErrorModal(err, 'Error al añadir especialidad');
+      else console.warn('Resultado de una creación anterior pendiente de revisión:', err);
     } finally {
-      setIsAddingSpecialty(false);
+      operation.finish();
+      if (operation.alive()) setIsAddingSpecialty(false);
     }
   };
 
   const confirmDeleteSpecialty = (id: string, name: string) => {
-    setModalConfig({
+    if (!isMounted()) return;
+    latestOperation.current = null;
+    showModal({
       visible: true,
       title: 'Eliminar Especialidad',
       message: `¿Estás seguro de que deseas eliminar "${name}"? Esta acción no se puede deshacer.`,
@@ -114,13 +202,19 @@ export default function SpecialtiesScreen() {
       confirmText: 'Sí, eliminar',
       onCancel: closeModal,
       onConfirm: async () => {
+        const operation = beginOperation('delete:' + id);
+        if (!operation) return;
         closeModal();
         try {
           const { error } = await supabase.from('specialties').delete().eq('id', id);
           if (error) throw error;
-          await fetchSpecialties();
-        } catch (err: any) {
-          handleErrorModal(err, 'No se puede eliminar porque hay médicos asignados a esta especialidad.');
+          if (!operation.alive()) return;
+          await reloadSpecialties();
+        } catch (err: unknown) {
+          if (operation.latest()) handleErrorModal(err, 'No se puede eliminar porque hay médicos asignados a esta especialidad.');
+          else console.warn('Resultado de una eliminación anterior pendiente de revisión:', err);
+        } finally {
+          operation.finish();
         }
       }
     });
@@ -128,20 +222,30 @@ export default function SpecialtiesScreen() {
 
   const handleUpdateSpecialty = async () => {
     if (!editingSpecialtyId || !editingSpecialtyName.trim()) return;
+    const operation = beginOperation('edit:' + editingSpecialtyId);
+    if (!operation) return;
+    const draftVersion = editDraftVersion.current;
     try {
       const { error } = await supabase.from('specialties').update({ name: editingSpecialtyName.trim() }).eq('id', editingSpecialtyId);
       if (error) throw error;
-      setEditingSpecialtyId(null);
-      setEditingSpecialtyName('');
-      await fetchSpecialties();
-    } catch (err: any) {
-      handleErrorModal(err, 'Error al actualizar especialidad');
+      if (!operation.alive()) return;
+      if (editDraftVersion.current === draftVersion) {
+        editDraftVersion.current += 1;
+        setEditingSpecialtyId(null);
+        setEditingSpecialtyName('');
+      }
+      await reloadSpecialties();
+    } catch (err: unknown) {
+      if (operation.latest()) handleErrorModal(err, 'Error al actualizar especialidad');
+      else console.warn('Resultado de una edición anterior pendiente de revisión:', err);
+    } finally {
+      operation.finish();
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <CustomModal 
+      <CustomModal
         visible={modalConfig.visible}
         title={modalConfig.title}
         message={modalConfig.message}
@@ -159,7 +263,7 @@ export default function SpecialtiesScreen() {
           <Text style={styles.headerTitle}>Gestión de Especialidades</Text>
           <Text style={styles.headerSubtitle}>Administración G.A.M. Cochabamba</Text>
         </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={fetchSpecialties} disabled={loading}>
+        <TouchableOpacity style={styles.refreshBtn} onPress={reloadSpecialties} disabled={loading}>
           <Ionicons name="refresh" size={22} color="#64748b" />
         </TouchableOpacity>
       </View>
@@ -172,7 +276,7 @@ export default function SpecialtiesScreen() {
             placeholder="Ej: Neurología, Pediatría..."
             placeholderTextColor="#94a3b8"
             value={newSpecialtyName}
-            onChangeText={setNewSpecialtyName}
+            onChangeText={changeNewName}
           />
           <TouchableOpacity
             style={[styles.addBtn, (!newSpecialtyName.trim() || isAddingSpecialty) && { opacity: 0.5 }]}
@@ -190,12 +294,21 @@ export default function SpecialtiesScreen() {
 
       <View style={styles.listContainer}>
         <Text style={styles.sectionTitle}>Especialidades Registradas</Text>
-        
+
+        {loadError && (
+          <View>
+            <Text accessibilityRole="alert" style={styles.emptyText}>{loadError}</Text>
+            <TouchableOpacity onPress={reloadSpecialties} style={styles.refreshBtn}>
+              <Text>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color="#2563eb" />
           </View>
-        ) : specialties.length === 0 ? (
+        ) : !hasSnapshot ? null : specialties.length === 0 ? (
           <View style={styles.centerContainer}>
             <Ionicons name="medkit-outline" size={48} color="#cbd5e1" />
             <Text style={styles.emptyText}>No hay especialidades registradas.</Text>
@@ -206,16 +319,16 @@ export default function SpecialtiesScreen() {
               <View key={item.id} style={styles.specialtyCard}>
                 {editingSpecialtyId === item.id ? (
                   <View style={styles.editRow}>
-                    <TextInput 
-                      style={styles.editInput} 
-                      value={editingSpecialtyName} 
-                      onChangeText={setEditingSpecialtyName} 
-                      autoFocus 
+                    <TextInput
+                      style={styles.editInput}
+                      value={editingSpecialtyName}
+                      onChangeText={changeEditName}
+                      autoFocus
                     />
                     <TouchableOpacity onPress={handleUpdateSpecialty} style={styles.iconBtnSave}>
                       <Ionicons name="checkmark" size={20} color="#fff" />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setEditingSpecialtyId(null)} style={styles.iconBtnCancel}>
+                    <TouchableOpacity onPress={cancelEditing} style={styles.iconBtnCancel}>
                       <Ionicons name="close" size={20} color="#fff" />
                     </TouchableOpacity>
                   </View>
@@ -226,14 +339,14 @@ export default function SpecialtiesScreen() {
                       <Text style={styles.specialtyName}>{item.name}</Text>
                     </View>
                     <View style={styles.actionsRow}>
-                      <TouchableOpacity 
-                        style={styles.actionBtnEdit} 
-                        onPress={() => { setEditingSpecialtyId(item.id); setEditingSpecialtyName(item.name); }}
+                      <TouchableOpacity
+                        style={styles.actionBtnEdit}
+                        onPress={() => startEditing(item)}
                       >
                         <Ionicons name="pencil" size={18} color="#3b82f6" />
                       </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.actionBtnDelete} 
+                      <TouchableOpacity
+                        style={styles.actionBtnDelete}
                         onPress={() => confirmDeleteSpecialty(item.id, item.name)}
                       >
                         <Ionicons name="trash" size={18} color="#ef4444" />

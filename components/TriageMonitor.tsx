@@ -1,57 +1,115 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, StatusBar, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { triageService } from '@/services/triage.service';
 import { Ionicons } from '@expo/vector-icons';
 
+const REFRESH_INTERVAL_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 30_000;
+
 export default function TriageMonitor() {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  const fetchTriages = async () => {
-    try {
-      const data = await triageService.getActiveTriages();
-      if (data) {
-        const formattedData = data.map((triage: any) => {
-          // Extraemos el nombre del paciente si el JOIN funcionó
-          const patientName = triage.patients?.profiles?.full_name || 'Paciente Nuevo';
-          
-          // Calculamos minutos
-          const createdAt = new Date(triage.created_at);
-          const now = new Date();
-          const diffMins = Math.max(1, Math.round((now.getTime() - createdAt.getTime()) / 60000));
-          
-          return {
-            id: triage.id,
-            name: patientName,
-            urgency: triage.urgency_level,
-            symptoms: triage.reported_symptoms,
-            time: `${diffMins} min`,
-            raw: triage
-          };
-        });
-        setPatients(formattedData);
-      }
-    } catch (error) {
-      console.error("Error al cargar triajes:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const refreshRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    let active = true;
+    type MonitorRequest = {
+      controller: AbortController;
+      timeout: ReturnType<typeof setTimeout> | null;
+    };
+    let pending: MonitorRequest | null = null;
+
+    const finish = (request: MonitorRequest) => {
+      if (!active || pending !== request) return;
+      if (request.timeout !== null) clearTimeout(request.timeout);
+      pending = null;
+      setLoading(false);
+      setRefreshing(false);
+    };
+
+    const fetchTriages = () => {
+      // Periodic ticks and manual refreshes share the same in-flight request.
+      if (!active || pending) return;
+      const request: MonitorRequest = {
+        controller: new AbortController(),
+        timeout: null,
+      };
+      pending = request;
+      const isCurrent = () => active && pending === request;
+
+      // This read has a local deadline; there is no global project read timeout.
+      request.timeout = setTimeout(() => {
+        if (!isCurrent()) return;
+        finish(request);
+        setLoadError('La consulta tardó más de 30 segundos. Se volverá a intentar automáticamente; también puedes actualizar.');
+        request.controller.abort();
+      }, REQUEST_TIMEOUT_MS);
+
+      void Promise.resolve().then(() => {
+        if (!isCurrent()) return null;
+        return triageService.getActiveTriages(request.controller.signal);
+      }).then(data => {
+        if (!isCurrent()) return;
+        if (data) {
+          const formattedData = data.map((triage: any) => {
+            // Extraemos el nombre del paciente si el JOIN funcionó
+            const patientName = triage.patients?.profiles?.full_name || 'Paciente Nuevo';
+
+            // Calculamos minutos
+            const createdAt = new Date(triage.created_at);
+            const now = new Date();
+            const diffMins = Math.max(1, Math.round((now.getTime() - createdAt.getTime()) / 60000));
+
+            return {
+              id: triage.id,
+              name: patientName,
+              urgency: triage.urgency_level,
+              symptoms: triage.reported_symptoms,
+              time: `${diffMins} min`,
+              raw: triage
+            };
+          });
+          setPatients(formattedData);
+        }
+        setLoadError(null);
+      }).catch((error: unknown) => {
+        if (!isCurrent()) return;
+        console.error('Error al cargar triajes:', error);
+        setLoadError('No se pudieron cargar los triajes. Se volverá a intentar automáticamente; también puedes actualizar.');
+      }).finally(() => {
+        // An expired request must not release a newer request's loading state.
+        finish(request);
+      });
+    };
+
+    const refresh = () => {
+      if (!active) return;
+      setRefreshing(true);
+      fetchTriages();
+    };
+    refreshRef.current = refresh;
     fetchTriages();
-    // Refrescar cada 10 segundos
-    const interval = setInterval(fetchTriages, 10000);
-    return () => clearInterval(interval);
+    // Keep the original cadence, skipping ticks while a request is pending.
+    const interval = setInterval(fetchTriages, REFRESH_INTERVAL_MS);
+    return () => {
+      active = false;
+      if (refreshRef.current === refresh) refreshRef.current = null;
+      clearInterval(interval);
+      const request = pending;
+      pending = null;
+      if (request) {
+        if (request.timeout !== null) clearTimeout(request.timeout);
+        request.controller.abort();
+      }
+    };
   }, []);
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchTriages();
+    refreshRef.current?.();
   };
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -89,9 +147,15 @@ export default function TriageMonitor() {
           </TouchableOpacity>
         </View>
 
-        {loading && !refreshing ? (
+        {loadError && (
+          <View style={styles.errorBanner}>
+            <Text accessibilityRole="alert" style={styles.errorText}>{loadError}</Text>
+          </View>
+        )}
+
+        {loading ? (
           <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 50 }} />
-        ) : patients.length === 0 ? (
+        ) : patients.length === 0 && !loadError ? (
           <View style={styles.emptyState}>
             <Ionicons name="checkmark-done-circle" size={60} color="#10b981" />
             <Text style={styles.emptyText}>No hay pacientes en sala de espera.</Text>
@@ -157,6 +221,17 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: '#e5e7eb',
     borderRadius: 12,
+  },
+  errorBanner: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#991b1b',
+    fontSize: 14,
+    lineHeight: 20,
   },
   emptyState: {
     alignItems: 'center',

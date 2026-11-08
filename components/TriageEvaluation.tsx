@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -105,7 +105,7 @@ export default function TriageEvaluation({ onBack, triage }: { onBack?: () => vo
           <View className="mb-6">
             <Text className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-2">Síntomas Reportados</Text>
             <View className="bg-slate-50 p-4 rounded-2xl">
-              <Text className="text-[15px] text-slate-700 leading-6 italic">"{triageData.symptoms}"</Text>
+              <Text className="text-[15px] text-slate-700 leading-6 italic">&quot;{triageData.symptoms}&quot;</Text>
             </View>
           </View>
 

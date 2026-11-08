@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
+import {
+  View,
+  Text,
+  TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView, 
-  Platform, 
-  ActivityIndicator, 
-  ScrollView 
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -39,23 +39,25 @@ export default function RegisterScreen() {
   const [document, setDocument] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
   useEffect(() => {
-    if (isDoctor) {
-      fetchSpecialties();
-    }
-  }, [isDoctor]);
-
-  const fetchSpecialties = async () => {
-    try {
-      const { data, error } = await supabase.from('specialties').select('id, name');
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setSpecialties(data);
-        setSelectedSpecialty(data[0].id);
+    if (!isDoctor) return;
+    let active = true;
+    const fetchSpecialties = async () => {
+      try {
+        const { data, error } = await supabase.from('specialties').select('id, name');
+        if (!active) return;
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setSpecialties(data);
+          setSelectedSpecialty(data[0].id);
+        }
+      } catch (err) {
+        console.error('Error fetching specialties:', err);
       }
-    } catch (err) {
-      console.error('Error fetching specialties:', err);
-    }
-  };
+    };
+
+    fetchSpecialties();
+    return () => { active = false; };
+  }, [isDoctor]);
 
   const pickDocument = async () => {
     try {
@@ -90,7 +92,7 @@ export default function RegisterScreen() {
       const cleanEmail = email.trim().toLowerCase();
 
       // 0a. Verificar disponibilidad de correo en profiles
-      const { data: existingByEmail, error: checkEmailError } = await supabase
+      const { data: existingByEmail } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', cleanEmail)
@@ -101,7 +103,7 @@ export default function RegisterScreen() {
       }
 
       // 0b. Verificar CI
-      const { data: existingByCI, error: checkCIError } = await supabase
+      const { data: existingByCI } = await supabase
         .from('profiles')
         .select('id')
         .eq('identity_card', identityCard.trim())
@@ -145,11 +147,11 @@ export default function RegisterScreen() {
         if (document) {
           const fileExt = document.name.split('.').pop();
           const fileName = `${userId}-${Date.now()}.${fileExt}`;
-          
+
           const response = await fetch(document.uri);
           const blob = await response.blob();
-          
-          const { data: uploadData, error: uploadError } = await supabase.storage
+
+          const { error: uploadError } = await supabase.storage
             .from('doctor_documents')
             .upload(fileName, blob, {
               contentType: document.mimeType || 'application/octet-stream',
@@ -160,7 +162,7 @@ export default function RegisterScreen() {
           const { data: publicUrlData } = supabase.storage
             .from('doctor_documents')
             .getPublicUrl(fileName);
-            
+
           documentUrl = publicUrlData.publicUrl;
         }
 
@@ -198,14 +200,14 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View className="absolute top-12 left-6 w-10 h-10 rounded-full bg-white border border-slate-100 z-20" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
-          <TouchableOpacity 
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} 
+          <TouchableOpacity
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
             onPress={() => router.back()}
           >
             <Ionicons name="chevron-back" size={24} color="#000000" />
@@ -213,7 +215,7 @@ export default function RegisterScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60, maxWidth: 480, width: '100%', alignSelf: 'center', marginTop: Platform.OS === 'ios' ? 80 : 100 }} showsVerticalScrollIndicator={false}>
-          
+
           <View className="mb-6 items-center">
             <View className={`w-16 h-16 rounded-[18px] items-center justify-center mb-4 border border-slate-100 bg-white`} style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}>
               <Ionicons name={isDoctor ? "medkit" : "person-add"} size={30} color={isDoctor ? "#007AFF" : "#000000"} />
@@ -230,11 +232,11 @@ export default function RegisterScreen() {
                 </View>
                 <Text className="text-[22px] font-bold text-slate-900 mb-2">¡Todo listo!</Text>
                 <Text className="text-[14px] text-slate-500 text-center mb-6 leading-5">{successMsg}</Text>
-                <View 
+                <View
                   className="w-full rounded-[16px]"
                   style={{ backgroundColor: isDoctor ? '#007AFF' : '#000000', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 }}
                 >
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={{ paddingVertical: 16, alignItems: 'center' }}
                     onPress={() => router.replace(`/login?role=${isDoctor ? 'doctor' : 'patient'}`)}
                   >
@@ -252,10 +254,10 @@ export default function RegisterScreen() {
                 ) : null}
 
                 <Text className="text-[14px] font-semibold text-slate-400 uppercase tracking-wider mb-4 ml-1">Cuenta</Text>
-                
+
                 <View className="space-y-4 mb-8">
                   <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                    <TextInput 
+                    <TextInput
                       className="text-[16px] text-slate-900 h-full"
                       placeholder="Correo Electrónico"
                       placeholderTextColor="#94a3b8"
@@ -266,7 +268,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                    <TextInput 
+                    <TextInput
                       className="text-[16px] text-slate-900 h-full"
                       placeholder="Contraseña"
                       placeholderTextColor="#94a3b8"
@@ -278,10 +280,10 @@ export default function RegisterScreen() {
                 </View>
 
                 <Text className="text-[14px] font-semibold text-slate-400 uppercase tracking-wider mb-4 ml-1">Información Personal</Text>
-                
+
                 <View className="space-y-4 mb-8">
                   <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                    <TextInput 
+                    <TextInput
                       className="text-[16px] text-slate-900 h-full"
                       placeholder="Nombre Completo"
                       placeholderTextColor="#94a3b8"
@@ -290,7 +292,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                    <TextInput 
+                    <TextInput
                       className="text-[16px] text-slate-900 h-full"
                       placeholder="Carnet de Identidad"
                       placeholderTextColor="#94a3b8"
@@ -299,7 +301,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                    <TextInput 
+                    <TextInput
                       className="text-[16px] text-slate-900 h-full"
                       placeholder="Teléfono"
                       placeholderTextColor="#94a3b8"
@@ -309,7 +311,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View className="border border-slate-200 rounded-[16px] px-4 py-1 h-[56px] justify-center mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                    <TextInput 
+                    <TextInput
                       className="text-[16px] text-slate-900 h-full"
                       placeholder="Dirección"
                       placeholderTextColor="#94a3b8"
@@ -332,7 +334,7 @@ export default function RegisterScreen() {
                 {isDoctor && (
                   <>
                     <Text className="text-[14px] font-semibold text-slate-400 uppercase tracking-wider mb-4 ml-1">Perfil Profesional</Text>
-                    
+
                     <View className="space-y-4 mb-8">
                       <View className="border border-slate-200 rounded-[16px] h-[56px] justify-center overflow-hidden" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
                         <Picker
@@ -348,8 +350,8 @@ export default function RegisterScreen() {
                       </View>
 
                       <View className="border border-slate-200 rounded-[16px] mt-4" style={{ backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
-                        <TouchableOpacity 
-                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16 }} 
+                        <TouchableOpacity
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16 }}
                           onPress={pickDocument}
                         >
                           <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: 'rgba(226, 232, 240, 0.5)' }}>
@@ -364,11 +366,11 @@ export default function RegisterScreen() {
                   </>
                 )}
 
-                <View 
+                <View
                   className={`mt-2 rounded-[16px]`}
                   style={[{ backgroundColor: isDoctor ? '#007AFF' : '#000000', height: 56, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }, loading ? { opacity: 0.7 } : {}]}
                 >
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
                     onPress={handleRegister}
                     disabled={loading}

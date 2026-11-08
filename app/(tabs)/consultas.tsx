@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Platform, ActivityIndicator, RefreshControl
@@ -36,6 +36,53 @@ const urgencyLabel = (u: string) => {
   }
 };
 
+async function loadAppointments(): Promise<Appointment[]> {
+  const { data, error } = await supabase
+    .from('triages')
+    .select(`
+      id,
+      patient_id,
+      urgency_level,
+      reported_symptoms,
+      created_at,
+      patients (
+        id,
+        profiles (
+          full_name,
+          identity_card
+        )
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error consultas:', JSON.stringify(error));
+    throw new Error(error.message);
+  }
+
+  const formatted: Appointment[] = (data || []).map((t: any) => {
+    const profile = t.patients?.profiles;
+    const name = profile?.full_name || 'Paciente';
+    const ci   = profile?.identity_card || '—';
+    const mins = Math.max(1, Math.round(
+      (Date.now() - new Date(t.created_at).getTime()) / 60000
+    ));
+    return {
+      id:          t.id,
+      patientId:   t.patient_id || t.patients?.id || '',
+      patientName: name,
+      patientCI:   ci,
+      urgency:     t.urgency_level || 'Medium',
+      waitingMins: mins,
+      type:        t.reported_symptoms
+        ? t.reported_symptoms.substring(0, 40) + '...'
+        : 'Consulta General',
+    };
+  });
+
+  return formatted;
+}
+
 export default function ConsultasScreen() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -43,64 +90,35 @@ export default function ConsultasScreen() {
   const [errorMsg, setErrorMsg]         = useState('');
   const [activeTab, setActiveTab]       = useState<'active' | 'completed'>('active');
 
-  const fetchAppointments = useCallback(async () => {
-    setErrorMsg('');
-    try {
-      const { data, error } = await supabase
-        .from('triages')
-        .select(`
-          id,
-          patient_id,
-          urgency_level,
-          reported_symptoms,
-          created_at,
-          patients (
-            id,
-            profiles (
-              full_name,
-              identity_card
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error consultas:', JSON.stringify(error));
-        throw new Error(error.message);
-      }
-
-      const formatted: Appointment[] = (data || []).map((t: any) => {
-        const profile = t.patients?.profiles;
-        const name = profile?.full_name || 'Paciente';
-        const ci   = profile?.identity_card || '—';
-        const mins = Math.max(1, Math.round(
-          (Date.now() - new Date(t.created_at).getTime()) / 60000
-        ));
-        return {
-          id:          t.id,
-          patientId:   t.patient_id || t.patients?.id || '',
-          patientName: name,
-          patientCI:   ci,
-          urgency:     t.urgency_level || 'Medium',
-          waitingMins: mins,
-          type:        t.reported_symptoms
-            ? t.reported_symptoms.substring(0, 40) + '...'
-            : 'Consulta General',
-        };
+  const requestVersion = useRef(0);
+  const fetchAppointments = useCallback(() => {
+    const version = ++requestVersion.current;
+    return loadAppointments()
+      .then(data => {
+        if (version !== requestVersion.current) return;
+        setAppointments(data);
+      })
+      .catch((err: unknown) => {
+        if (version !== requestVersion.current) return;
+        setErrorMsg(
+          err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message
+            ? err.message
+            : 'Error al cargar las consultas.'
+        );
+      })
+      .finally(() => {
+        if (version !== requestVersion.current) return;
+        setLoading(false);
+        setRefreshing(false);
       });
-
-      setAppointments(formatted);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Error al cargar las consultas.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
   }, []);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  useEffect(() => {
+    void fetchAppointments();
+    return () => { requestVersion.current += 1; };
+  }, [fetchAppointments]);
 
-  const onRefresh = () => { setRefreshing(true); fetchAppointments(); };
+  const onRefresh = () => { setRefreshing(true); setErrorMsg(''); void fetchAppointments(); };
 
   const renderItem = ({ item }: { item: Appointment }) => {
     const color = urgencyColor(item.urgency);

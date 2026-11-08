@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Camera } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,53 +8,198 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import CustomModal from '@/components/CustomModal';
 
-export default function VideoCallScreen() {
-  const params = useLocalSearchParams();
-  const role = params.role || 'patient'; // 'doctor' or 'patient'
-  const patientId = params.patientId;
-  const patientNameParam = params.patientName || 'Paciente';
-  const triageId = params.triageId;
-  const doctorNameParam = params.doctorName || 'Médico Asignado';
+type CallRole = 'doctor' | 'patient';
 
+interface ConsultationIdentity {
+  triageId: string | null;
+  patientId: string | null;
+  role: CallRole;
+}
+
+interface CallTriage {
+  id: string;
+  patient_id: string;
+  status: string;
+  urgency_level?: string;
+  reported_symptoms?: string;
+  ai_recommendation?: string;
+}
+
+interface CallAppointment {
+  id: string;
+  triage_id: string;
+  patient_id: string;
+  doctor_id: string;
+}
+
+interface CallContext {
+  triage: CallTriage;
+  appointment: CallAppointment | null;
+}
+
+interface CallRecord {
+  id?: string;
+  appointment_id: string;
+  patient_id: string;
+  doctor_id: string;
+  diagnosis: string;
+  treatment_plan: string;
+  clinical_notes: string | null;
+  created_at: string;
+}
+
+interface ChatMessage {
+  id: string;
+  sender: string;
+  text: string;
+  time: string;
+}
+
+interface SaveProgress {
+  running: boolean;
+  recordWritten: boolean;
+  uncertainWrite: boolean;
+  completed: boolean;
+}
+
+// Only write status is retained across screen visits; clinical text stays in its consultation.
+const savesByTriage = new Map<string, SaveProgress>();
+const definiteInsertRejections = new Set(['23502', '23503', '23505', '23514', '42501', '22001', '22P02']);
+
+class ConsultationChanged extends Error {
+  constructor() {
+    super('La consulta cambió o se cerró.');
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function routeValue(value: string | string[] | undefined): string | null {
+  return (Array.isArray(value) ? value[0] : value) || null;
+}
+
+function errorMessage(error: unknown): string {
+  return isRecord(error) && typeof error.message === 'string'
+    ? error.message
+    : 'No se pudo guardar el registro clínico en la base de datos.';
+}
+
+function parseTriage(value: unknown, identity: ConsultationIdentity): CallTriage {
+  if (!identity.triageId || !identity.patientId || !isRecord(value) ||
+      typeof value.id !== 'string' || typeof value.patient_id !== 'string' || value.id !== identity.triageId ||
+      value.patient_id !== identity.patientId || typeof value.status !== 'string') {
+    throw new Error('El triaje no corresponde al paciente de esta consulta.');
+  }
+  return {
+    id: value.id,
+    patient_id: value.patient_id,
+    status: value.status,
+    urgency_level: typeof value.urgency_level === 'string' ? value.urgency_level : undefined,
+    reported_symptoms: typeof value.reported_symptoms === 'string' ? value.reported_symptoms : undefined,
+    ai_recommendation: typeof value.ai_recommendation === 'string' ? value.ai_recommendation : undefined,
+  };
+}
+
+function parseAppointment(value: unknown, triage: CallTriage): CallAppointment {
+  if (!isRecord(value) || typeof value.id !== 'string' ||
+      value.triage_id !== triage.id || value.patient_id !== triage.patient_id ||
+      typeof value.doctor_id !== 'string') {
+    throw new Error('La cita no corresponde al triaje y al paciente de esta consulta.');
+  }
+  return {
+    id: value.id,
+    triage_id: value.triage_id,
+    patient_id: value.patient_id,
+    doctor_id: value.doctor_id,
+  };
+}
+
+function parseRecord(value: unknown, context: CallContext): CallRecord {
+  const appointment = context.appointment;
+  if (!appointment || !isRecord(value) || value.appointment_id !== appointment.id ||
+      value.patient_id !== context.triage.patient_id || value.doctor_id !== appointment.doctor_id) {
+    throw new Error('El registro médico no corresponde a la cita, al paciente y al médico de esta consulta.');
+  }
+  return {
+    id: typeof value.id === 'string' ? value.id : undefined,
+    appointment_id: appointment.id,
+    patient_id: context.triage.patient_id,
+    doctor_id: appointment.doctor_id,
+    diagnosis: typeof value.diagnosis === 'string' ? value.diagnosis : '',
+    treatment_plan: typeof value.treatment_plan === 'string' ? value.treatment_plan : '',
+    clinical_notes: typeof value.clinical_notes === 'string' ? value.clinical_notes : null,
+    created_at: typeof value.created_at === 'string' ? value.created_at : '',
+  };
+}
+
+export default function VideoCallScreen() {
+  const params = useLocalSearchParams<{
+    role?: string | string[];
+    patientId?: string | string[];
+    triageId?: string | string[];
+    doctorName?: string | string[];
+  }>();
+  const identity: ConsultationIdentity = {
+    triageId: routeValue(params.triageId),
+    patientId: routeValue(params.patientId),
+    role: routeValue(params.role) === 'doctor' ? 'doctor' : 'patient',
+  };
+
+  // A new identity owns new form, recipe, appointment, call, modal and resource states.
+  return (
+    <VideoConsultation
+      key={JSON.stringify([identity.triageId, identity.patientId, identity.role])}
+      identity={identity}
+      doctorNameParam={routeValue(params.doctorName) || 'Médico Asignado'}
+    />
+  );
+}
+
+function VideoConsultation({
+  identity,
+  doctorNameParam,
+}: {
+  identity: ConsultationIdentity;
+  doctorNameParam: string;
+}) {
+  const { triageId, patientId, role } = identity;
   const isDoctor = role === 'doctor';
 
-  // Estados de control de la llamada
-  const [micActive, setMicActive] = useState(true);
-  const [camActive, setCamActive] = useState(true);
-  const [callDuration, setCallDuration] = useState(0);
+  const [camActive] = useState(true);
+  const [, setCallDuration] = useState(0);
   const [connecting, setConnecting] = useState(true);
   const [isCallEnded, setIsCallEnded] = useState(false);
-
-  // Paneles de interacción
   const [showChat, setShowChat] = useState(false);
-  const [showNotes, setShowNotes] = useState(false); // Solo médico
-  
-  // Chat interno de la videollamada
-  const [messages, setMessages] = useState<any[]>([
+  const [showNotes, setShowNotes] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([
     { id: '1', sender: isDoctor ? 'patient' : 'doctor', text: 'Hola, buenas tardes.', time: '14:30' },
   ]);
   const [chatInput, setChatInput] = useState('');
-
-  // Formulario clínico (Doctor)
   const [diagnosis, setDiagnosis] = useState('');
   const [treatment, setTreatment] = useState('');
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
-
-  // Datos de triaje del paciente (Doctor)
-  const [patientTriage, setPatientTriage] = useState<any>(null);
-
-  // Estados para ver el registro médico (Paciente)
+  const [patientTriage, setPatientTriage] = useState<CallTriage | null>(null);
   const [showPatientRecord, setShowPatientRecord] = useState(false);
-  const [medicalRecord, setMedicalRecord] = useState<any>(null);
+  const [medicalRecord, setMedicalRecord] = useState<CallRecord | null>(null);
   const [fetchingRecord, setFetchingRecord] = useState(false);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
 
-  // Referencias para la cámara local en Web
-  const localVideoRef = useRef<any>(null);
-  const localStreamRef = useRef<any>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const mountedRef = useRef(false);
+  const readControllersRef = useRef(new Set<AbortController>());
+  const chatTimersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const sendingChannelsRef = useRef(new Set<ReturnType<typeof supabase.channel>>());
+  const sendingCancellationsRef = useRef(new Set<() => void>());
+  const pendingRecordRef = useRef<Promise<void> | null>(null);
+  const receivedRecordRef = useRef<CallRecord | null>(null);
+  const receivedEndRef = useRef(false);
+  const savingRef = useRef(false);
+  const endingRef = useRef(false);
 
-  // Configuración del modal de alertas
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
     title: string;
@@ -71,339 +216,421 @@ export default function VideoCallScreen() {
     confirmText: 'Aceptar',
   });
 
-  const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
-
-  // Contadores y temporizadores
   useEffect(() => {
-    // Pedir permisos en móviles antes de renderizar Jitsi
+    mountedRef.current = true;
+    const controllers = readControllersRef.current;
+    const timers = chatTimersRef.current;
+    const channels = sendingChannelsRef.current;
+    const cancellations = sendingCancellationsRef.current;
+    return () => {
+      mountedRef.current = false;
+      controllers.forEach(controller => controller.abort());
+      controllers.clear();
+      timers.forEach(timer => clearTimeout(timer));
+      timers.clear();
+      cancellations.forEach(cancel => cancel());
+      cancellations.clear();
+      channels.forEach(channel => { void supabase.removeChannel(channel); });
+      channels.clear();
+    };
+  }, []);
+
+  const isCurrent = useCallback(() => mountedRef.current, []);
+  const ensureCurrent = useCallback(() => {
+    if (!mountedRef.current) throw new ConsultationChanged();
+  }, []);
+
+  const runRead = useCallback(async function runRead<T>(
+    query: (signal: AbortSignal) => PromiseLike<T>
+  ): Promise<T> {
+    ensureCurrent();
+    const controller = new AbortController();
+    readControllersRef.current.add(controller);
+    try {
+      const result = await query(controller.signal);
+      ensureCurrent();
+      return result;
+    } finally {
+      readControllersRef.current.delete(controller);
+    }
+  }, [ensureCurrent]);
+
+  const closeModal = useCallback(() => {
+    if (isCurrent()) setModalConfig(prev => ({ ...prev, visible: false }));
+  }, [isCurrent]);
+
+  const returnToMenu = useCallback(() => {
+    if (isCurrent()) router.replace(isDoctor ? '/(doctor)/dashboard' : '/(patient)/menu');
+  }, [isCurrent, isDoctor]);
+
+  const readContext = useCallback(async (): Promise<CallContext> => {
+    if (!triageId || !patientId) throw new Error('Falta identificar el triaje o el paciente de la consulta.');
+    const { data: triageData, error: triageError } = await runRead(signal => supabase
+      .from('triages')
+      .select('*, patients(id, blood_type, allergies, emergency_contact, profiles(full_name, identity_card))')
+      .eq('id', triageId)
+      .abortSignal(signal)
+      .single());
+    if (triageError) throw triageError;
+    const triage = parseTriage(triageData, { triageId, patientId, role });
+    const { data: appointmentData, error: appointmentError } = await runRead(signal => supabase
+      .from('appointments')
+      .select('id, triage_id, patient_id, doctor_id')
+      .eq('triage_id', triage.id)
+      .abortSignal(signal)
+      .maybeSingle());
+    if (appointmentError) throw appointmentError;
+    return { triage, appointment: appointmentData ? parseAppointment(appointmentData, triage) : null };
+  }, [triageId, patientId, role, runRead]);
+
+  const findRecord = useCallback(async (context: CallContext): Promise<CallRecord | null> => {
+    const appointment = context.appointment;
+    if (!appointment) return null;
+    const { data, error } = await runRead(signal => supabase
+      .from('medical_records')
+      .select('*')
+      .eq('appointment_id', appointment.id)
+      .abortSignal(signal)
+      .maybeSingle());
+    if (error) throw error;
+    return data ? parseRecord(data, context) : null;
+  }, [runRead]);
+
+  const presentRecord = useCallback((record: CallRecord, ended = false) => {
+    if (!isCurrent()) return;
+    const firstRecord = receivedRecordRef.current === null;
+    const firstEnd = ended && !receivedEndRef.current;
+    receivedRecordRef.current = record;
+    if (ended) {
+      receivedEndRef.current = true;
+      setIsCallEnded(true);
+    }
+    setMedicalRecord(record);
+    if (firstRecord || firstEnd) {
+      setModalConfig({
+        visible: true,
+        title: ended ? 'Consulta Finalizada' : 'Nueva Indicación Médica',
+        message: ended
+          ? 'El doctor ha finalizado la consulta y emitido tu receta digital. La videollamada ha terminado.'
+          : 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
+        type: 'alert',
+        confirmText: ended ? 'Ver Receta Digital' : 'Ver Registro',
+        onConfirm: () => {
+          if (!isCurrent()) return;
+          closeModal();
+          setShowPatientRecord(true);
+          setShowChat(false);
+        },
+        onCancel: closeModal,
+      });
+    }
+  }, [isCurrent, closeModal]);
+
+  const fetchPatientRecord = useCallback((
+    canUpdate: () => boolean = () => true
+  ): Promise<void> => {
+    if (!isCurrent() || !canUpdate()) return Promise.resolve();
+    if (pendingRecordRef.current) return pendingRecordRef.current;
+    const pending = (async () => {
+      try {
+        const context = await readContext();
+        if (!isCurrent() || !canUpdate()) return;
+        setAppointmentId(context.appointment?.id ?? null);
+        const record = await findRecord(context);
+        if (!isCurrent() || !canUpdate()) return;
+        if (record) presentRecord(record);
+      } catch (error: unknown) {
+        if (isCurrent() && canUpdate()) console.warn('Error al buscar registro médico del paciente:', error);
+      } finally {
+        pendingRecordRef.current = null;
+      }
+    })();
+    pendingRecordRef.current = pending;
+    return pending;
+  }, [readContext, findRecord, presentRecord, isCurrent]);
+
+  useEffect(() => {
+    let active = true;
     const requestPermissions = async () => {
       if (Platform.OS !== 'web') {
         try {
           const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
+          if (!active || !isCurrent()) return;
           const { status: audioStatus } = await Camera.requestMicrophonePermissionsAsync();
+          if (!active || !isCurrent()) return;
           if (cameraStatus !== 'granted' || audioStatus !== 'granted') {
             console.warn('Los permisos de cámara/micrófono son necesarios.');
           }
-        } catch (e) {
-          console.warn('Error solicitando permisos', e);
+        } catch (error: unknown) {
+          if (active && isCurrent()) console.warn('Error solicitando permisos', error);
         }
       }
     };
-    requestPermissions();
-
-    // Simular retraso de conexión de 3 segundos
+    void requestPermissions();
     const connTimeout = setTimeout(() => {
-      setConnecting(false);
+      if (active && isCurrent()) setConnecting(false);
     }, 3000);
-
-    // Cronómetro de llamada
     const interval = setInterval(() => {
-      setCallDuration(prev => prev + 1);
+      if (active && isCurrent()) setCallDuration(prev => prev + 1);
     }, 1000);
-
-    // Limpiar historial previo si cambia el paciente (Expo Router reusa el componente)
-    setDiagnosis('');
-    setTreatment('');
-    setNotes('');
-    setMedicalRecord(null);
-    setShowNotes(false);
-    setShowPatientRecord(false);
-    setShowChat(false);
-
-    // Obtener datos del triaje si es doctor
-    if (isDoctor && triageId) {
-      fetchTriageData();
-    }
-
     return () => {
+      active = false;
       clearTimeout(connTimeout);
       clearInterval(interval);
-      // Apagar cámara si está activa (en Web)
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track: any) => track.stop());
-      }
     };
-  }, []);
+  }, [isCurrent]);
 
   useEffect(() => {
+    if (!isDoctor || !triageId) return;
+    let active = true;
+    void readContext().then(context => {
+      if (!active || !isCurrent()) return;
+      setPatientTriage(context.triage);
+      setAppointmentId(context.appointment?.id ?? null);
+    }).catch((error: unknown) => {
+      if (active && isCurrent()) console.error('Error cargando triaje para videollamada:', error);
+    });
+    return () => { active = false; };
+  }, [readContext, isDoctor, triageId, isCurrent]);
+
+  useEffect(() => {
+    let active = true;
+    const stopLocalCamera = () => {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+      if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    };
+    const startLocalCamera = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          if (!active || !isCurrent()) {
+            stream.getTracks().forEach(track => track.stop());
+            return;
+          }
+          localStreamRef.current = stream;
+          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        }
+      } catch (error: unknown) {
+        if (active && isCurrent()) console.warn('No se pudo acceder a la cámara física:', error);
+      }
+    };
     if (Platform.OS === 'web' && camActive && !connecting && !isCallEnded) {
-      startLocalCamera();
+      void startLocalCamera();
     } else {
       stopLocalCamera();
     }
-  }, [camActive, connecting, isCallEnded]);
-
-  const startLocalCamera = async () => {
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false // El audio no lo capturamos para evitar acoples locales
-        });
-        localStreamRef.current = stream;
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-        }
-      }
-    } catch (err) {
-      console.warn('No se pudo acceder a la cámara física:', err);
-    }
-  };
-
-  const stopLocalCamera = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track: any) => track.stop());
-      localStreamRef.current = null;
-    }
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-    }
-  };
-
-  // Obtener el appointment_id y activar consulta periódica para el paciente
-  useEffect(() => {
-    if (isDoctor) return;
-
-    let active = true;
-    let pollInterval: any = null;
-
-    const initPatientPolling = async () => {
-      if (!triageId) return;
-      try {
-        const { data: appt } = await supabase
-          .from('appointments')
-          .select('id')
-          .eq('triage_id', triageId)
-          .limit(1)
-          .maybeSingle();
-
-        if (appt && active) {
-          setAppointmentId(appt.id);
-          // Primera búsqueda
-          fetchPatientRecord(appt.id);
-          
-          // Encuesta cada 5 segundos
-          pollInterval = setInterval(() => {
-            if (active) {
-              fetchPatientRecord(appt.id);
-            }
-          }, 5000);
-        } else if (active) {
-          // Si no hay appointment aún, intentamos buscar de todas formas cada 5 segundos
-          fetchPatientRecord();
-          pollInterval = setInterval(() => {
-            if (active) {
-              fetchPatientRecord();
-            }
-          }, 5000);
-        }
-      } catch (err) {
-        console.error('Error al inicializar consulta de registro:', err);
-      }
-    };
-
-    initPatientPolling();
-
     return () => {
       active = false;
-      if (pollInterval) clearInterval(pollInterval);
+      stopLocalCamera();
     };
-  }, [triageId]);
+  }, [camActive, connecting, isCallEnded, isCurrent]);
 
-  // Suscripción Realtime para indicaciones médicas y fin de llamada (Paciente)
   useEffect(() => {
     if (isDoctor || !triageId) return;
+    let active = true;
+    const canUpdate = () => active && isCurrent();
+    void fetchPatientRecord(canUpdate);
+    const interval = setInterval(() => { void fetchPatientRecord(canUpdate); }, 5000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [triageId, isDoctor, fetchPatientRecord, isCurrent]);
 
-    // 1. Canal para cuando el doctor finaliza y guarda la receta
+  const emitCallEnded = useCallback((context: CallContext, record: CallRecord | null): Promise<boolean> => {
+    if (!isCurrent()) return Promise.resolve(false);
+    let channel: ReturnType<typeof supabase.channel>;
+    try {
+      channel = supabase.channel('rt_call_' + context.triage.id);
+    } catch (error: unknown) {
+      console.warn('No se pudo iniciar el aviso de fin de llamada:', error);
+      return Promise.resolve(false);
+    }
+    return new Promise(resolve => {
+      let settled = false;
+      let sending = false;
+      const finish = (sent: boolean, detail?: unknown) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        sendingCancellationsRef.current.delete(cancel);
+        sendingChannelsRef.current.delete(channel);
+        void supabase.removeChannel(channel);
+        if (!sent && detail !== undefined && isCurrent()) {
+          console.warn('No se pudo confirmar el aviso de fin de llamada:', detail);
+        }
+        resolve(sent);
+      };
+      const cancel = () => finish(false);
+      const timeout = setTimeout(() => finish(false, 'Tiempo de espera agotado.'), 5000);
+      sendingChannelsRef.current.add(channel);
+      sendingCancellationsRef.current.add(cancel);
+      try {
+        channel.subscribe(status => {
+          if (settled) return;
+          if (!isCurrent()) {
+            finish(false);
+            return;
+          }
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            finish(false, status);
+            return;
+          }
+          if (status !== 'SUBSCRIBED' || sending) return;
+          sending = true;
+          void channel.send({
+            type: 'broadcast',
+            event: 'call_ended',
+            payload: {
+              triageId: context.triage.id,
+              patientId: context.triage.patient_id,
+              appointmentId: context.appointment?.id ?? null,
+              diagnosis: record?.diagnosis ?? 'Consulta finalizada sin registro.',
+              treatment_plan: record?.treatment_plan ?? 'Contacte a administración.',
+            },
+          }).then(result => finish(result === 'ok', result === 'ok' ? undefined : result))
+            .catch((error: unknown) => finish(false, error));
+        });
+      } catch (error: unknown) {
+        finish(false, error);
+      }
+    });
+  }, [isCurrent]);
+
+  useEffect(() => {
+    if (isDoctor || !triageId) return;
+    let active = true;
+    const canUpdate = () => active && isCurrent();
     const callChannel = supabase
-      .channel(`rt_call_${triageId}`)
-      .on('broadcast', { event: 'call_ended' }, async (payload) => {
-        setIsCallEnded(true);
-        
-        // El paciente actualiza su propio triage a completado para evitar bloqueos de RLS del doctor
-        await supabase.from('triages').update({ status: 'completed' }).eq('id', triageId);
-
-        setMedicalRecord({
-          diagnosis: payload.payload.diagnosis,
-          treatment_plan: payload.payload.treatment_plan,
-          created_at: new Date().toISOString()
-        });
-        setModalConfig({
-          visible: true,
-          title: 'Consulta Finalizada',
-          message: 'El doctor ha finalizado la consulta y emitido tu receta digital. La videollamada ha terminado.',
-          type: 'alert',
-          confirmText: 'Ver Receta Digital',
-          onConfirm: () => {
-            closeModal();
-            setShowPatientRecord(true);
-            setShowChat(false);
-          },
-        });
+      .channel('rt_call_' + triageId)
+      .on('broadcast', { event: 'call_ended' }, async (event: unknown) => {
+        if (!canUpdate() || !isRecord(event) || !isRecord(event.payload)) return;
+        const payload = event.payload;
+        if ((payload.triageId !== undefined && payload.triageId !== triageId) ||
+            (payload.patientId !== undefined && payload.patientId !== patientId)) return;
+        try {
+          const context = await readContext();
+          if (!canUpdate()) return;
+          if (payload.appointmentId !== undefined && payload.appointmentId !== (context.appointment?.id ?? null)) return;
+          const record = await findRecord(context);
+          if (!canUpdate()) return;
+          const identifiedPayload = payload.triageId === context.triage.id &&
+            payload.patientId === context.triage.patient_id &&
+            payload.appointmentId === (context.appointment?.id ?? null);
+          if (!record && !identifiedPayload) {
+            if (context.triage.status === 'completed' || context.triage.status === 'resolved') {
+              setIsCallEnded(true);
+            } else {
+              console.warn('Se ignoró un aviso sin identidad ni un cierre confirmado de esta consulta.');
+            }
+            return;
+          }
+          const { error } = await supabase.from('triages').update({ status: 'completed' }).eq('id', context.triage.id);
+          if (error) throw error;
+          if (!canUpdate()) return;
+          if (record) {
+            presentRecord(record, true);
+          } else if (context.appointment) {
+            presentRecord({
+              appointment_id: context.appointment.id,
+              patient_id: context.triage.patient_id,
+              doctor_id: context.appointment.doctor_id,
+              diagnosis: typeof payload.diagnosis === 'string' ? payload.diagnosis : 'Consulta finalizada sin registro.',
+              treatment_plan: typeof payload.treatment_plan === 'string' ? payload.treatment_plan : 'Contacte a administración.',
+              clinical_notes: null,
+              created_at: new Date().toISOString(),
+            }, true);
+          } else {
+            setIsCallEnded(true);
+          }
+        } catch (error: unknown) {
+          if (canUpdate()) console.warn('Error al verificar el fin de esta consulta:', error);
+        }
       })
       .subscribe();
 
-    // 2. Canal tradicional a nivel DB (por si falla el broadcast)
-    let dbChannel: any = null;
+    let dbChannel: ReturnType<typeof supabase.channel> | null = null;
     if (appointmentId) {
       dbChannel = supabase
-        .channel(`rt_db_${appointmentId}`)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'medical_records', filter: `appointment_id=eq.${appointmentId}` },
-          (payload) => {
-            if (payload.new) {
-              setMedicalRecord((prev: any) => {
-                if (!prev) {
-                  setIsCallEnded(true);
-                  setModalConfig({
-                    visible: true,
-                    title: 'Nueva Indicación Médica',
-                    message: 'El doctor ha registrado tu diagnóstico y tratamiento.',
-                    type: 'alert',
-                    confirmText: 'Ver Registro',
-                    onConfirm: () => {
-                      closeModal();
-                      setShowPatientRecord(true);
-                      setShowChat(false);
-                    },
-                    onCancel: closeModal,
-                  });
-                }
-                return payload.new;
-              });
-            }
+        .channel('rt_db_' + appointmentId)
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'medical_records', filter: 'appointment_id=eq.' + appointmentId,
+        }, async () => {
+          if (!canUpdate()) return;
+          try {
+            const context = await readContext();
+            if (!canUpdate() || context.appointment?.id !== appointmentId) return;
+            const record = await findRecord(context);
+            if (canUpdate() && record) presentRecord(record, true);
+          } catch (error: unknown) {
+            if (canUpdate()) console.warn('Error al verificar el registro de esta consulta:', error);
           }
-        )
+        })
         .subscribe();
     }
-
     return () => {
-      supabase.removeChannel(callChannel);
-      if (dbChannel) supabase.removeChannel(dbChannel);
+      active = false;
+      void supabase.removeChannel(callChannel);
+      if (dbChannel) void supabase.removeChannel(dbChannel);
     };
-  }, [triageId, appointmentId]);
-
-  const fetchPatientRecord = async (apptId?: string) => {
-    try {
-      let targetApptId = apptId || appointmentId;
-      
-      // Intentar obtener el appointment_id asociado al triage si no lo tenemos
-      if (!targetApptId && triageId) {
-        const { data: appt } = await supabase
-          .from('appointments')
-          .select('id')
-          .eq('triage_id', triageId)
-          .limit(1)
-          .maybeSingle();
-        if (appt) {
-          targetApptId = appt.id;
-          setAppointmentId(appt.id);
-        }
-      }
-
-      // Si tenemos un appointment_id, buscamos por él
-      if (targetApptId) {
-        const { data, error } = await supabase
-          .from('medical_records')
-          .select('*')
-          .eq('appointment_id', targetApptId)
-          .limit(1)
-          .maybeSingle();
-
-        if (error) throw error;
-        if (data) {
-          setMedicalRecord((prev: any) => {
-            if (!prev) {
-              setModalConfig({
-                visible: true,
-                title: 'Nueva Indicación Médica',
-                message: 'El doctor ha registrado tu diagnóstico y tratamiento. Puedes revisarlo presionando el botón de Registro Clínico en la llamada.',
-                type: 'alert',
-                confirmText: 'Ver Registro',
-                onConfirm: () => {
-                  closeModal();
-                  setShowPatientRecord(true);
-                  setShowChat(false);
-                },
-                onCancel: closeModal,
-              });
-            }
-            return data;
-          });
-          return;
-        }
-      }
-      // NOTA: Se eliminó el "fallback" por patientId porque causaba que se cargaran
-      // recetas antiguas de otras consultas si el paciente probaba la app varias veces.
-    } catch (err) {
-      console.warn('Error al buscar registro médico del paciente:', err);
-    }
-  };
+  }, [triageId, patientId, appointmentId, isDoctor, readContext, findRecord, presentRecord, isCurrent]);
 
   const handleOpenPatientRecord = async () => {
+    if (!isCurrent()) return;
     setShowPatientRecord(true);
     setShowChat(false);
     setFetchingRecord(true);
     await fetchPatientRecord();
-    setFetchingRecord(false);
-  };
-
-  const fetchTriageData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('triages')
-        .select(`
-          *,
-          patients (
-            id,
-            blood_type,
-            allergies,
-            emergency_contact,
-            profiles (
-              full_name,
-              identity_card
-            )
-          )
-        `)
-        .eq('id', triageId)
-        .single();
-      if (error) throw error;
-      setPatientTriage(data);
-    } catch (err) {
-      console.error('Error cargando triaje para videollamada:', err);
-    }
-  };
-
-  const formatDuration = (sec: number) => {
-    const mins = Math.floor(sec / 60);
-    const secs = sec % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    if (isCurrent()) setFetchingRecord(false);
   };
 
   const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
-    const newMsg = {
+    if (!isCurrent() || !chatInput.trim()) return;
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       sender: 'self',
       text: chatInput,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages(prev => [...prev, newMsg]);
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }]);
     setChatInput('');
-
-    // Simular respuesta automática del paciente/médico tras 2 segundos
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      chatTimersRef.current.delete(timer);
+      if (!isCurrent()) return;
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         sender: isDoctor ? 'patient' : 'doctor',
         text: isDoctor ? 'Entendido doctor, ya anoté la indicación.' : 'De acuerdo, por favor tome asiento.',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }]);
     }, 2000);
+    chatTimersRef.current.add(timer);
+  };
+
+  const showSaved = (noticeSent: boolean) => {
+    if (!isCurrent()) return;
+    setIsCallEnded(true);
+    setModalConfig({
+      visible: true,
+      title: 'Historial Guardado',
+      message: noticeSent
+        ? 'El registro e historial médico ha sido guardado exitosamente. La llamada ha finalizado.'
+        : 'El registro e historial médico ha sido guardado exitosamente. La llamada ha finalizado, pero no se confirmó el aviso al paciente.',
+      type: 'alert',
+      confirmText: 'Volver al Inicio',
+      onCancel: closeModal,
+      onConfirm: () => {
+        if (!isCurrent()) return;
+        closeModal();
+        returnToMenu();
+      },
+    });
   };
 
   const handleSaveMedicalRecord = async () => {
+    if (!isCurrent() || !isDoctor || savingRef.current || endingRef.current) return;
     if (!diagnosis || !treatment) {
       setModalConfig({
         visible: true,
@@ -412,137 +639,179 @@ export default function VideoCallScreen() {
         type: 'alert',
         confirmText: 'Entendido',
         onConfirm: closeModal,
-        onCancel: closeModal
+        onCancel: closeModal,
       });
       return;
     }
 
+    savingRef.current = true;
     setSavingNotes(true);
+    let progress: SaveProgress | undefined;
+    let ownsLock = false;
     try {
-      // 1. Obtener usuario autenticado (médico)
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      ensureCurrent();
+      if (authError) throw authError;
       if (!user) throw new Error('No hay una sesión médica activa.');
+      const context = await readContext();
+      ensureCurrent();
+      const appointment = context.appointment;
+      if (!appointment) throw new Error('No se puede guardar sin una cita asociada a este triaje.');
+      if (appointment.doctor_id !== user.id) throw new Error('El médico autenticado no corresponde a esta cita.');
 
-      // 2. Obtener el appointment_id asociado al triage
-      let appointmentId = null;
-      if (triageId) {
-        const { data: appt } = await supabase
-          .from('appointments')
-          .select('id')
-          .eq('triage_id', triageId)
-          .limit(1)
-          .maybeSingle();
-        if (appt) {
-          appointmentId = appt.id;
-        }
+      progress = savesByTriage.get(context.triage.id);
+      if (!progress) {
+        progress = { running: false, recordWritten: false, uncertainWrite: false, completed: false };
+        savesByTriage.set(context.triage.id, progress);
       }
+      if (progress.running) throw new Error('Ya hay un guardado de esta consulta en curso. Espere a que finalice.');
+      progress.running = true;
+      ownsLock = true;
 
-      // 3. Guardar en la tabla medical_records
-      const { error } = await supabase.from('medical_records').insert({
-        patient_id: patientId || null,
-        doctor_id: user.id,
-        appointment_id: appointmentId,
-        diagnosis: diagnosis,
-        treatment_plan: treatment,
-        clinical_notes: notes || null,
-      });
-
-      if (error) throw error;
-
-      // 4. Marcar el triage como completado
-      if (triageId) {
-        const { error: updateTriageError } = await supabase.from('triages').update({ status: 'completed' }).eq('id', triageId).select().single();
-        if (updateTriageError) {
-           console.error('Error al completar el triaje:', updateTriageError);
-           throw new Error('El registro se guardó, pero falló el cambio de estado de la cita. Supabase dice: ' + updateTriageError.message + ' (Code: ' + updateTriageError.code + ')');
+      let savedRecord = await findRecord(context);
+      ensureCurrent();
+      if (savedRecord) {
+        progress.recordWritten = true;
+        progress.uncertainWrite = false;
+      } else {
+        if (progress.recordWritten || progress.uncertainWrite) {
+          throw new Error('Hay un guardado previo de esta consulta pendiente de verificación. Revise su registro antes de reintentar para evitar duplicados.');
         }
+        const recordData = {
+          patient_id: context.triage.patient_id,
+          doctor_id: user.id,
+          appointment_id: appointment.id,
+          diagnosis,
+          treatment_plan: treatment,
+          clinical_notes: notes || null,
+        };
+        // Sent writes cannot be safely undone: remember an acknowledgement even after unmount.
+        progress.uncertainWrite = true;
+        const { error } = await supabase.from('medical_records').insert(recordData);
+        if (error) {
+          if (definiteInsertRejections.has(error.code)) progress.uncertainWrite = false;
+          throw error;
+        }
+        progress.recordWritten = true;
+        progress.uncertainWrite = false;
+        savedRecord = { ...recordData, created_at: new Date().toISOString() };
       }
+      ensureCurrent();
 
-      // 5. Señal Broadcast instantánea al paciente para cortar su llamada
-      if (triageId) {
-        const channel = supabase.channel(`rt_call_${triageId}`);
-        channel.subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await channel.send({
-              type: 'broadcast',
-              event: 'call_ended',
-              payload: { diagnosis, treatment_plan: treatment }
-            });
-          }
+      if (!(progress.completed && context.triage.status === 'completed')) {
+        const { error } = await supabase.from('triages')
+          .update({ status: 'completed' }).eq('id', context.triage.id).select().single();
+        if (error) throw new Error('El registro se guardó, pero falló el cambio de estado de la cita. ' + error.message);
+        progress.completed = true;
+        ensureCurrent();
+      }
+      setIsCallEnded(true);
+      const noticeSent = await emitCallEnded(context, savedRecord);
+      ensureCurrent();
+      showSaved(noticeSent);
+    } catch (error: unknown) {
+      if (isCurrent()) {
+        console.error('Error al guardar registro médico:', error);
+        setModalConfig({
+          visible: true,
+          title: 'Error al Guardar',
+          message: errorMessage(error),
+          type: 'alert',
+          confirmText: 'Aceptar',
+          onCancel: closeModal,
+          onConfirm: closeModal,
         });
+      } else if (!(error instanceof ConsultationChanged)) {
+        console.warn('El resultado de un guardado anterior requiere verificación:', error);
       }
-
-      setSavingNotes(false);
-      setIsCallEnded(true); // Corta la cámara del doctor instantáneamente
-      setModalConfig({
-        visible: true,
-        title: 'Historial Guardado',
-        message: 'El registro e historial médico ha sido guardado exitosamente. La llamada ha finalizado.',
-        type: 'alert',
-        confirmText: 'Volver al Inicio',
-        onCancel: closeModal,
-        onConfirm: () => {
-          closeModal();
-          router.replace('/(doctor)/dashboard');
-        }
-      });
-    } catch (error: any) {
-      console.error('Error al guardar registro médico:', error);
-      setSavingNotes(false);
-      setModalConfig({
-        visible: true,
-        title: 'Error al Guardar',
-        message: error.message || 'No se pudo guardar el registro clínico en la base de datos.',
-        type: 'alert',
-        confirmText: 'Aceptar',
-        onCancel: closeModal,
-        onConfirm: closeModal
-      });
+    } finally {
+      if (progress && ownsLock) progress.running = false;
+      savingRef.current = false;
+      if (isCurrent()) setSavingNotes(false);
     }
   };
 
   const handleEndCall = () => {
-    if (isDoctor) {
-      // Si el doctor cuelga, le recordamos guardar la ficha
-      if (diagnosis && treatment) {
-        setIsCallEnded(true);
-        router.replace('/(doctor)/dashboard');
-      } else {
-        setModalConfig({
-          visible: true,
-          title: 'Registro Incompleto',
-          message: 'Se recomienda llenar el Registro Médico antes de salir. Si deseas salir sin registrar, puedes confirmarlo ahora.',
-          type: 'confirm',
-          confirmText: 'Salir sin guardar',
-          onCancel: closeModal,
-          onConfirm: async () => {
-            closeModal();
-            setIsCallEnded(true);
-            
-            // Forzar completado del triage si el médico se va
-            if (triageId) {
-              await supabase.from('triages').update({ status: 'completed' }).eq('id', triageId);
-              const channel = supabase.channel(`rt_call_${triageId}`);
-              channel.subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                  await channel.send({
-                    type: 'broadcast',
-                    event: 'call_ended',
-                    payload: { diagnosis: 'Consulta finalizada sin registro.', treatment_plan: 'Contacte a administración.' }
-                  });
-                }
-              });
-            }
-            
-            router.replace('/(doctor)/dashboard');
-          }
-        });
-        setShowNotes(true);
-      }
-    } else {
+    if (!isCurrent() || savingRef.current || endingRef.current) return;
+    if (!isDoctor || (diagnosis && treatment)) {
       setIsCallEnded(true);
-      router.replace('/(patient)/menu');
+      returnToMenu();
+      return;
     }
+    setModalConfig({
+      visible: true,
+      title: 'Registro Incompleto',
+      message: 'Se recomienda llenar el Registro Médico antes de salir. Si deseas salir sin registrar, puedes confirmarlo ahora.',
+      type: 'confirm',
+      confirmText: 'Salir sin guardar',
+      onCancel: closeModal,
+      onConfirm: async () => {
+        if (!isCurrent() || savingRef.current || endingRef.current) return;
+        endingRef.current = true;
+        closeModal();
+        let progress: SaveProgress | undefined;
+        let ownsLock = false;
+        try {
+          const { data: { user }, error: authError } = await supabase.auth.getUser();
+          ensureCurrent();
+          if (authError) throw authError;
+          if (!user) throw new Error('No hay una sesión médica activa.');
+          const context = await readContext();
+          ensureCurrent();
+          if (context.appointment && context.appointment.doctor_id !== user.id) {
+            throw new Error('El médico autenticado no corresponde a esta cita.');
+          }
+          progress = savesByTriage.get(context.triage.id);
+          if (!progress) {
+            progress = { running: false, recordWritten: false, uncertainWrite: false, completed: false };
+            savesByTriage.set(context.triage.id, progress);
+          }
+          if (progress.running) throw new Error('Ya hay un guardado de esta consulta en curso. Espere a que finalice.');
+          progress.running = true;
+          ownsLock = true;
+          const { error } = await supabase.from('triages').update({ status: 'completed' }).eq('id', context.triage.id);
+          if (error) throw error;
+          ensureCurrent();
+          setIsCallEnded(true);
+          const noticeSent = await emitCallEnded(context, null);
+          ensureCurrent();
+          if (noticeSent) {
+            returnToMenu();
+          } else {
+            setModalConfig({
+              visible: true,
+              title: 'Consulta Finalizada',
+              message: 'La consulta ha finalizado, pero no se confirmó el aviso al paciente.',
+              type: 'alert',
+              confirmText: 'Volver al Inicio',
+              onCancel: closeModal,
+              onConfirm: () => {
+                if (!isCurrent()) return;
+                closeModal();
+                returnToMenu();
+              },
+            });
+          }
+        } catch (error: unknown) {
+          if (isCurrent()) {
+            console.warn('Error al finalizar esta consulta:', error);
+            setModalConfig({
+              visible: true,
+              title: 'Error al Finalizar',
+              message: errorMessage(error),
+              type: 'alert',
+              confirmText: 'Aceptar',
+              onCancel: closeModal,
+              onConfirm: closeModal,
+            });
+          }
+        } finally {
+          if (progress && ownsLock) progress.running = false;
+          endingRef.current = false;
+        }
+      },
+    });
+    setShowNotes(true);
   };
 
   // Usamos Whereby (Líder en WebRTC para iframes, diseño súper limpio)
@@ -560,14 +829,15 @@ export default function VideoCallScreen() {
     displayName: isDoctor ? 'Doctor' : 'Paciente'
   }).toString();
 
-  const videoUrl = `${WHEREBY_BASE_URL}?${wherebyParams}`;
+  const videoUrl: `https://${string}` = `${WHEREBY_BASE_URL}?${wherebyParams}`;
   
   // Enlace externo (Por si se quiere abrir fuera de la app)
   const launchExternalMeet = () => {
+    if (!isCurrent()) return;
     if (Platform.OS === 'web') {
       window.open(videoUrl, '_blank');
     } else {
-      router.push(videoUrl as any);
+      router.push(videoUrl);
     }
   };
 
@@ -875,7 +1145,7 @@ export default function VideoCallScreen() {
       <TouchableOpacity 
         className="absolute top-12 left-6 w-11 h-11 rounded-full bg-slate-900/60 justify-center items-center z-20 border border-slate-700/50"
         style={{ backdropFilter: 'blur(8px)' }}
-        onPress={() => router.replace(isDoctor ? '/(doctor)/dashboard' : '/(patient)/menu')}
+        onPress={returnToMenu}
       >
         <Ionicons name="arrow-back" size={20} color="#ffffff" />
       </TouchableOpacity>
